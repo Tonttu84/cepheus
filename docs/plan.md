@@ -17,9 +17,8 @@ from Entire Brain (`.entire/agent-guide.md`).
 A home monitoring system for people who have finished a TMS course for depression. Its
 core is a simple, cheap flow:
 
-1. **Ask.** One or two short questions a few times a week, daily only when something
-   moves, and the standard nine-question depression questionnaire (PHQ-9) every two
-   weeks.
+1. **Ask.** One or two short questions twice a week, and the standard nine-question
+   depression questionnaire (PHQ-9) every two weeks.
 2. **Warn.** A warning is raised when the answers move away from the person's own
    baseline and stay there, or when the person stops answering.
 3. **Call.** A nurse calls. The conversation, not the software, finds out whether the
@@ -54,16 +53,19 @@ stimulate; ours decides when.
 Asking every morning wears people out. In studies, answering fades by 1 to 2% a week
 even among the willing, and in real-world use mental-health apps keep few users after a
 month (`research/2-mental-measures.md`, section D; `research/5-products-and-gap.md`,
-section B). So the schedule is stepped:
+section B). So the questions come twice a week, always:
 
-| State | What is asked | Why |
+| State | What happens | Why |
 |---|---|---|
-| Steady | One or two taps, two or three times a week, and the PHQ-9 every two weeks | Keeps a baseline without wearing people out |
-| Watchful: the answers or the ring start to move | Daily, for a short stretch | More detail exactly when it matters |
-| Warning: the change stays, or the person goes quiet | A nurse calls | A person, not more questions |
+| Routine | One or two taps, twice a week, and the PHQ-9 every two weeks | Keeps a baseline without wearing people out |
+| Warning: the answers stay below the person's baseline for two rounds, or two rounds go unanswered | A nurse calls | About a week of delay; the call, not more questions, finds out what is going on |
 | Any answer about self-harm, at any time | The crisis path at once, and the clinic is told the same day | This cannot wait for a schedule |
 
-Why a few days of delay is acceptable in the first rows and not in the last:
+There is no daily tier. A delay of about a week is acceptable for a relapse, so asking
+more often would add fatigue without adding safety. The crisis path does not depend on
+being asked: it is on the patient's screen all the time.
+
+Why a week of delay is acceptable in the first rows and not in the last:
 
 - A relapse usually builds over weeks. Reviews of the early signs before depressive
   episodes report lead times from under a month to much longer; one study found a mean
@@ -116,14 +118,14 @@ A flag describes a change for this person, never an illness. The patient switche
 method of measuring on separately, sees what it records, and can switch it off again.
 Home and money signals, if any are added, never raise a flag alone: they must agree
 with the patient's own check-in and last a week or more
-(`research/7-behaviour-flags.md`).
+(`research/7-behaviour-flags.md`, on another open trail).
 
 ## Measurement ladder
 
 | Step | What | Cost to the patient | In the demo |
 |---|---|---|---|
 | 1 | The ring in the background (phone signals later) | None | Built, on simulated history |
-| 2 | Short questions on the stepped schedule, and a camera check; a short game and a voice check if time | Seconds to minutes | Questions and camera built |
+| 2 | Short questions twice a week, and a camera check; a short game and a voice check if time | Seconds to minutes | Questions and camera built |
 | 3 | A nurse calls, when signals are unclear or the patient goes quiet | A conversation | A button on the clinic's screen |
 | 4 | A visit, a clinician's assessment, tests the clinic chooses | A trip | Named only |
 
@@ -131,7 +133,7 @@ with the patient's own check-in and last a week or more
 
 | Tier | What |
 |---|---|
-| Must have | The flow: the stepped questions and PHQ-9, the warning rule (including silence), and the clinic's screen with the nurse-call action. Then the supporting signals, each against a personal baseline: the ring's rhythm and sleep regularity, and the camera's expressivity reading |
+| Must have | The flow: the twice-weekly questions and PHQ-9, the warning rule (including silence), and the clinic's screen with the nurse-call action. Then the supporting signals, each against a personal baseline: the ring's rhythm and sleep regularity, and the camera's expressivity reading |
 | Thin extra | One patient screen: a single suggestion with one button, using a fixed response |
 | Only if time | Learning which response helps each person, shown on simulated weeks |
 
@@ -139,7 +141,7 @@ with the patient's own check-in and last a week or more
 
 | Tier | Signal | Source |
 |---|---|---|
-| Core | Short questions on the stepped schedule (one or two taps, or a short game), plus a fortnightly PHQ-9. The answers are data; stopping is a signal in itself, possibly the most important one | The patient's phone |
+| Core | Short questions twice a week (one or two taps, or a short game), plus a fortnightly PHQ-9. The answers are data; stopping is a signal in itself, possibly the most important one | The patient's phone |
 | Core | Day-night activity rhythm and sleep regularity | The ring; simulated and open data for the history |
 | Core | Facial expressivity and head movement | The Arduino USB camera, live, processed in the browser |
 | If time | A game rating ambiguous faces; speech rate from a read-aloud | Phone or laptop; the camera's microphone |
@@ -153,9 +155,9 @@ Each is a guess we build on for now. None is verified.
 
 | # | Assumption | Risk | How we would find out |
 |---|---|---|---|
-| A1 | People will answer one or two questions a few times a week while they are well, and daily for a short stretch when asked | Answering fades for everyone over weeks, and most missed answers have technical causes, so a stop is hard to read (`research/2-mental-measures.md`, section D) | Record every missed day with what the passive signals did; compare with how the person was doing |
+| A1 | People will answer one or two questions twice a week for as long as they are followed | Answering fades for everyone over weeks, and most missed answers have technical causes, so a stop is hard to read (`research/2-mental-measures.md`, section D) | Record every missed answer with what the passive signals did; compare with how the person was doing |
 | A2 | When the answers stop abruptly after getting worse, while the ring still sends data, the person is more likely unwell than bored | Not validated as a relapse signal in any study we found | The same records, plus what the nurse learns when calling |
-| A3 | Some patients will agree to share bank data if it is optional, last in line, and shown only as "financial routine" | No acceptance data for money was found; people accept sharing sleep far more readily than location (`research/7-behaviour-flags.md`) | Ask patients; count who switches the method on |
+| A3 | Some patients will agree to share bank data if it is optional, last in line, and shown only as "financial routine" | No acceptance data for money was found; people accept sharing sleep far more readily than location (`research/7-behaviour-flags.md`, on another open trail) | Ask patients; count who switches the method on |
 | A4 | Home-routine signals such as laundry or showering carry information | No depression study has tested them | Collect them next to the check-in and see whether they move together |
 
 ## The demo
@@ -180,7 +182,7 @@ Each is its own trail. Nobody is assigned yet: claim one in a comment.
 | # | Workstream | Delivers | Needs |
 |---|---|---|---|
 | 1 | Foundation | App skeleton, the whole data model (check-in answers, ring days, camera readings) so later streams do not edit it at once, a generator for one simulated person's weeks | Nothing; goes first |
-| 2 | Questions | The stepped question schedule and the fortnightly PHQ-9 on the phone, with the crisis path | 1 |
+| 2 | Questions | The twice-weekly questions and the fortnightly PHQ-9 on the phone, with the crisis path always in view | 1 |
 | 3 | Signal maths | Rhythm, sleep regularity and personal-baseline functions, with tests; the routing rule (what counts as a small dip, a dip that does not recover, and silence); loading the open activity data | 1 |
 | 4 | Camera check | A page measuring facial expressivity and head movement | 1 |
 | 5 | The two screens | The clinic's screen and the patient's one-suggestion screen | 2-4 for real numbers; can start on simulated ones |
@@ -206,8 +208,9 @@ Everything above is a proposal. These are the points where an answer is needed m
    changed. Does anyone disagree?
 3. Is the core flow right: ask, warn, a nurse calls, with the ring and the camera only
    as support?
-4. Is the stepped question schedule right, or should the questions stay daily? How long
-   should things look steady before the questions drop to a few times a week?
+4. Is twice a week right for the questions, with no daily tier? The reasoning: a
+   relapse builds over weeks, so about a week of delay is acceptable, and anything
+   about self-harm goes to the crisis path at once.
 5. How much should a flag tell the clinic? Proposal: the broad area that changed, never
    the raw data.
 6. May a patient hold back a single flag, or only switch whole methods off? A person
@@ -228,6 +231,6 @@ Everything above is a proposal. These are the points where an answer is needed m
     account hosts it?
 11. Does anything here not fit what the Aalto mentors (5th floor, booth 11) say they
     want? Questions for them are in `docs/general-plan.md`, section 7, and at the end of
-    `docs/research/7-behaviour-flags.md`.
+    `docs/research/7-behaviour-flags.md` (on another open trail).
 
 Decisions in this plan become rows in `docs/decisions.md` when the team accepts it.

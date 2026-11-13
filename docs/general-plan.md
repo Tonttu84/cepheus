@@ -3,7 +3,8 @@
 **Background document.** It records the research summary and the options as they stood
 on the evening of 13 Nov, before the planning sessions. For what the team proposes to
 build, read `plan.md`: where the two differ, `plan.md` is newer. Sections 4 and 8 below
-(candidate cores and open decisions) are kept as they were and are superseded by it.
+(candidate cores and open decisions) are superseded by it; they are kept as they were,
+apart from the rows on the stack and the repository flow.
 
 Status 13 Nov 2026, late evening. Planning notes: the challenge is likely but not locked,
 and no product core is chosen.
