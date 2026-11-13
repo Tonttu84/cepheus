@@ -286,6 +286,42 @@ Something, I don't know, creative.
 
 But that is quite a high bar.
 
+> Peliin yks idea ois että se ensin selvittäis sen ihmisen persoonallisuuden
+
+**Idea**: one idea for the game would be that it first works out the person's
+personality.
+
+> ja sit se hyödyntäis sitä persoonallisuutta siitä näkökulmasta, että miten sitä vois joustavoittaa
+
+And then it would use that personality from the angle of how it could be made more
+flexible.
+
+> esim. perfektionisti pakotetaan sietää virheitä tai jotain
+
+For example, a perfectionist is made to tolerate mistakes, or something.
+
+> eli se ihminen pakotetaan pois "mukavuusalueeltaan"=masennus
+
+So the person is pushed out of their "comfort zone" = depression.
+
+> ja opetetaan sille joku toinen kaava käyttäytyä ja sit kun se on vahvempi niin se pääsee siitä lokaalista optimista
+
+And is taught another pattern of behaving, and once that is stronger, the person gets
+out of that local optimum.
+
+> ja jos toi toimis niin sit se ei toimis pelkkään depikseen vaan tosi laajasti
+
+And if that worked, it would work not only for depression but very broadly.
+
+> Njoo ja tietty metakognition kehittäminen vois olla yks tavoite mut joo
+
+And of course developing metacognition could be one goal.
+
+Checked for these last ideas: matching an intervention to personality type has no trial
+behind it (`research/evidence-check.md`, section 11), and the general plan's rule
+applies: personality is never shown to the person as a label. Metacognition as a goal
+has not been looked up.
+
 Checked: not yet. The writing claim (that it helps in milder depression and not in
 severe depression) has not been looked up. An app that contacts friends on a person's
 behalf would need that person's clear consent each time; the research on what users
