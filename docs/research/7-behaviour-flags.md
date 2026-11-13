@@ -58,6 +58,32 @@ Water-flow or humidity sensors, smart plugs on washing machines, and bed sensors
 
 ---
 
+### A refinement from the team: bills unpaid although the money was there
+
+Added after the research, in answer to its finding that money signals point to poverty
+more than to depression. With bank statements the two can be told apart: a bill left
+unpaid while the balance covered it is not a sign of being out of money. It looks more
+like not attending to one's affairs, which fits the doctor's description of avoidance
+and of effort being impaired (`../doctor-notes.md`, sections 3 and 6).
+
+- **Why it is a better signal than debt or missed payments.** It removes the poverty
+  explanation by construction, so the main objection above does not apply to it.
+- **Evidence.** Two targeted searches found no study that tests this exact pattern in
+  depression. A review of financial technology and mental health notes that memory and
+  attention problems in depression and bipolar disorder make due dates hard to keep,
+  and that some people avoid acting on their finances entirely
+  (https://arxiv.org/pdf/2204.05448 ; search summary). A UK poll found people with
+  mental health problems three times more likely to be behind on payments
+  (Money and Mental Health Policy Institute; search summary), without separating those
+  who could pay. So it is plausible and untested.
+- **What else produces it.** Forgetting, a failed automatic payment, a disputed bill,
+  travel, attention problems, cognitive decline, and the disorganisation of mania.
+- **How to keep it within the rule.** It is defined by a rule, not judged by a model:
+  count bills that went unpaid on their due date although the balance covered them,
+  against the person's own past. The system does not conclude "depression" or "not
+  poverty". It raises "financial routine" as a changed area, and only when the
+  patient's own check-in agrees, like every other home or money signal.
+
 ## C. Risk behaviours and clinical warning signs
 
 - **Alcohol.** The evidence that alcohol use predicts the course of depression is mixed. In the Dutch NEMESIS-2 cohort, alcohol use did not predict persistence of major depression over 3 years; the authors' review found two earlier studies with higher relapse risk and three with none. https://pmc.ncbi.nlm.nih.gov/articles/PMC9971850/ (full text summary via search). Alcohol remains a clinically relevant risk factor (it worsens mood and interacts with medication) but is not a validated relapse predictor.
@@ -211,6 +237,8 @@ Added by the team after the research, to take to the Aalto mentors (5th floor, b
    off? A person who is getting worse may hide it.
 6. Would patients, and an ethics board in Finland, accept bank data as a source, even
    shown only as "financial routine"?
+7. Do you see patients who stop paying bills although they have the money? If so, does
+   it come early or late as things get worse?
 
 ## Could not check in this run
 
