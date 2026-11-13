@@ -11,7 +11,15 @@ This file is for coding agents and for people. It holds the rules of this reposi
 
 - Nobody pushes to `main`. Every change goes on a branch, is published as an Entire
   trail, gets a review from someone (a person or a fresh agent) who did not write it,
-  and is merged after that review passes. See D5 in `docs/decisions.md`.
+  and is merged after that review passes. See D5 and D6 in `docs/decisions.md`.
+- Publishing a change, from a branch with its commits made:
+  1. `entire trail create --title "<what and why>" --body "<what to look at>"` publishes
+     the branch and opens the trail; it prints the trail's web address.
+  2. `entire trail ready` marks it ready for review.
+  3. A teammate reviews and approves it; agents report review points with
+     `entire trail finding`, since trail comments are for people.
+  4. `entire trail merge` merges it into `main`.
+  `entire agent-help trail` prints the exact flags of the installed version.
 - The author fixes what the review finds. A fix that goes beyond a finding is reviewed
   again.
 - Commit messages follow Conventional Commits: `type(scope): imperative summary`, at
