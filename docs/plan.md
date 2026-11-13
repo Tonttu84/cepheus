@@ -95,24 +95,26 @@ brings the right person to the phone.
 | A rough patch, mood only slightly down | Simple things (activity, a sleep routine), a check that medication is still being taken, and a closer look at the next two rounds of answers |
 | A decline that has held for a couple of weeks | A booster: a cluster of about 5 TMS sessions over two or three days |
 | A full relapse | A new course, through a referral |
-| Any sign of crisis | Urgent care, at once |
+| Any sign of crisis during the call | Urgent care, at once. This is in addition to the crisis path on the patient's own screen, which is always there and does not wait for a warning or a call |
 
 Why both simple things and re-treatment, in steps:
 
-- TMS is safe. Common side effects are mild (headache, discomfort at the scalp). The
-  serious risk is a seizure, which an older guideline put at about one per 30,000
-  sessions (https://pmc.ncbi.nlm.nih.gov/articles/PMC7732158 ; search summary).
+- TMS is safe. Common side effects are mild, such as headache or discomfort at the
+  scalp (https://pubmed.ncbi.nlm.nih.gov/29338288/ ; search summary). The serious risk
+  is a seizure, which an older guideline put at about one per 30,000 sessions
+  (https://pmc.ncbi.nlm.nih.gov/articles/PMC7732158 ; search summary).
 - Its real cost is clinic capacity and the patient's time: 20 to 30 sessions for a
   course, about 5 for a booster. Fewer than 800 people received TMS in Finland in 2022,
   and a repeat course needs a new referral (`research/4-relapse-after-tms.md`).
 - Re-treatment works for people who responded before. In one open study, 38 of 99
   patients worsened and 84% of those regained the benefit when TMS was restarted.
   Monthly booster clusters cut relapse in the one sizeable trial: 16% with boosters and
-  medication, 44% with medication alone. Waiting for symptoms did no worse than a fixed
-  schedule (same report).
-- The simple things have their evidence in milder depression. These patients needed TMS
-  because medication had failed, so the simple things are a first step for a small
-  dip, not a substitute for a booster when the decline holds.
+  medication, 44% with medication alone. Re-treating when symptoms return did about as
+  well as a fixed schedule, in an observational comparison (same report).
+- The simple things have modest evidence (`research/evidence-check.md`, section 7;
+  `research/3-state-shifters.md`), and we found none of it in people who needed TMS
+  because medication had failed. So they are a first step for a small dip, not a
+  substitute for a booster when the decline holds.
 - The point of catching a decline early is the second row: a booster is a few days of
   sessions, a full relapse means a new course and weeks of illness.
 
@@ -256,8 +258,10 @@ Everything above is a proposal. These are the points where an answer is needed m
    answering can also be caught by simple rules (answers given too fast, the same
    answer to everything); people answer machines honestly but stick with a programme
    better when a person is involved; and an AI must never stand between a person in
-   crisis and a human. Starting point: fixed questions answered by tapping, with
-   reading aloud as an option, and an AI only where it is shown to help.
+   crisis and a human. Two limits hold whatever is chosen: an AI neither triggers nor
+   holds back a warning, and a spoken answer is never used to read mood from the
+   voice. Starting point: fixed questions answered by tapping, with reading aloud as an
+   option, and an AI only where it is shown to help.
 9. Does anyone have a week or more of their own ring data? An Oura export can take
    days, so it would have to be requested now.
 10. May we publish a public copy of this repository on GitHub for the final submission?
