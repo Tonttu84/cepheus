@@ -48,7 +48,10 @@ below.
 These hold whatever is built.
 
 - The product makes no treatment or diagnostic claims, and never says it detects or
-  predicts relapse. Sensing is described as a wellbeing check-in.
+  predicts relapse. Sensing is described as a wellbeing check-in. Never claim brain
+  measurement or brain stimulation at home.
+- A general AI model may turn numbers into a plain summary. It must not read mood from
+  a face or a voice, and it must not decide when to alert a clinician.
 - Anything that asks about mood or self-harm shows a crisis path: a route to a person
   and to emergency help, with nothing automated in between.
 - Anything asked of a person who is unwell costs almost no effort. No streaks, no
@@ -59,8 +62,9 @@ These hold whatever is built.
 - Camera and microphone input is processed on the device. Only derived numbers are
   stored, never video or audio.
 - `docs/doctor-notes.md` is one clinician's working model. Remarks marked "Idea" are
-  brainstorming, not findings. A claim goes into the product or the pitch only as far
-  as `docs/research/` supports it.
+  brainstorming, not findings. Its "Checked" lines rest on abstracts, not full papers.
+  A claim goes into the product or the pitch only as far as `docs/research/` supports
+  it.
 
 ## Private data
 
@@ -75,6 +79,7 @@ These hold whatever is built.
 
 | Path | What it holds |
 | --- | --- |
+| `AGENTS.md`, `CLAUDE.md` | These rules; `CLAUDE.md` only points Claude Code at `AGENTS.md` |
 | `docs/general-plan.md` | The problem, what the research says, candidate cores, build order, open decisions |
 | `docs/doctor-notes.md` | A doctor's remarks, anonymous, with what a literature check found |
 | `docs/research/` | The evidence check and six research reports, with sources |
