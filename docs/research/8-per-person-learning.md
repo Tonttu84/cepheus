@@ -110,6 +110,8 @@ Sources (C):
 
 **A design fork for the team.** The after tap is an extra question and an extra notification, and the plan allows questions only twice a week and gives the patient "one suggestion and one button". Two ways to resolve it: (a) accept the after tap as an opt-in part of a try-out period, which the patient switches on knowingly; or (b) drop it and use the next scheduled check-in as the "after" score. Option (b) keeps the plan's rule intact, but the gap is then three or four days, the rebound is larger, and the number of trials needed grows well beyond the figures below. The figures in this report assume (a).
 
+**Settled by the owner on 14 Nov 2026: (b).** "Lets not ask an extra question if we have a curated set that can be proven". There is no after tap. The next scheduled check-in, three or four days later, is the only "after" score. The times in this report are therefore lower bounds: with a gap of days between a suggestion and the next answer, most of any short-lived effect has passed and the rebound dominates, so one person's data is unlikely to show an effect at all, and the learning that remains is the pooled comparison across patients over months.
+
 ### How many candidates
 **Two or three**, all from the supported list in `3-state-shifters.md` §A: e.g. a 10-minute walk (best acute evidence in depressed people), 3 minutes of mindful breathing (supported vs rumination in remitted patients), and a low-effort contact (text one named person). Never options with documented backfire (positive-memory recall, self-chosen sad music, cold water). More options split too few trials.
 
