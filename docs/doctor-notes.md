@@ -10,10 +10,10 @@ How to read this file:
 - Each remark is given in the original Finnish, followed by an English rendering.
 - "Checked" lines say what a literature check found, with the file that holds the
   sources. Those checks read abstracts, not full papers.
-- The doctor's product and game ideas are brainstorming, not medical facts. The team's
-  note on this (13 Nov 2026): "his feature ideas are not medical facts though of course
-  he has some insights". Remarks that are ideas are marked **Idea**; section 9 collects
-  the ones that are only ideas.
+- The doctor's product and game ideas are brainstorming, not medical facts, though the
+  doctor has real insights; the team asked for this to be made plain (13 Nov 2026).
+  Remarks that are ideas are marked **Idea**; section 9 collects the ones that are only
+  ideas.
 - The last section is the team's own direction on measuring, not the doctor's words.
 
 ## 1. How to approach the problem
@@ -106,7 +106,7 @@ people recovered from depression (`research/3-state-shifters.md`, section D).
 
 > Esimerkki, ... sä voisit spontaanisti ilostua kun joku tulee hymyillen vastaan (ja näin ehkä kävikin jossain kohtaa elämäää), mutta sit muistatkin automaaattisesti että siitä seuraa vain kärsimystä, koska vuosikymmeniä sitten oli parisuhde sen AINOAN ihmisen kanssa, jonka kanssa koskaan klikkasi, jonka sössit huonoilla sosiaalisilla taidoilla, ja sen jälkeen elämällä ei oo ollut mitään merkitystä, ja toisaalta et koskaan oppinut sosiaalisia taitoja, ja ootkin oppinut, että et oikeastaan edes halua olla ihmisten kanssa, eikä ne sosiaaliset jutut ei oikeastaan koskaan ollut edes sun juttu, ja ihmisten kohtaaminen tuntuukin nyt siltä kuin olisit erämaassa ja vastaan kävelee vihamielisen heimon jäsen
 
-An example (hypothetical): you could spontaneously feel glad when someone comes towards
+An example: you could spontaneously feel glad when someone comes towards
 you smiling, and perhaps you once did. But then you automatically remember that only
 suffering follows, because decades ago there was a relationship with the ONLY person
 you ever clicked with, which you ruined with poor social skills, and since then life
@@ -247,7 +247,7 @@ CBASP has support in chronic depression but added nothing over optimised medicat
 people who had not responded to medication, the group closest to TMS patients
 (`research/3-state-shifters.md`, section C).
 
-## 9. Feature ideas (brainstorming, not clinical claims)
+## 9. Feature ideas (brainstorming, with one unchecked clinical remark)
 
 The measuring ideas in sections 5 and 6 are also **Ideas**: a game that observes how
 negatively a person sees stimuli, and a game that measures whether a person is
@@ -264,9 +264,9 @@ Like "just reaching out from beyond the grave here..."
 
 > Jotain juttuja on mitkä tutkitusti auttaa ainakin lievemmässä depiksessä on sellaset missä kirjottamalla tietoisesti käsitellään omaa elämäntarinaa ja mihin on menossa elämässä, mitä haluaa jne
 
-Some things that research shows help, at least in milder depression, are ones where you
-consciously work through your own life story in writing: where you are going in life,
-what you want and so on.
+**Clinical remark, not checked**: some things that research shows help, at least in
+milder depression, are ones where you consciously work through your own life story in
+writing: where you are going in life, what you want and so on.
 
 > mut se ei kyl sit taas toimi jos on kunnon depis enää, mut vois toimia tollases pelissä
 
