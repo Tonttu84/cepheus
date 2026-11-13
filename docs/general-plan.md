@@ -15,8 +15,8 @@ As a TMS researcher would put it (`research/4-relapse-after-tms.md`):
 - Booster sessions seem to work in uncontrolled data, but nobody knows when a given
   patient needs them. Today the trigger is the patient getting worse, being referred
   again and waiting.
-- No reliable predictor of relapse after TMS exists, and no study was found that used
-  wearables after TMS.
+- No reliable predictor of relapse after TMS exists, and no published results were found
+  from wearables after TMS (one registered protocol pairs a ring with TMS).
 
 In the doctor's model (`doctor-notes.md`):
 
@@ -45,7 +45,7 @@ In the doctor's model (`doctor-notes.md`):
 
 | Measure | Source | Verdict |
 |---|---|---|
-| Day-night activity rhythm and sleep regularity | Ring or wrist | Best: the only sign with relapse data in recovered people (93 people, 23 relapses, one study, not replicated) |
+| Day-night activity rhythm and sleep regularity | Ring or wrist | Best: the strongest relapse evidence in recovered people (93 people, 23 relapses, one study, not replicated) |
 | Daily steps; phone mobility and time at home | Phone, ring | Good: move with a person's own symptoms |
 | Daily check-in of 3-4 items, under 30 s | Self-report | Good: single mood items are valid; about 79% compliance in studies |
 | PHQ-9 every 1-2 weeks | Self-report | The calibration anchor; a change of about 6 points is real |
@@ -64,12 +64,15 @@ event; never score it as a zero or punish it.
 
 - Fast and low effort: a short walk, brief mindful attention or distraction (fades the
   same day), slow breathing (healthy samples only), bright light.
-- Backfire: recalling happy memories, self-chosen sad music. Cold water does nothing.
+- Backfire: recalling happy memories (worsens mood in people who are depressed, no
+  change in recovered people), self-chosen sad music. Cold water does nothing.
 - People can use a strategy when prompted; starting it is what fails. Remove the
   starting step.
-- Learning per person is slow: 16 to 63 tries to tell one response from doing nothing,
-  and telling two responses apart is unrealistic. Realistic: confirm 2-4 candidates over
-  4-8 weeks while the person is well, starting from group evidence.
+- Learning per person is slow. No published figure exists; the report's own rough
+  estimate is 16 to 63 tries of a response plus as many do-nothing comparisons, so about
+  30 to 130 occasions, to tell one response from doing nothing. Telling two responses
+  apart is unrealistic. Realistic: confirm 2-4 candidates over 4-8 weeks while the person
+  is well, starting from group evidence.
 
 **The gap** (`research/5-products-and-gap.md`)
 
@@ -102,8 +105,9 @@ shown as a label.
 
 - An Oura ring: gives sleep timing, night waking and per-minute activity, which is the
   best sign. No live stream (data lags until the phone app syncs); access needs an OAuth
-  app, and newer rings need a membership. The account data export works without one but
-  can take up to 10 days, so request it at once. The rhythm measures need 7+ days of data.
+  app, and newer rings need a membership. The account data export is the fallback; whether
+  it is complete without a membership is not confirmed, and it can take up to 10 days, so
+  request it at once. The rhythm measures need 7+ days of data.
 - An Arduino USB Camera: a standard driver-free webcam (up to 4K, ring light, built-in
   microphone). Enough for facial expressivity, head movement and the read-aloud. Ask it
   for 720p and switch the ring light on.
@@ -113,7 +117,7 @@ Build order for the sensing (`research/6-sensing-feasibility.md`; hours are esti
 
 | Step | Route | Hours |
 |---|---|---|
-| 1. Daily check-in and fortnightly PHQ-9 | Web form | 3 |
+| 1. Daily check-in and fortnightly PHQ-9 | Web form; the PHQ-9 question on thoughts of self-harm must show the crisis path | 3-4 |
 | 2. Rhythm and sleep-regularity numbers | Own formulas, first on a simulated person, then on open activity data | 3-4 |
 | 3. Facial expressivity and head movement | MediaPipe Face Landmarker in the browser; frames processed in memory, only numbers stored | 3-5 |
 | 4. Speech rate and pauses, if time | Fixed passage with a known syllable count | 3-4 |
