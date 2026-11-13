@@ -85,6 +85,37 @@ https://www.ovid.com/journals/pspsbf/pdf/10.1159/000517953~prodromal-symptoms-in
 https://pmc.ncbi.nlm.nih.gov/articles/PMC2916193 , https://www.pubmed.gov/24183486/ ,
 https://pmc.ncbi.nlm.nih.gov/articles/PMC9729416 .
 
+## After a warning
+
+The nurse's call decides what happens next. The system never recommends a treatment; it
+brings the right person to the phone.
+
+| What the nurse finds | Response |
+|---|---|
+| A rough patch, mood only slightly down | Simple things (activity, a sleep routine), a check that medication is still being taken, and a closer look at the next two rounds of answers |
+| A decline that has held for a couple of weeks | A booster: a cluster of about 5 TMS sessions over two or three days |
+| A full relapse | A new course, through a referral |
+| Any sign of crisis | Urgent care, at once |
+
+Why both simple things and re-treatment, in steps:
+
+- TMS is safe. Common side effects are mild (headache, discomfort at the scalp). The
+  serious risk is a seizure, which an older guideline put at about one per 30,000
+  sessions (https://pmc.ncbi.nlm.nih.gov/articles/PMC7732158 ; search summary).
+- Its real cost is clinic capacity and the patient's time: 20 to 30 sessions for a
+  course, about 5 for a booster. Fewer than 800 people received TMS in Finland in 2022,
+  and a repeat course needs a new referral (`research/4-relapse-after-tms.md`).
+- Re-treatment works for people who responded before. In one open study, 38 of 99
+  patients worsened and 84% of those regained the benefit when TMS was restarted.
+  Monthly booster clusters cut relapse in the one sizeable trial: 16% with boosters and
+  medication, 44% with medication alone. Waiting for symptoms did no worse than a fixed
+  schedule (same report).
+- The simple things have their evidence in milder depression. These patients needed TMS
+  because medication had failed, so the simple things are a first step for a small
+  dip, not a substitute for a booster when the decline holds.
+- The point of catching a decline early is the second row: a booster is a few days of
+  sessions, a full relapse means a new course and weeks of illness.
+
 ## Principles
 
 1. The goal is a system that works: notice a relapse coming and help someone act on it.
@@ -230,10 +261,12 @@ Everything above is a proposal. These are the points where an answer is needed m
     notes. One view so far: not yet. Proposal: decide by Saturday evening, and if yes,
     push once the demo path is frozen and again just before submitting. Whose GitHub
     account hosts it?
-11. Does anything here not fit what the Aalto mentors (5th floor, booth 11) say they
+11. Can a clinic give a five-session booster at short notice, and who decides that a
+    patient gets one? The steps after a warning depend on it.
+12. Does anything here not fit what the Aalto mentors (5th floor, booth 11) say they
     want? Questions for them are in `docs/general-plan.md`, section 7, and at the end of
     `docs/research/7-behaviour-flags.md` (on another open trail).
 
-The owner's decisions behind this plan are rows D7 to D15 in `docs/decisions.md`. Each
+The owner's decisions behind this plan are rows D7 to D16 in `docs/decisions.md`. Each
 is marked there as open to the team, with the question above that covers it. When the
 team answers, a row is added that confirms the decision or names the one it replaces.
