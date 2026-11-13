@@ -22,6 +22,12 @@ This file is for coding agents and for people. It holds the rules of this reposi
   `entire agent-help trail` prints the exact flags of the installed version.
 - The author fixes what the review finds. A fix that goes beyond a finding is reviewed
   again.
+- At the start of a session, list the project's open trails with
+  `entire trail list --project et/crunchproject --status open` and tell your user which
+  ones wait for their comment or review, giving the web address that
+  `entire trail show <number>` prints. A trail whose phase is `complete` is merged and
+  needs nothing. This is how teammates hear about each other's changes; nobody should
+  have to pass links around by hand.
 - Commit messages follow Conventional Commits: `type(scope): imperative summary`, at
   most 72 characters, no trailing period; a body, wrapped at 72 columns, that says why.
   Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`,
