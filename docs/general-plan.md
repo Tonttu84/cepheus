@@ -1,117 +1,154 @@
 # General plan: Beyond the Clinic
 
-Status 13 Nov 2026, evening. Planning notes: the challenge is likely but not locked, and no
-product core is chosen.
-Sources: `doctor-notes.md` (the doctor's words), `research/evidence-check.md` (claims
-checked at abstract level), and the challenge brief on the Junction platform.
+Status 13 Nov 2026, late evening. Planning notes: the challenge is likely but not locked,
+and no product core is chosen.
+Sources: `doctor-notes.md` (the doctor's words), the reports in `research/` (sources read
+mostly at abstract level; each report lists what it could not check), and the challenge
+brief on the Junction platform.
 
-## 1. The problem, in the doctor's model
+## 1. The problem
 
-- TMS treats severe depression in daily clinic visits. Even when it works, depression often
-  returns: roughly half of responders still respond at 12 months. Nothing good exists for
-  maintenance at home.
-- The feeling drives thinking and action, not the other way round. Reasoning with the
-  thoughts does little, and the feeling cannot be commanded directly.
-- The mood sets the mind to "solving" things that need no solving or cannot be solved
-  (old events). That is rumination, and it deepens the state.
-- Change takes conscious effort, and that effort is exactly what is impaired when unwell.
-- The person has strong bad routines (self-blame, denying themselves anything pleasant),
-  not just weak good ones. Negative experiences pile up into a list that is easy to grab.
-- Thinking, feeling and action end up all stuck. That state is intolerable and can lead to
-  suicide.
-- Maintenance is about balance: either the person holds it, or a trigger arrives and the
-  question is how they handle it before they are in too deep. Personality shapes which
-  triggers hit (threat-sensitive, self-demanding).
-- Named therapies: MBCT (built to prevent recurrence, fits the brief), CBASP (chronic
-  depression, where the person could improve their situation but does not believe it).
+As a TMS researcher would put it (`research/4-relapse-after-tms.md`):
+
+- About half of the people who respond to a TMS course lose the response within a year:
+  46.3% still respond at 12 months (Senova 2019, read in full).
+- Booster sessions seem to work in uncontrolled data, but nobody knows when a given
+  patient needs them. Today the trigger is the patient getting worse, being referred
+  again and waiting.
+- No reliable predictor of relapse after TMS exists, and no study was found that used
+  wearables after TMS.
+
+In the doctor's model (`doctor-notes.md`):
+
+- The feeling drives thinking and action. Reasoning with the thoughts does little, and
+  the feeling cannot be commanded directly, only shifted indirectly.
+- Change takes conscious effort, which is exactly what is impaired. Bad routines are
+  strong, not just good ones weak.
+- Perception turns negative, life narrows through avoidance, and negative experiences
+  pile up. Thinking, feeling and action end up stuck; that state can lead to suicide.
+- Maintenance is about balance: what happens after a trigger, before it is too deep.
 
 ## 2. What the brief rewards
 
-- Judging, 25% each: usefulness, ease of use, smart sensing, creativity.
-- Wanted: a loop that senses how someone is doing, responds with something that helps, and
-  learns what works for that person. A phone and a laptop are enough.
-- Possible users: people after TMS, anyone at risk of depression, clinicians following
-  patients between visits.
-- Judges and mentors are brain-stimulation researchers (Ilmoniemi and Lioumis group).
-- Prize (Aalto in Discord `#aalto`, 13 Nov; the platform page still says "to be announced"):
-  2000 EUR for the best team, a visit to the brain stimulation lab, and for the most
-  promising idea a chance to keep developing it with the researchers.
-- Mentors: Aalto University booth, 5th floor, booth 11 (venue map in the participant
-  guide): the short column of booths 10-13 in the middle of the hacking area, below the
-  Arduino Hardware Lab.
+- Judging, 25% each: usefulness, ease of use, smart sensing ("clever use of what can be
+  measured at home, and learn what works for each person"), creativity.
+- Prize: 2000 EUR for the best team, a visit to the brain stimulation lab, and for the
+  most promising idea a chance to keep developing it with the researchers.
+- Mentors: Aalto University booth, 5th floor, booth 11.
+- "Closed-loop" in the judging group's own work means a loop of milliseconds to minutes
+  inside one stimulation session. A home product is the slow outer loop, over days to
+  weeks, that decides when to stimulate; theirs decides how. Never claim home TMS-EEG.
 
-## 3. The option space
+## 3. What the research says
 
-Build cost is my estimate for a weekend, not a measurement.
+**Sensing, ranked** (`research/1-physical-signs.md`, `research/2-mental-measures.md`)
 
-| Direction | What the doctor's model says | Evidence | Build cost |
-|---|---|---|---|
-| Daily check-in companion | Fits only if it costs almost no effort and does not argue with thoughts | Daily check-ins are tolerated (about 79% compliance) | Low |
-| Sensing against a personal baseline | This is the "balance" idea: notice before it is too deep | Wearable accuracy 0.70-0.89, "not ready for clinical use"; warning signals preceded about a third of recurrences | Medium; demo on open data |
-| Sensory state-shifters (music, light, rhythm) | Strong fit: an indirect way to shift a feeling that cannot be commanded | Weak at group level, short-term lab studies; honest only as a per-person measurement | Low to medium |
-| Small acts and routines | Partial: actions follow the feeling too, so only as cue-based routines trained while well | Strongest family (behavioural activation, exercise); tiny acts thinly studied | Low |
-| Mindfulness practice (MBCT style) | Named by the doctor for recurrence prevention | Strongest for relapse (risk cut by about 30%) | Low, but not novel and hard to demo |
-| Game | Nothing said | Weak; Soihtu has no published trial | High |
-| Smart home light and sound | Fits rhythm and zero effort | Light helps as an add-on | High without hardware |
-| Social (peers reach out) | Mixed: for some people contact is itself the trigger | Soft | Medium, heavy on privacy |
-| Clinician view | Follow-up is the "more trivial" part, but it makes escalation real | Workflow, not a treatment claim | Low on synthetic data |
+| Measure | Source | Verdict |
+|---|---|---|
+| Day-night activity rhythm and sleep regularity | Ring or wrist | Best: the only sign with relapse data in recovered people (93 people, 23 relapses, one study, not replicated) |
+| Daily steps; phone mobility and time at home | Phone, ring | Good: move with a person's own symptoms |
+| Daily check-in of 3-4 items, under 30 s | Self-report | Good: single mood items are valid; about 79% compliance in studies |
+| PHQ-9 every 1-2 weeks | Self-report | The calibration anchor; a change of about 6 points is real |
+| Game rating ambiguous faces or scenarios | Phone or laptop | Best-supported task; low reliability, so a weekly trend, never a daily alarm |
+| Facial expressivity and head movement | Ordinary camera | The only camera signal that moves with recovery; small studies |
+| Gaze toward sad versus happy faces | Camera plus a viewing task | Real, but persists after recovery, so more trait than state |
+| Speech rate from a 30-second read-aloud | Phone microphone | Cheap add-on |
+| Activity and social range per day | Self-report | Tracks same-day symptoms; not shown to precede relapse |
+| HRV alone, pupil, eye movements, skin conductance, attention-probe tasks | Various | Avoid: trait-like, lab-only or unreliable |
 
-Two cores discussed so far, both parked:
-- **A, the stuck moment:** notice a dip, sort the thought (can I act on this today?), then
-  one small act or an attention shift. Weakness: it asks a stuck person to reason.
-- **B, train while well, one tap when unwell:** learn each person's own state-shifters by
-  short experiments while well, rehearse them into routines, deliver the proven one with
-  one tap in a dip. Weakness: the learning needs weeks, so the demo must simulate time.
+A missed answer as a signal is mixed: low mood predicts a missed next prompt, but most
+missing answers have technical causes and answering fades for everyone. Log it as an
+event; never score it as a zero or punish it.
 
-Holds whichever direction is chosen:
-- A crisis path: a clear route to a person and to emergency help.
-- Near-zero effort for anything asked of a person who is unwell.
-- No treatment claims; open or synthetic data only, no real patient data.
-- No streaks or scores; personality is never shown to the user as a label. These are
-  design judgement, with weak evidence behind them.
+**Responses** (`research/3-state-shifters.md`)
 
-Do not say in a pitch:
-- "Depressive thinking is logical reasoning on biased premises" (the evidence says the
-  opposite).
-- That slowing recovery predicts relapse (it preceded about a third of recurrences).
-- That time from waking to first movement, or unanswered messages, are known markers
-  (no source found; lower mobility and a flatter day-night rhythm are supported).
+- Fast and low effort: a short walk, brief mindful attention or distraction (fades the
+  same day), slow breathing (healthy samples only), bright light.
+- Backfire: recalling happy memories, self-chosen sad music. Cold water does nothing.
+- People can use a strategy when prompted; starting it is what fails. Remove the
+  starting step.
+- Learning per person is slow: 16 to 63 tries to tell one response from doing nothing,
+  and telling two responses apart is unrealistic. Realistic: confirm 2-4 candidates over
+  4-8 weeks while the person is well, starting from group evidence.
 
-## 4. The weekend
+**The gap** (`research/5-products-and-gap.md`)
+
+- Sensing-only products failed (a signal with no proven action); treatment-only products
+  had no payer. Nothing targets the period after TMS.
+- New is the combination: learn while well, one tap at a dip, and a clinic action.
+- A clinician view is already done elsewhere; the TMS clinic context is what is left.
+- Real-world mental-health apps keep a median 3.3% of users at day 30.
+- Do not say "detects relapse": a predictive claim makes the software a medical device.
+
+## 4. Candidate cores (none chosen)
+
+- **A, the stuck moment:** notice a dip, sort the thought, then one small act or an
+  attention shift. Weakness: it asks a stuck person to reason.
+- **B, train while well, one tap when unwell:** learn each person's own state-shifters
+  while well, rehearse them, deliver the proven one with one tap in a dip. Weakness:
+  learning takes weeks, so the demo must simulate time.
+- **C, the outer loop for the TMS clinic:** home sensing against a personal baseline
+  that tells the clinic when to offer a booster, plus self-management in between.
+  Weakness: the response belongs to the clinic, so the home side can look thin.
+
+B and C combine: C gives the signal a clinic action, B gives the person something to do.
+
+Holds whichever is chosen: a crisis path to a person and to emergency help with nothing
+automated in between; near-zero effort for anything asked of someone unwell; no
+treatment claims; open or synthetic data only; no streaks or scores; personality never
+shown as a label.
+
+## 5. Hardware and data at hand
+
+- An Oura ring: gives sleep timing, night waking and per-minute activity, which is the
+  best sign. No live stream (data lags by hours); access needs an OAuth app, and newer
+  rings need a membership; a data export works without one.
+- An Arduino USB camera: enough for facial expressivity, head movement and a gaze task.
+- An AI-assisted tracking camera demoed at the venue: make and developer access unknown.
+- Open data for a demo: one patient's 239 days of diary reports through a depressive
+  transition (Kossakowski 2017); activity data from 23 patients and 32 controls
+  (Depresjon); phone sensing from 48 students (StudentLife).
+
+## 6. The weekend
 
 | When | What |
 |---|---|
 | Fri 13 Nov 23:55 | Preliminary submission: which challenge (can be changed later) |
-| Fri evening | "Build with Google DeepMind" workshop (time not stated on the page) |
 | Sat 14 Nov 12:00 | Submissions open |
 | Sun 15 Nov 10:00 | Final submission |
 | Sun 15 Nov 10:30-13:00 | Peer review at the venue; skipping it forfeits the main prize |
 
-Suggested checkpoints (mine, not the organisers'):
-- Fri night: talk to the Aalto mentors; settle the challenge and the core.
-- Sat midday: one loop working end to end on fake data.
-- Sat evening: demo path frozen; only polish after this.
-- Sun morning: pitch rehearsed and submitted well before 10:00.
+Suggested checkpoints: mentors and core settled on Friday night; one loop working end to
+end on fake data by Saturday midday; demo path frozen Saturday evening; pitch rehearsed
+and submitted well before Sunday 10:00.
 
-At the Aalto booth, ask: what counts as "smart sensing" for them; which open datasets
-they point to; whether TMS-specific maintenance matters more than relapse prevention in
-general; the prize. They may also run a TMS demo and a portable EEG demo.
+## 7. Questions for the mentors
 
-## 5. Open decisions
+1. Would a clinic offer planned maintenance or symptom-triggered boosters, and can it
+   give a cluster of sessions at short notice?
+2. Which measure and threshold would you trust to call a patient back, and who would
+   receive the alert?
+3. Would daily data during and after a course help your personalisation work?
+4. What counts as "smart sensing" for you, and which open datasets do you point to?
+5. Which pilot outcome would convince you that it worked?
+
+## 8. Open decisions
 
 | Decision | Whose | By when |
 |---|---|---|
-| Is this the challenge, and does it go to the team | Owner, then team | Before Fri 23:55 (changeable) |
-| Product core (A, B, or another) | Owner or team | After talking to the mentors |
-| Primary user: post-TMS patient, at-risk person, clinician | Owner or team | With the core |
-| Sensing source: self-report only, phone, wearable | Team; depends on hardware at hand | With the core |
-| Tech challenges to stack (Gemini API pays 4000 EUR for first; Gemma; Modal; Verda) | Team | Sat morning |
-| Who builds what, and the doctor's role (advice, pitch) | Owner | Fri night |
-| Stack and repo flow | Team | At kickoff |
+| Lock the challenge | Team | Before Fri 23:55 (changeable) |
+| Product core (A, B, C or a mix) | Team | After talking to the mentors |
+| Primary user: person after TMS, person at risk, clinician | Team | With the core |
+| Which sensors go in the demo | Team | With the core |
+| Tech challenges to stack (Gemini API, Gemma, Modal, Verda) | Team | Sat morning |
+| Who builds what, and the doctor's role | Team | Fri night |
+| Stack and repository flow | Team | At kickoff |
 
-Not yet checked: CBASP, cue-based routines in depression, mood-driven memory bias, lower
-HRV as a marker, ACT versus CBT for depression. No full texts were read for any claim.
+## 9. Not yet checked
 
-Open datasets for a demo: Kossakowski 2017 (one patient, 239 days of diary reports through
-a depressive transition, CC BY 4.0); Depresjon (activity data, 23 patients and 32
-controls); StudentLife (phone sensing, 48 students, PHQ-9).
+- Most figures come from abstracts. Spot-checked against sources: the rhythm study, the
+  interpretation-bias meta-analysis, the app retention figure, the sad-music study, the
+  open diary dataset, and the registered trial of phone-triggered maintenance TMS.
+- Lower HRV as a marker, ACT versus CBT for depression, the two-week lead time in the
+  rhythm study, the specifications of the demoed camera, and whether Oura's sign-in
+  works for a local app.
