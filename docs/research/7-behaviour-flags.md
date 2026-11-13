@@ -194,6 +194,24 @@ In each case, the flag to the clinic in the demo should fire only when the devic
 
 ---
 
+## Questions for the mentors
+
+Added by the team after the research, to take to the Aalto mentors (5th floor, booth
+11). They test this whole line of thought against people who run a clinic's research.
+
+1. Would a clinic act on a flag that names only an area, such as "sleep" or "daily
+   routine", or does it need to see the measure before it calls a patient?
+2. No study has tested showering, laundry or other home routines as relapse signals. Do
+   you think they are worth testing, and would such a study fit the follow-up work the
+   challenge prize offers?
+3. What do your patients describe as their own first signs that things are slipping,
+   and is medication use followed after a TMS course?
+4. How many false flags a month would a clinic tolerate before it stops reading them?
+5. Should a patient be able to hold back a single flag, or only switch whole methods
+   off? A person who is getting worse may hide it.
+6. Would patients, and an ethics board in Finland, accept bank data as a source, even
+   shown only as "financial routine"?
+
 ## Could not check in this run
 
 - Sample sizes for the EMBC 2023 and Dennis 2024 smart-home studies (abstracts only; PubMed blocked fetch).
