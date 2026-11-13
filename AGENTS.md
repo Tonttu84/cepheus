@@ -44,16 +44,17 @@ This file is for coding agents and for people. It holds the rules of this reposi
 
 ## Stack
 
-Not chosen yet. When it is, record why in `docs/decisions.md` and fill in the commands
-below.
+Next.js (App Router) with strict TypeScript and Tailwind CSS, SQLite through Prisma,
+Zod, MediaPipe in the browser, plain tested TypeScript functions for signal maths,
+Vitest, and Playwright. See D15 in `docs/decisions.md`.
 
 ## Commands
 
 | Task | Command |
 | --- | --- |
-| Set up a fresh clone | not defined yet |
-| Run the app | not defined yet |
-| Tests, lint and type-check before a branch is published | not defined yet |
+| Set up a fresh clone | `npm install && npm run db:setup` |
+| Run the app | `npm run dev` |
+| Tests, lint and type-check before a branch is published | `npm run check && npm run build && npm run test:e2e` |
 
 ## Rules of the problem
 
