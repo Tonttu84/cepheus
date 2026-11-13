@@ -103,3 +103,8 @@ These hold whatever is built.
   provides the `git-remote-entire` helper, on the PATH, and a completed `entire login`.
 - Most figures in `docs/research/` come from abstracts. Each report lists what it could
   not check; read that list before relying on a number.
+
+<!-- entire-agent:begin -->
+Read .entire/agent-guide.md for this repository's workflow, source inspection, and verification guidance.
+@.entire/agent-guide.md
+<!-- entire-agent:end -->
