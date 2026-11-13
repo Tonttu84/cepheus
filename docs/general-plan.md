@@ -1,5 +1,10 @@
 # General plan: Beyond the Clinic
 
+**Background document.** It records the research summary and the options as they stood
+on the evening of 13 Nov, before the planning sessions. For what the team proposes to
+build, read `plan.md`: where the two differ, `plan.md` is newer. Sections 4 and 8 below
+(candidate cores and open decisions) are kept as they were and are superseded by it.
+
 Status 13 Nov 2026, late evening. Planning notes: the challenge is likely but not locked,
 and no product core is chosen.
 Sources: `doctor-notes.md` (the doctor's words), the reports in `research/` (sources read
@@ -169,7 +174,8 @@ and submitted well before Sunday 10:00.
 | Which sensors go in the demo | Team | With the core |
 | Tech challenges to stack (Gemini API, Gemma, Modal, Verda) | Team | Sat morning |
 | Who builds what, and the doctor's role | Team | Fri night |
-| Stack and repository flow | Team | At kickoff |
+| Stack | Team | Proposed in `plan.md` |
+| Repository flow | Settled | See D5 and D6 in `decisions.md` |
 
 ## 9. Not yet checked
 
