@@ -1,6 +1,6 @@
 # Side challenges
 
-Status 13 Nov 2026, 22:15. Side challenges ("tech challenges") are entered on top of the
+Status 13 Nov 2026, 22:10. Side challenges ("tech challenges") are entered on top of the
 main challenge. The team's rule: nothing is built only to enter one. We enter one that
 matches how we already work, and keep a map of others in case one turns out to fit.
 
@@ -19,7 +19,7 @@ team already works through its trails.
 
 | Capability | What it is | How it is reached |
 |---|---|---|
-| Sessions | Each coding agent's session saved as checkpoints next to the commits it produced, and pushed to the team | `entire enable`, then `entire agent add <agent>`, per person; `entire session`, `entire search`, `entire why` read them |
+| Sessions | Each coding agent's session saved as checkpoints next to the commits it produced, and pushed to the team | `entire enable`, then `entire agent add <agent>`, per person; `entire session` and `entire search` read them, as does the experimental `entire why` |
 | Trails | A unit of work with intent, a branch, findings and a merge. Replaces the pull request | `entire trail ...`; see `AGENTS.md` |
 | Graph | A local code graph for symbol search, tracing relationships and change impact, so agents search the graph, not the files | An official plugin: `entire plugin install graph` |
 | Brain | A local, inspectable knowledge base of the repository built from session history, which agents can query for past decisions | An official plugin: `entire plugin install brain` |
@@ -29,7 +29,7 @@ team already works through its trails.
 
 | When (13 Nov) | Use | Evidence |
 |---|---|---|
-| 21:25 | Repository hosted on Entire; planning documents pushed | `main` |
+| by 21:25 | Repository hosted on Entire; planning documents pushed | `main` |
 | 21:27-21:47 | First trail: `AGENTS.md`, reviewed cold by a fresh agent, fixed, merged through Entire | Trail 1 |
 | 21:27 | A teammate enabled Entire for the repository, with the Pi agent | Commit "Enable Entire" |
 | 21:44 | The team plan published as a trail for comments | Trail 2 |
@@ -38,26 +38,21 @@ team already works through its trails.
 
 **What we still need to do**
 
-1. Sessions for everyone. Each teammate enables Entire for the coding agent they use.
-   Do not import earlier session history: sessions from before the repository was
-   shared hold private notes and event codes.
-2. One real handover. A teammate's agent resumes a trail that another person's agent
-   started (`entire trail resume`), and we note what context it had without being told.
-3. Graph, once there is code. Install the plugin, tell agents in `AGENTS.md` to search
-   the graph before searching files, and record token use for the same kind of task
-   with and without it.
-4. Brain, once sessions exist. Install the plugin and ask it one real question, such as
-   why a decision in `docs/decisions.md` was made, and note whether the answer is right.
-5. Review on Entire's side. The project owner adds Entire's preset review agents and
-   switches on the approvals gate, so findings appear on each trail and a merge needs a
-   review.
-6. Numbers. Run the token reports at the end of each build day and keep the figures
-   here. "Measurable token efficiency" needs a before and an after.
-7. For the submission: links to the trails, one generated summary of the agents' work
-   (`entire dispatch`), the token figures, and a short account of the flow.
+| # | What | Who | When |
+|---|---|---|---|
+| 1 | Sessions for everyone: enable Entire for the coding agent you use. Do not import earlier session history; sessions from before the repository was shared hold private notes and event codes | Each teammate | Saturday morning |
+| 2 | One real handover: a teammate's agent resumes a trail that another person's agent started (`entire trail resume`), and we note what context it had without being told | Two teammates, unassigned | Saturday |
+| 3 | Graph: install the plugin, tell agents in `AGENTS.md` to search the graph before searching files, and record token use for the same kind of task with and without it | Whoever takes the foundation workstream | Once there is code, Saturday |
+| 4 | Brain: install the plugin and ask it one real question, such as why a decision in `docs/decisions.md` was made, and note whether the answer is right | Unassigned | Saturday evening, once sessions exist |
+| 5 | Review on Entire's side: add Entire's preset review agents and switch on the approvals gate, so findings appear on each trail and a merge needs a review | The project owner | Saturday morning |
+| 6 | Clean history: keep Conventional Commits, one logical change per commit, and every change through a reviewed trail; point to the history in the submission | Everyone | Throughout |
+| 7 | Numbers: run the token reports and keep the figures in this file. "Measurable token efficiency" needs a before and an after | Unassigned | End of Saturday, and Sunday morning |
+| 8 | For the submission: links to the trails, one generated summary of the agents' work (`entire dispatch`), the token figures, and a short account of the flow | Whoever takes the pitch workstream | Sunday morning |
 
-Not yet tried: session capture from Claude Code on any machine, the Graph and Brain
-plugins, `entire trail resume`, review agents, the token reports.
+Not yet tried by us: session capture from Claude Code on any machine, the Graph and
+Brain plugins, `entire trail resume`, `entire search`, `entire dispatch`, review agents,
+the approvals gate, and the token reports. The commands are listed by the installed
+tool; what they do in practice is still to be seen.
 
 ## Map of other side challenges (none entered)
 
@@ -67,7 +62,7 @@ offers.
 | Challenge | Prize | What it would take | Fit |
 |---|---|---|---|
 | Gemini API (Google DeepMind) | 4000 / 2000 / 1000 EUR | Gemini central to the product | Possible: only if it clearly beats a plain template for the clinic's brief. Participants must be 18 or older |
-| Arduino UNO Q | A UNO Q and kit per member | Edge AI on the board; publication on Arduino's Project Hub | Possible: running the camera check on the board would make "processed on the device" literal. Not checked whether the board can run it |
+| Arduino UNO Q | A UNO Q and kit per member | Edge AI on the board; publication on Arduino's Project Hub | Possible: computing the expressivity and head-movement numbers on the board, never a mood reading, would make "processed on the device" literal. Not checked whether the board can run it |
 | Tiger Data (MLH) | A Stream Deck Mini | Time-series data in Tiger Data's Postgres | Possible: the signals are time series. Only if SQLite proves too weak, which is unlikely this weekend |
 | Aiven | 1000 / 750 / 500 EUR | Aiven's managed database or streaming doing real work | Weak: same reasoning as Tiger Data |
 | Codex (OpenAI) | 10,000 / 5000 / 2500 USD in API credits | Codex used in development, and shown | Depends on whether a teammate builds with Codex anyway |
