@@ -29,6 +29,14 @@ stimulate; ours decides when.
 5. Safety: a crisis path to a person and to emergency help, with nothing automated in
    between, wherever mood or self-harm is asked about; the patient knows and agrees to what the clinic sees; no real patient
    data; simulated data is labelled as simulated.
+6. An untested signal is allowed if the system can verify it. Every signal is kept next
+   to what happened afterwards (the check-in scores, the PHQ-9, what the clinic found
+   when it called), so the collected data can show later whether the signal was worth
+   having. The Aalto mentors' view, 13 Nov: something not yet studied is fine, as long
+   as there is a way to verify it, by funding a study or simply by collecting data.
+7. Intrusive methods are acceptable when the patient agrees to them. Whether enough
+   patients will agree is a separate question. We make slightly positive assumptions
+   and write each one down with its risk (see "Assumptions").
 
 ## Who gets the response
 
@@ -64,13 +72,24 @@ with the patient's own check-in and last a week or more
 
 | Tier | Signal | Source |
 |---|---|---|
-| Core | Daily check-in of 3-4 items, plus a fortnightly PHQ-9 | The patient's phone |
+| Core | A morning routine: a check-in of 3-4 items or a short game, every day, plus a fortnightly PHQ-9. The answers are data; stopping the routine is a signal in itself, possibly the most important one | The patient's phone |
 | Core | Day-night activity rhythm and sleep regularity | The ring; simulated and open data for the history |
 | Core | Facial expressivity and head movement | The Arduino USB camera, live, processed in the browser |
 | If time | A game rating ambiguous faces; speech rate from a read-aloud | Phone or laptop; the camera's microphone |
 | Skipped | Gaze, pupil, phone mobility, HRV on its own | |
 
 The camera reading is one number among others, shown as a trend, never a mood verdict.
+
+## Assumptions
+
+Each is a guess we build on for now. None is verified.
+
+| # | Assumption | Risk | How we would find out |
+|---|---|---|---|
+| A1 | People will do a short morning routine most days while they are well | Answering fades for everyone over weeks, and most missed answers have technical causes, so a stop is hard to read (`research/2-mental-measures.md`, section D) | Record every missed day with what the passive signals did; compare with how the person was doing |
+| A2 | When the routine stops abruptly after worsening answers, while the ring still sends data, the person is more likely unwell than bored | Not validated as a relapse signal in any study we found | The same records, plus what the nurse learns when calling |
+| A3 | Some patients will agree to share bank data if it is optional, last in line, and shown only as "financial routine" | No acceptance data for money was found; people accept sharing sleep far more readily than location (`research/7-behaviour-flags.md`) | Ask patients; count who switches the method on |
+| A4 | Home-routine signals such as laundry or showering carry information | No depression study has tested them | Collect them next to the check-in and see whether they move together |
 
 ## The demo
 
