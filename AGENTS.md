@@ -104,6 +104,20 @@ These hold whatever is built.
 - Most figures in `docs/research/` come from abstracts. Each report lists what it could
   not check; read that list before relying on a number.
 
+## Entire Brain
+
+The block below was written by Entire Brain's setup and points at a generated guide,
+`.entire/agent-guide.md`. These rules are ours and come first:
+
+- Where the guide and this file disagree, this file wins.
+- Brain exists only on machines where its plugins are installed and set up. If
+  `entire brain status` fails once, Brain is not set up here: ignore the guide for the
+  rest of the session and do not retry.
+- Only read from Brain. Do not run `entire brain remember`, `distill`, `connect` or any
+  other command that writes, records or uploads unless your user asks.
+- Never put names, private notes or secrets into a Brain memory, and do not distill or
+  import session history from before the repository was shared.
+
 <!-- entire-agent:begin -->
 Read .entire/agent-guide.md for this repository's workflow, source inspection, and verification guidance.
 @.entire/agent-guide.md
