@@ -35,7 +35,13 @@ stimulate; ours decides when.
 | Signal | Goes to | What they get |
 |---|---|---|
 | A small dip from the person's own baseline | The patient | One suggestion and one button: a fixed response in the demo, later the one that has helped that person before. No scores, graphs or risk levels |
-| A dip that does not recover, or silence | The healthcare system | The trend, which signals moved and since when, and actions: request a nurse call, offer a booster |
+| A dip that does not recover, or silence | The healthcare system | A flag that names the broad area that changed (for example sleep, daily routine, the check-in) and since when, never the raw data, and actions: request a nurse call, offer a booster. The patient can share more in that conversation |
+
+A flag describes a change for this person, never an illness. The patient switches each
+method of measuring on separately, sees what it records, and can switch it off again.
+Home and money signals, if any are added, never raise a flag alone: they must agree
+with the patient's own check-in and last a week or more
+(`research/7-behaviour-flags.md`).
 
 ## Measurement ladder
 
