@@ -10,6 +10,10 @@ How to read this file:
 - Each remark is given in the original Finnish, followed by an English rendering.
 - "Checked" lines say what a literature check found, with the file that holds the
   sources. Those checks read abstracts, not full papers.
+- The doctor's product and game ideas are brainstorming, not medical facts. The team's
+  note on this (13 Nov 2026): "his feature ideas are not medical facts though of course
+  he has some insights". Remarks that are ideas are marked **Idea**; section 9 collects
+  the ones that are only ideas.
 - The last section is the team's own direction on measuring, not the doctor's words.
 
 ## 1. How to approach the problem
@@ -116,6 +120,15 @@ hostile tribe walking towards you.
 And when life is awful, negative experiences pile up into an ever-growing list that is
 easy to grab onto, because there is a confirmation bias in it.
 
+> joillain ihmisillä se tuntuu olevan kiinni jostain yhdestä isosta asiasta josta ei pääse yli
+
+For some people it seems to hang on one big thing they cannot get over.
+
+> siis tyyliin joku mikä herättää suuria vääryyden tunteita ja sit siihen verrattuna mikään muu ei tunnu miltään
+
+Something that arouses a great sense of injustice, and compared with it nothing else
+feels like anything.
+
 Checked: in people who have recovered, a low mood does bring negative thinking back out;
 whether that predicts relapse differs between studies
 (`research/2-mental-measures.md`, claim 6). Asking a depressed person to recall happy
@@ -138,7 +151,7 @@ So perceptions and interpretations start to distort.
 
 > niin periaatteessa vois jossain pelissä vaik havainnoida sitä miten negatiivisena näkee ärsykkeet
 
-So in principle a game could observe how negatively a person sees stimuli.
+**Idea**: so in principle a game could observe how negatively a person sees stimuli.
 
 > ahdistuneena kans vaikka kovat äänet alkaa pelästyttää
 
@@ -165,7 +178,7 @@ Another angle is so-called avoidance behaviour.
 
 > Eli se peli vois jotenkin mitata sitä kapeuttaako se ihminen elämänpiiriään ... vähän niinkuin että mikä sen reviiri/toimijuuden alue o
 
-The game could somehow measure whether the person is narrowing their sphere of life:
+**Idea**: the game could somehow measure whether the person is narrowing their sphere of life:
 roughly, what their territory or area of agency is.
 
 > Esim., depiksessä ihminen eiu nouse sängystä koska päivät on paskaa, ja odottaa vain että pääsee nukkumaan
@@ -234,7 +247,39 @@ CBASP has support in chronic depression but added nothing over optimised medicat
 people who had not responded to medication, the group closest to TMS patients
 (`research/3-state-shifters.md`, section C).
 
-## 9. The team's direction on measuring
+## 9. Feature ideas (brainstorming, not clinical claims)
+
+The measuring ideas in sections 5 and 6 are also **Ideas**: a game that observes how
+negatively a person sees stimuli, and a game that measures whether a person is
+narrowing their sphere of life.
+
+> yks hauska ja disturbing feature tollaseen peliin vois olla jos se somettais sun puolesta ottamalla yhteyttä ystäviin ;)
+
+**Idea**, said as a joke: a funny and disturbing feature for such a game would be if it
+did your social media for you by contacting your friends ;)
+
+> sillee "täältä haudan takaa vaan kurkottelen..."
+
+Like "just reaching out from beyond the grave here..."
+
+> Jotain juttuja on mitkä tutkitusti auttaa ainakin lievemmässä depiksessä on sellaset missä kirjottamalla tietoisesti käsitellään omaa elämäntarinaa ja mihin on menossa elämässä, mitä haluaa jne
+
+Some things that research shows help, at least in milder depression, are ones where you
+consciously work through your own life story in writing: where you are going in life,
+what you want and so on.
+
+> mut se ei kyl sit taas toimi jos on kunnon depis enää, mut vois toimia tollases pelissä
+
+**Idea**: that no longer works once the depression is severe, but it could work in a
+game like that.
+
+Checked: not yet. The writing claim (that it helps in milder depression and not in
+severe depression) has not been looked up. An app that contacts friends on a person's
+behalf would need that person's clear consent each time; the research on what users
+want points to social connection as something that keeps people engaged
+(`research/5-products-and-gap.md`, section B).
+
+## 10. The team's direction on measuring
 
 These are the team's own words (13 Nov 2026), not the doctor's.
 
