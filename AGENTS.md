@@ -20,14 +20,20 @@ This file is for coding agents and for people. It holds the rules of this reposi
      `entire trail finding`, since trail comments are for people.
   4. `entire trail merge` merges it into `main`.
   `entire agent-help trail` prints the exact flags of the installed version.
+- At the start of a session, tell your user what the team has open, so that nobody has
+  to pass links around by hand:
+  1. `entire trail list --project et/crunchproject --status open` lists the open trails.
+     Leave out any whose phase is `complete`: those are merged.
+  2. `entire trail list --mine --status open` lists the ones your user wrote or is
+     assigned to. Every other open trail is a teammate's, and your user may want to
+     comment on it or review it.
+  3. Report one line per trail: its title, whether it is your user's or a teammate's,
+     and the web address that `entire trail show <number>` prints. If nothing is open,
+     say nothing.
+  Only read: do not comment, approve, add findings or merge unless your user asks. If
+  `entire` is missing or not signed in, say so in one line and carry on (see Quirks).
 - The author fixes what the review finds. A fix that goes beyond a finding is reviewed
   again.
-- At the start of a session, list the project's open trails with
-  `entire trail list --project et/crunchproject --status open` and tell your user which
-  ones wait for their comment or review, giving the web address that
-  `entire trail show <number>` prints. A trail whose phase is `complete` is merged and
-  needs nothing. This is how teammates hear about each other's changes; nobody should
-  have to pass links around by hand.
 - Commit messages follow Conventional Commits: `type(scope): imperative summary`, at
   most 72 characters, no trailing period; a body, wrapped at 72 columns, that says why.
   Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`,
