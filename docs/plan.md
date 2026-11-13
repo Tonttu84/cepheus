@@ -249,10 +249,15 @@ Everything above is a proposal. These are the points where an answer is needed m
    who is getting worse may hide it.
 7. Which single response does the patient's screen offer? Proposal: a short walk, a
    well-supported low-effort response.
-8. Should an AI ask the questions in conversation, by voice for example? Proposal: not
-   in the build. People answer machines honestly but stick with a programme better
-   when a person is involved, and a tap-through form is cheaper. Worth testing later
-   only if it gets more people to answer.
+8. To do, open for discussion: how are the questions asked? Written and tapped, or
+   spoken; plain fixed questions, or an AI in the loop. One view: an AI could reduce
+   misuse of the questionnaire, such as careless or random answers. Points on the other
+   side: the standard questionnaires are validated with fixed wording; careless
+   answering can also be caught by simple rules (answers given too fast, the same
+   answer to everything); people answer machines honestly but stick with a programme
+   better when a person is involved; and an AI must never stand between a person in
+   crisis and a human. Starting point: fixed questions answered by tapping, with
+   reading aloud as an option, and an AI only where it is shown to help.
 9. Does anyone have a week or more of their own ring data? An Oura export can take
    days, so it would have to be requested now.
 10. May we publish a public copy of this repository on GitHub for the final submission?
