@@ -95,6 +95,7 @@ These hold whatever is built.
 | `docs/general-plan.md` | The problem, what the research says, candidate cores, build order, open decisions |
 | `docs/doctor-notes.md` | A doctor's remarks, anonymous, with what a literature check found |
 | `docs/research/` | The evidence check and six research reports, with sources |
+| `docs/side-challenges.md` | The side challenge we entered (Entire), what it still needs from us, and a map of the others |
 | `docs/decisions.md` | Decisions, one row each |
 
 ## Quirks
