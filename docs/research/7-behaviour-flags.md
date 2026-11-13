@@ -153,7 +153,7 @@ Evidence strength refers to depression worsening or relapse, not to any associat
 
 ### F2. How many signals should agree
 
-No published rule for depression monitoring was found. Design inference (not evidence): require a sustained change (for example 7-14 days, not one day) in at least two independent channels, one of which is the patient's own report, before a clinic flag; single-channel changes go only to the patient as a suggestion.
+No published rule for depression monitoring was found. Design inference (not evidence), for home and money signals: require a sustained change (for example 7-14 days, not one day) that agrees with the patient's own report before a clinic flag; a home or money change on its own goes only to the patient as a suggestion. This does not limit the patient's own answers: in the team plan (`../plan.md`, on another open trail) the answers can raise a warning by themselves, and so can silence.
 
 ### F3. EU rules
 
@@ -171,7 +171,7 @@ Ambient sensors collect data without the person interacting, raising the risk of
 
 1. **Flags describe change, not illness.** Never "possible depression". How much of the change the clinician sees is set by F6: by default the broad area, with the measure itself released only when the patient agrees.
 2. **Two channels, sustained, one self-reported.** No clinic flag from a home or money signal alone, and none from home and money signals agreeing only with each other: the patient's own report must be one of the agreeing channels, and the change must last at least a week. Other channels can add to the self-report but cannot replace it.
-3. **The patient sees first and can veto.** Every signal is shown to the patient before the clinic; the patient chooses which channels exist (for example laundry yes, bathroom no, bank no), approves each once at setup, and can switch any off at any time, deleting its history. Whether the patient can also hold back an individual flag is a decision for the team; this report assumes not, since a person who is getting worse may hide it.
+3. **The patient chooses the methods.** The patient decides which channels exist (for example laundry yes, bathroom no, bank no), approves each once at setup, can see what each records, and can switch any off at any time, deleting its history. Whether the patient can also hold back an individual flag is an open question in the team plan; this report assumes not, since a person who is getting worse may hide it.
 4. **Derived counts only, on the device.** Store "shower events per day", not humidity traces; store category totals, not merchants or amounts. Raw data never leaves the home.
 5. **Money is opt-in and last.** It is the most intrusive and least specific channel; if used, the patient sees only a coarse change (for example "spending pattern much less regular than usual"), never merchants, and is told it may reflect money stress rather than mood. The clinic sees at most the area "financial routine" (F6).
 6. **Not a crisis service.** State plainly that the system does not detect emergencies and give the crisis contact in the app.
@@ -206,11 +206,14 @@ The team member proposed: "the doctor only gets the info that flag has been rais
 - *Broad area* (for example "daily routine", "sleep", "activity outside home", "self-report") lets the clinician judge urgency and choose the right question, while not revealing which sensor or which bathroom or bank detail. Caveat: if a patient has only one channel in an area, the area reveals the measure; group areas so each holds at least two channels, or say so to the patient.
 - *The measure itself* ("laundry cycles 0 in 14 days") released only when the patient taps "share details" on that flag, or in the conversation the flag leads to. This is tiered disclosure with the patient holding the glass, and matches what patients say they want (control, transparency) and what the law favours (minimisation, consent per purpose).
 - **Money is never shown as a measure to the clinic** in the default design, only as the area "financial routine" if the patient has opted in to it at all.
-- Combined with rules 2-3: the patient sees the measure first, approves each method once at setup and can withdraw any method at any time, and the clinic sees the area only when two channels agree, one of them the patient's own report.
+- Combined with rules 2-3: the patient can see each measure, approves each method once at setup and can withdraw any method at any time, and for a home or money signal the clinic sees the area only when it agrees with the patient's own report.
 
 ---
 
 ## G. A weekend demo
+
+The team plan (`../plan.md`, on another open trail) does not build any of these for now.
+They are options if the team wants to show how the system treats weak signals.
 
 1. **Smart plug on the washing machine (or kettle/cooker).** Power above a threshold = one cycle. Show a personal baseline (cycles per week), a dip, and a patient-facing nudge. Real hardware is cheap and quick (smart plug with power metering + Home Assistant, or simulated data). What to say: "Self-care and household routine are part of depression, but no study has tested laundry as a relapse signal. We show it as a personal-routine marker the patient chose."
 2. **Bathroom humidity sensor for showers.** Humidity spike detection is simple. What to say: "No evidence it predicts relapse; included only to show on-device counting and patient consent per room. Many users will refuse it, and that is fine."
@@ -228,7 +231,7 @@ Added by the team after the research, to take to the Aalto mentors (5th floor, b
 **First answer, 13 Nov.** The mentors' view, as reported by the team member who asked:
 a signal that has not been studied is fine to include, as long as there is a way to
 verify it, by funding a study or simply by collecting data. This bears on question 2
-and on every untested signal in this report. The team's response is in `../plan.md`:
+and on every untested signal in this report. The team's response is in `../plan.md` (on another open trail):
 each signal is stored next to what happened afterwards, and the unverified assumptions
 are listed there with how each would be checked. Questions 1 and 3 to 7 are still open.
 
