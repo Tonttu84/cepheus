@@ -1,16 +1,24 @@
 # Team plan (proposal, open for comments)
 
-Status 13 Nov 2026, late evening. This is a proposal from one planning session, not yet
-agreed by the team. Comment on its trail in Entire's web client: object, ask, or claim a
-workstream. `docs/general-plan.md` and `docs/research/` hold the background and sources;
-where they differ from this file, this file is the newer proposal.
+Status 13 Nov 2026, close to midnight. A first version of this plan was merged into
+`main` by the project owner on 13 Nov. This version adds the twice-weekly schedule and
+one list of open questions, and it remains a proposal: the points in that list are not
+settled until teammates have answered. Comment on its trail in Entire's web client:
+object, ask, or claim a workstream. `docs/general-plan.md` and
+`docs/research/` hold the background and sources; where they differ from this file, this
+file is the newer proposal.
+
+Related: the Entire side challenge and a map of the others (`docs/side-challenges.md`).
+Two more proposals are on other open trails, each with its own question for the team:
+research on everyday behaviour as flags (`docs/research/7-behaviour-flags.md`) and an
+agent guide from Entire Brain (`.entire/agent-guide.md`).
 
 ## What we build
 
 A home monitoring system for people who have finished a TMS course for depression. Its
 core is a simple, cheap flow:
 
-1. **Ask.** A short morning routine of questions each day, and the standard nine-question
+1. **Ask.** One or two short questions twice a week, and the standard nine-question
    depression questionnaire (PHQ-9) every two weeks.
 2. **Warn.** A warning is raised when the answers move away from the person's own
    baseline and stay there, or when the person stops answering.
@@ -41,6 +49,42 @@ Why questions are the core:
 For the judges, who are brain-stimulation researchers: their loop decides how to
 stimulate; ours decides when.
 
+## How often we ask, and how fast we act
+
+Asking every morning wears people out. In studies, answering fades by 1 to 2% a week
+even among the willing, and in real-world use mental-health apps keep few users after a
+month (`research/2-mental-measures.md`, section D; `research/5-products-and-gap.md`,
+section B). So the questions come twice a week, always:
+
+| State | What happens | Why |
+|---|---|---|
+| Routine | One or two taps, twice a week, and the PHQ-9 every two weeks | Keeps a baseline without wearing people out |
+| Warning: the answers stay below the person's baseline for two rounds, or two rounds go unanswered | A nurse calls | About a week of delay; the call, not more questions, finds out what is going on |
+| Any answer about self-harm, at any time | The crisis path at once, and the clinic is told the same day | This cannot wait for a schedule |
+
+There is no daily tier. A delay of about a week is acceptable for a relapse, so asking
+more often would add fatigue without adding safety. The crisis path does not depend on
+being asked: it is on the patient's screen all the time.
+
+Why a week of delay is acceptable in the first rows and not in the last:
+
+- A relapse usually builds over weeks. Reviews of the early signs before depressive
+  episodes report lead times from under a month to much longer; one study found a mean
+  of about 115 days, and for depressive episodes in bipolar disorder the average was 11
+  to 19 days. By the standard definition an episode means at least two weeks of
+  symptoms.
+- Treating sooner helps, on a scale of weeks to months: a shorter time untreated goes
+  with better response and remission (risk ratios of about 1.7, from three studies,
+  strongest for first episodes). Nothing we found shows a benefit from acting days
+  sooner.
+- A crisis is different. Warning signs for suicide act within minutes, hours or days,
+  not weeks. So an answer that signals risk is never queued behind a schedule.
+
+These figures come from search summaries of reviews, not from the papers themselves:
+https://www.ovid.com/journals/pspsbf/pdf/10.1159/000517953~prodromal-symptoms-in-depression-a-systematic-review ,
+https://pmc.ncbi.nlm.nih.gov/articles/PMC2916193 , https://www.pubmed.gov/24183486/ ,
+https://pmc.ncbi.nlm.nih.gov/articles/PMC9729416 .
+
 ## Principles
 
 1. The goal is a system that works: notice a relapse coming and help someone act on it.
@@ -53,8 +97,8 @@ stimulate; ours decides when.
    supports the clinic's judgment about when to act, since a claim to detect or predict
    relapse makes software a medical device and the evidence for any one signal is early.
 5. Safety: a crisis path to a person and to emergency help, with nothing automated in
-   between, wherever mood or self-harm is asked about; the patient knows and agrees to what the clinic sees; no real patient
-   data; simulated data is labelled as simulated.
+   between, wherever mood or self-harm is asked about; the patient knows and agrees to
+   what the clinic sees; no real patient data; simulated data is labelled as simulated.
 6. An untested signal is allowed if the system can verify it. Every signal is kept next
    to what happened afterwards (the check-in scores, the PHQ-9, what the clinic found
    when it called), so the collected data can show later whether the signal was worth
@@ -75,14 +119,14 @@ A flag describes a change for this person, never an illness. The patient switche
 method of measuring on separately, sees what it records, and can switch it off again.
 Home and money signals, if any are added, never raise a flag alone: they must agree
 with the patient's own check-in and last a week or more
-(`research/7-behaviour-flags.md`).
+(`research/7-behaviour-flags.md`, on another open trail).
 
 ## Measurement ladder
 
 | Step | What | Cost to the patient | In the demo |
 |---|---|---|---|
 | 1 | The ring in the background (phone signals later) | None | Built, on simulated history |
-| 2 | Daily check-in and a camera check; a short game and a voice check if time | Seconds to minutes | Check-in and camera built |
+| 2 | Short questions twice a week, and a camera check; a short game and a voice check if time | Seconds to minutes | Questions and camera built |
 | 3 | A nurse calls, when signals are unclear or the patient goes quiet | A conversation | A button on the clinic's screen |
 | 4 | A visit, a clinician's assessment, tests the clinic chooses | A trip | Named only |
 
@@ -90,7 +134,7 @@ with the patient's own check-in and last a week or more
 
 | Tier | What |
 |---|---|
-| Must have | The flow: the morning routine and PHQ-9, the warning rule (including silence), and the clinic's screen with the nurse-call action. Then the supporting signals, each against a personal baseline: the ring's rhythm and sleep regularity, and the camera's expressivity reading |
+| Must have | The flow: the twice-weekly questions and PHQ-9, the warning rule (including silence), and the clinic's screen with the nurse-call action. Then the supporting signals, each against a personal baseline: the ring's rhythm and sleep regularity, and the camera's expressivity reading |
 | Thin extra | One patient screen: a single suggestion with one button, using a fixed response |
 | Only if time | Learning which response helps each person, shown on simulated weeks |
 
@@ -98,7 +142,7 @@ with the patient's own check-in and last a week or more
 
 | Tier | Signal | Source |
 |---|---|---|
-| Core | A morning routine: a check-in of 3-4 items or a short game, every day, plus a fortnightly PHQ-9. The answers are data; stopping the routine is a signal in itself, possibly the most important one | The patient's phone |
+| Core | Short questions twice a week (one or two taps, or a short game), plus a fortnightly PHQ-9. The answers are data; stopping is a signal in itself, possibly the most important one | The patient's phone |
 | Core | Day-night activity rhythm and sleep regularity | The ring; simulated and open data for the history |
 | Core | Facial expressivity and head movement | The Arduino USB camera, live, processed in the browser |
 | If time | A game rating ambiguous faces; speech rate from a read-aloud | Phone or laptop; the camera's microphone |
@@ -112,9 +156,9 @@ Each is a guess we build on for now. None is verified.
 
 | # | Assumption | Risk | How we would find out |
 |---|---|---|---|
-| A1 | People will do a short morning routine most days while they are well | Answering fades for everyone over weeks, and most missed answers have technical causes, so a stop is hard to read (`research/2-mental-measures.md`, section D) | Record every missed day with what the passive signals did; compare with how the person was doing |
-| A2 | When the routine stops abruptly after worsening answers, while the ring still sends data, the person is more likely unwell than bored | Not validated as a relapse signal in any study we found | The same records, plus what the nurse learns when calling |
-| A3 | Some patients will agree to share bank data if it is optional, last in line, and shown only as "financial routine" | No acceptance data for money was found; people accept sharing sleep far more readily than location (`research/7-behaviour-flags.md`) | Ask patients; count who switches the method on |
+| A1 | People will answer one or two questions twice a week for as long as they are followed | Answering fades for everyone over weeks, and most missed answers have technical causes, so a stop is hard to read (`research/2-mental-measures.md`, section D) | Record every missed answer with what the passive signals did; compare with how the person was doing |
+| A2 | When the answers stop abruptly after getting worse, while the ring still sends data, the person is more likely unwell than bored | Not validated as a relapse signal in any study we found | The same records, plus what the nurse learns when calling |
+| A3 | Some patients will agree to share bank data if it is optional, last in line, and shown only as "financial routine" | No acceptance data for money was found; people accept sharing sleep far more readily than location (`research/7-behaviour-flags.md`, on another open trail) | Ask patients; count who switches the method on |
 | A4 | Home-routine signals such as laundry or showering carry information | No depression study has tested them | Collect them next to the check-in and see whether they move together |
 
 ## The demo
@@ -139,7 +183,7 @@ Each is its own trail. Nobody is assigned yet: claim one in a comment.
 | # | Workstream | Delivers | Needs |
 |---|---|---|---|
 | 1 | Foundation | App skeleton, the whole data model (check-in answers, ring days, camera readings) so later streams do not edit it at once, a generator for one simulated person's weeks | Nothing; goes first |
-| 2 | Check-in | Daily check-in and fortnightly PHQ-9 on the phone, with the crisis path | 1 |
+| 2 | Questions | The twice-weekly questions and the fortnightly PHQ-9 on the phone, with the crisis path always in view | 1 |
 | 3 | Signal maths | Rhythm, sleep regularity and personal-baseline functions, with tests; the routing rule (what counts as a small dip, a dip that does not recover, and silence); loading the open activity data | 1 |
 | 4 | Camera check | A page measuring facial expressivity and head movement | 1 |
 | 5 | The two screens | The clinic's screen and the patient's one-suggestion screen | 2-4 for real numbers; can start on simulated ones |
@@ -157,18 +201,39 @@ Each is its own trail. Nobody is assigned yet: claim one in a comment.
 
 ## Open questions for the team
 
-1. Who takes which workstream?
-2. Is "Beyond the Clinic" locked as our challenge before 23:55 tonight?
-3. Which single response does the patient's screen offer? Proposal: a short walk, a
-   well-supported low-effort response.
-4. Does anyone have a week or more of their own ring data? An Oura export can take
-   days, so it would have to be requested now.
-5. Does anything here not fit what the Aalto mentors (5th floor, booth 11) say they
-   want? Questions for them are in `docs/general-plan.md`, section 7.
-6. May we publish a public copy of this repository on GitHub for the final submission?
-   Judges and peer reviewers need a source link they can open, and this repository is
-   private. A public copy shows everything in it, including the anonymous doctor's
-   notes. Proposal: yes, pushed once the demo path is frozen on Saturday evening and
-   again just before submitting. Whose GitHub account hosts it?
+Everything above is a proposal. These are the points where an answer is needed most.
 
-Decisions in this plan become rows in `docs/decisions.md` when the team accepts it.
+1. Who takes which workstream?
+2. A draft naming "Beyond the Clinic" as our challenge, with "Best Use of Entire" as a
+   side challenge, was saved on the Junction platform on 13 Nov. It can still be
+   changed. Does anyone disagree?
+3. Is the core flow right: ask, warn, a nurse calls, with the ring and the camera only
+   as support?
+4. Is twice a week right for the questions, with no daily tier? The reasoning: a
+   relapse builds over weeks, so about a week of delay is acceptable, and anything
+   about self-harm goes to the crisis path at once.
+5. How much should a flag tell the clinic? Proposal: the broad area that changed, never
+   the raw data.
+6. May a patient hold back a single flag, or only switch whole methods off? A person
+   who is getting worse may hide it.
+7. Which single response does the patient's screen offer? Proposal: a short walk, a
+   well-supported low-effort response.
+8. Should an AI ask the questions in conversation, by voice for example? Proposal: not
+   in the build. People answer machines honestly but stick with a programme better
+   when a person is involved, and a tap-through form is cheaper. Worth testing later
+   only if it gets more people to answer.
+9. Does anyone have a week or more of their own ring data? An Oura export can take
+   days, so it would have to be requested now.
+10. May we publish a public copy of this repository on GitHub for the final submission?
+    Judges and peer reviewers need a source link they can open, and this repository is
+    private. A public copy shows everything in it, including the anonymous doctor's
+    notes. One view so far: not yet. Proposal: decide by Saturday evening, and if yes,
+    push once the demo path is frozen and again just before submitting. Whose GitHub
+    account hosts it?
+11. Does anything here not fit what the Aalto mentors (5th floor, booth 11) say they
+    want? Questions for them are in `docs/general-plan.md`, section 7, and at the end of
+    `docs/research/7-behaviour-flags.md` (on another open trail).
+
+The owner's decisions behind this plan are rows D7 to D15 in `docs/decisions.md`. Each
+is marked there as open to the team, with the question above that covers it. When the
+team answers, a row is added that confirms the decision or names the one it replaces.
