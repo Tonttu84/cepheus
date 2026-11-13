@@ -7,10 +7,36 @@ where they differ from this file, this file is the newer proposal.
 
 ## What we build
 
-A home monitoring system for people who have finished a TMS course for depression. It
-follows a few signals against each person's own baseline. A small dip produces one simple
-suggestion on the patient's phone. A dip that does not recover goes to the clinic, with
-the detail a clinician needs to decide whether to call or offer a booster session.
+A home monitoring system for people who have finished a TMS course for depression. Its
+core is a simple, cheap flow:
+
+1. **Ask.** A short morning routine of questions each day, and the standard nine-question
+   depression questionnaire (PHQ-9) every two weeks.
+2. **Warn.** A warning is raised when the answers move away from the person's own
+   baseline and stay there, or when the person stops answering.
+3. **Call.** A nurse calls. The conversation, not the software, finds out whether the
+   patient is getting depressed again and what to offer, such as a booster session.
+
+Everything else supports that flow. The ring and the camera are weak at telling whether
+someone is depressed, but they show whether a person who went quiet is still up and
+about. A small dip that does not warrant a call produces one simple suggestion on the
+patient's phone.
+
+Why questions are the core:
+
+- Asking is the best-validated measurement there is. At its usual cut-off the PHQ-9
+  catches about 88 of 100 people with major depression and clears about 85 of 100
+  without it (Levis 2019, BMJ, 29 studies, 6,725 people:
+  https://eprints.whiterose.ac.uk/id/eprint/181475/). It works over the telephone too
+  (Pinto-Meza 2005: https://pmc.ncbi.nlm.nih.gov/articles/PMC1490180).
+- With those figures, and 20 of 100 patients relapsing in a period, about 30 warnings
+  are raised, of which about 18 are real and 12 are false alarms, and about 2 relapses
+  are missed. Sorting the false alarms is the job of the nurse's call. This is our own
+  arithmetic, not a study result.
+- Its weak point is that the people getting worse are the ones who stop answering. So
+  silence raises a warning too, and the passive signals help to read it.
+- A registered trial already tests the same idea: a weekly PHQ-9 by phone that triggers
+  booster TMS sessions (NCT06145594, no results yet).
 
 For the judges, who are brain-stimulation researchers: their loop decides how to
 stimulate; ours decides when.
@@ -64,7 +90,7 @@ with the patient's own check-in and last a week or more
 
 | Tier | What |
 |---|---|
-| Must have | Monitoring: three signals (the check-in, the ring's rhythm and sleep regularity, the camera's expressivity reading), each against a personal baseline, and the clinic's screen |
+| Must have | The flow: the morning routine and PHQ-9, the warning rule (including silence), and the clinic's screen with the nurse-call action. Then the supporting signals, each against a personal baseline: the ring's rhythm and sleep regularity, and the camera's expressivity reading |
 | Thin extra | One patient screen: a single suggestion with one button, using a fixed response |
 | Only if time | Learning which response helps each person, shown on simulated weeks |
 
