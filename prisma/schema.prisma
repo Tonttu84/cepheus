@@ -1,0 +1,427 @@
+// ============================================================================
+// Cepheus — Unified Prisma Schema (SQLite)
+// ============================================================================
+// Shared data contract across all workstreams:
+//   1. Foundation & Open-Dataset Seeding
+//   2. Twice-Weekly Check-In & Fortnightly PHQ-9 + Crisis Path
+//   3. Wearable Circadian Rhythm & Baseline Z-Score Maths
+//   4. On-Device MediaPipe Camera Expressivity Check & Optional Signals
+//   5. Patient & Clinic Views, Low-Effort Suggestions & Nurse Call Loop
+//
+// Core Repository Rules enforced by this schema:
+//   - No real patient data or names: `Participant.label` is anonymous and
+//     `isSimulated` / `source` explicitly mark simulated or open-dataset records
+//     so every UI screen can label simulated data clearly.
+//   - Never store raw video frames or audio recordings: `CameraReading` and
+//     `SpeechReading` persist only on-device derived numerical summaries.
+//   - Never store raw bank transactions or continuous home sensor traces:
+//     `RoutineSignalReading` holds only coarse period aggregates.
+//   - Missed answers are never punished or scored as zero: `CheckInRound` and
+//     `Phq9Assessment` record `status = "missed"` or `"not_today"` with nullable
+//     item scores, never coercing a missed check-in to 0.
+//   - Anything asking about mood or self-harm exposes an immediate crisis path:
+//     `selfHarmTriggered` and `crisisPathShown` are tracked without automated
+//     triage gates in between.
+//   - Clinic flags (`ClinicFlag`) expose only broad life areas (`check_in`,
+//     `sleep`, `daily_routine`, `activity_outside_home`, `financial_routine`)
+//     and `sinceDate`, never raw sensor numbers or diagnostic relapse labels,
+//     unless the participant explicitly opts to share details.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Anonymous participant profile (simulated trajectory, open dataset, or live demo user).
+/// Never store real patient names or personal identifiers here.
+model Participant {
+  id               String   @id @default(cuid())
+  externalId       String?  @unique
+  label            String   // Anonymous label, e.g. "Simulated post-TMS participant"
+  source           String   // "synthetic" | "depresjon" | "kossakowski" | "oura" | "live"
+  isSimulated      Boolean  @default(true)
+  seed             Int?
+  tmsCompletedDate String?
+  currentDemoDay   Int      @default(56)
+  group            String?
+  age              Int?
+  gender           String?
+  madrsBaseline    Int?
+  madrsEnd         Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  consents              MeasurementConsent[]
+  checkInRounds         CheckInRound[]
+  phq9Assessments       Phq9Assessment[]
+  ringDays              RingDay[]
+  activitySamples       ActivitySample[]
+  rhythmWindows         RhythmWindow[]
+  cameraReadings        CameraReading[]
+  speechReadings        SpeechReading[]
+  cognitiveGameReadings CognitiveGameReading[]
+  routineSignalReadings RoutineSignalReading[]
+  personalBaselines     PersonalBaseline[]
+  patientSuggestions    PatientSuggestion[]
+  clinicFlags           ClinicFlag[]
+  nurseCallRecords      NurseCallRecord[]
+}
+
+/// Per-method consent and plain-language transparency about what is recorded.
+model MeasurementConsent {
+  id                  String      @id @default(cuid())
+  participantId       String
+  participant         Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  method              String      // "check_in" | "phq9" | "ring_rhythm" | "camera_expressivity" | "speech_rate" | "ambiguous_faces" | "home_routine" | "financial_routine"
+  broadArea           String      // "check_in" | "sleep" | "daily_routine" | "activity_outside_home" | "financial_routine"
+  recordedDescription String
+  enabled             Boolean     @default(true)
+  isPersonalSign      Boolean     @default(false)
+  consentedAt         DateTime?
+  revokedAt           DateTime?
+  updatedAt           DateTime    @updatedAt
+
+  @@unique([participantId, method])
+}
+
+/// Twice-weekly short wellbeing check-in round.
+/// Missed answers are recorded as status = "missed" or "not_today" and never scored as 0.
+model CheckInRound {
+  id                String      @id @default(cuid())
+  participantId     String
+  participant       Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  scheduledAt       DateTime
+  respondedAt       DateTime?
+  date              String      // "YYYY-MM-DD"
+  dayIndex          Int
+  weekNumber        Int
+  roundNumber       Int
+  status            String      // "completed" | "not_today" | "missed"
+  moodScore         Float?      // 1..5
+  interestScore     Float?      // 1..5
+  energyScore       Float?      // 1..5
+  ruminationScore   Float?      // 1..5
+  compositeScore    Float?      // 1..5 (higher = better wellbeing)
+  singleItemScore   Float?      // 1..5 low-effort fallback
+  itemOrderJson     String?
+  freeTextNote      String?
+  selfHarmTriggered Boolean     @default(false)
+  crisisPathShown   Boolean     @default(false)
+  responseLatencyMs Int?
+  ringActiveAtRound Boolean?
+  isSimulated       Boolean     @default(false)
+  source            String      @default("live")
+  createdAt         DateTime    @default(now())
+
+  @@unique([participantId, roundNumber])
+  @@index([participantId, date])
+}
+
+/// Fortnightly PHQ-9 assessment (9 items rated 0..3).
+/// Any item9SelfHarm > 0 immediately surfaces the crisis path.
+model Phq9Assessment {
+  id                 String      @id @default(cuid())
+  participantId      String
+  participant        Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  scheduledAt        DateTime
+  completedAt        DateTime?
+  date               String      // "YYYY-MM-DD"
+  dayIndex           Int
+  weekNumber         Int
+  status             String      // "completed" | "missed"
+  totalScore         Int?        // 0..27
+  item1Interest      Int?
+  item2Mood          Int?
+  item3Sleep         Int?
+  item4Energy        Int?
+  item5Appetite      Int?
+  item6SelfWorth     Int?
+  item7Concentration Int?
+  item8Psychomotor   Int?
+  item9SelfHarm      Int?
+  crisisPathShown    Boolean     @default(false)
+  baselineDelta      Int?
+  isSimulated        Boolean     @default(false)
+  source             String      @default("live")
+  createdAt          DateTime    @default(now())
+
+  @@index([participantId, date])
+}
+
+/// Daily smart-ring summary plus compact 24h hourly array and 1440-min sleep/wake string
+/// for fast non-parametric circadian rhythm (IS, IV, RA, SRI) calculations.
+model RingDay {
+  id                    String      @id @default(cuid())
+  participantId         String
+  participant           Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  date                  String      // "YYYY-MM-DD"
+  dayIndex              Int
+  ringActive            Boolean     @default(true)
+  wearMinutes           Int         @default(1400)
+  steps                 Int?
+  activeCaloriesKcal    Float?
+  daytimeMeanActivity   Float?
+  nighttimeMeanActivity Float?
+  m10                   Float?
+  l5                    Float?
+  relativeAmplitude     Float?
+  hourlyActivityJson    String?     // JSON array of 24 hourly mean activity floats, clock hours 0..23
+  bedtimeStart          DateTime?
+  bedtimeEnd            DateTime?
+  sleepMidpointMin      Float?      // Minutes relative to midnight, e.g. -45 for 23:15, +195 for 03:15
+  timeInBedMin          Float?
+  totalSleepMin         Float?
+  onsetLatencyMin       Float?
+  wasoMinutes           Float?
+  nightActivityBouts    Int?
+  lowestHrBpm           Float?
+  avgHrBpm              Float?
+  avgHrvRmssdMs         Float?
+  tempDeviationC        Float?
+  sleepWakeGrid         String?     // 1440-char string of '0'=wake and '1'=sleep for exact per-minute SRI
+  sleepPhase5MinRaw     String?
+  isSimulated           Boolean     @default(false)
+  source                String      @default("synthetic")
+  createdAt             DateTime    @default(now())
+
+  @@unique([participantId, date])
+  @@index([participantId, dayIndex])
+}
+
+/// Optional fine-grained per-minute or 5-minute actigraphy rows for open datasets (e.g. Depresjon CSV).
+model ActivitySample {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  timestamp     DateTime
+  date          String
+  resolutionSec Int         @default(60)
+  activityCount Float?
+  met           Float?
+  isAsleep      Boolean?
+  source        String      @default("depresjon")
+
+  @@index([participantId, timestamp])
+  @@index([participantId, date])
+}
+
+/// Rolling 7- or 14-day circadian and sleep regularity metrics compared against personal baseline.
+model RhythmWindow {
+  id                    String      @id @default(cuid())
+  participantId         String
+  participant           Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  windowEndDate         String
+  dayIndex              Int
+  windowDays            Int         @default(7)
+  validDays             Int
+  m10                   Float
+  l5                    Float
+  relativeAmplitude     Float
+  interdailyStability   Float
+  intradailyVariability Float
+  sri                   Float?
+  sleepMidpointSdMin    Float?
+  wasoMeanMin           Float?
+  stepsMean             Float?
+  raZScore              Float?
+  isZScore              Float?
+  sriZScore             Float?
+  isSimulated           Boolean     @default(false)
+
+  @@unique([participantId, windowEndDate, windowDays])
+}
+
+/// On-device MediaPipe facial expressivity & head-kinematics reading.
+/// Stores ONLY derived numerical summary statistics — never video or image frames.
+model CameraReading {
+  id                   String      @id @default(cuid())
+  participantId        String
+  participant          Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  recordedAt           DateTime    @default(now())
+  date                 String      // "YYYY-MM-DD"
+  dayIndex             Int?
+  taskId               String      @default("check_in_clip_60s")
+  durationSec          Float
+  sampleRateHz         Float       @default(10.0)
+  effectiveFps         Float
+  faceDetectedRatio    Float
+  expressivityScore    Float
+  smileFraction        Float
+  mouthSmileMean       Float?
+  mouthSmileSd         Float?
+  browInnerUpSd        Float?
+  browDownSd           Float?
+  browOuterUpSd        Float?
+  eyeSquintSd          Float?
+  cheekSquintSd        Float?
+  jawOpenSd            Float?
+  blendshapeStatsJson  String?
+  yawSdDeg             Float
+  pitchSdDeg           Float
+  rollSdDeg            Float?
+  angularPathDegPerMin Float
+  translationSd        Float?
+  expressivityZScore   Float?
+  headMovementZScore   Float?
+  isSimulated          Boolean     @default(false)
+  source               String      @default("live")
+
+  @@index([participantId, date])
+}
+
+/// Optional 30s scripted read-aloud timing & pause summary.
+/// Stores ONLY derived timing numbers — never audio recordings or transcripts.
+model SpeechReading {
+  id                        String      @id @default(cuid())
+  participantId             String
+  participant               Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  recordedAt                DateTime    @default(now())
+  date                      String
+  dayIndex                  Int?
+  passageId                 String      @default("standard_passage_1")
+  syllableCount             Int
+  readingTimeSec            Float
+  speakingTimeSec           Float
+  pauseTimeSec              Float
+  speechRateSylPerSec       Float
+  articulationRateSylPerSec Float
+  pauseCountOver250ms       Int
+  meanPauseLengthMs         Float
+  pauseRatio                Float
+  noiseFloorDb              Float?
+  speechRateZScore          Float?
+  isSimulated               Boolean     @default(false)
+  source                    String      @default("live")
+
+  @@index([participantId, date])
+}
+
+/// Optional weekly ambiguous-faces / scenarios rating game summary.
+model CognitiveGameReading {
+  id                      String      @id @default(cuid())
+  participantId           String
+  participant             Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  recordedAt              DateTime    @default(now())
+  date                    String
+  dayIndex                Int?
+  taskType                String      @default("ambiguous_faces")
+  trialCount              Int
+  validTrialCount         Int
+  negativeRatingCount     Int
+  positiveRatingCount     Int
+  interpretationBiasScore Float
+  meanReactionTimeMs      Float?
+  biasZScore              Float?
+  isSimulated             Boolean     @default(false)
+  source                  String      @default("live")
+
+  @@index([participantId, date])
+}
+
+/// Optional derived home or financial routine counts — never raw transactions or sensor traces.
+model RoutineSignalReading {
+  id              String      @id @default(cuid())
+  participantId   String
+  participant     Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  periodStartDate String
+  periodEndDate   String
+  dayIndex        Int?
+  channel         String      // "laundry" | "shower_humidity" | "kitchen_motion" | "financial_routine"
+  broadArea       String      // "daily_routine" | "financial_routine"
+  derivedValue    Float
+  unit            String
+  baselineZScore  Float?
+  isSimulated     Boolean     @default(false)
+  source          String      @default("synthetic")
+
+  @@index([participantId, channel, periodEndDate])
+}
+
+/// Per-participant personal baseline statistics anchored on initial well weeks post-TMS.
+model PersonalBaseline {
+  id              String      @id @default(cuid())
+  participantId   String
+  participant     Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  metricName      String
+  windowStartDate String
+  windowEndDate   String
+  sampleCount     Int
+  mean            Float
+  sd              Float
+  median          Float?
+  iqr             Float?
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([participantId, metricName])
+}
+
+/// One-button low-effort state-shifter suggestion for small dips, with pre/post verification fields.
+model PatientSuggestion {
+  id               String      @id @default(cuid())
+  participantId    String
+  participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  createdAt        DateTime    @default(now())
+  date             String
+  dayIndex         Int?
+  reason           String      // "small_dip" | "practice"
+  actionKey        String      // "short_walk" | "breathing_space" | "bright_light" | "social_contact"
+  actionTitle      String
+  actionDetail     String?
+  effortTier       String      @default("low")
+  status           String      @default("shown") // "shown" | "accepted" | "completed" | "skipped"
+  respondedAt      DateTime?
+  armType          String      @default("intervention")
+  preMoodScore     Float?
+  postMoodScore    Float?
+  nextCheckInDelta Float?
+  isSimulated      Boolean     @default(false)
+
+  @@index([participantId, date])
+}
+
+/// Clinic-side flag naming only broad area(s) and since when — never raw sensor numbers or diagnostic labels.
+model ClinicFlag {
+  id                      String            @id @default(cuid())
+  participantId           String
+  participant             Participant       @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  createdAt               DateTime          @default(now())
+  sinceDate               String            // "YYYY-MM-DD"
+  dayIndex                Int?
+  triggerKind             String            // "sustained_dip" | "silence" | "crisis_self_harm"
+  primaryArea             String            // "check_in" | "sleep" | "daily_routine" | "activity_outside_home" | "financial_routine"
+  broadAreasJson          String            // JSON array of broad area keys
+  status                  String            @default("open") // "open" | "nurse_call_requested" | "booster_offered" | "watching" | "resolved"
+  ringActiveDuringSilence Boolean?
+  patientSharedDetails    Boolean           @default(false)
+  sharedAt                DateTime?
+  isSimulated             Boolean           @default(false)
+  nurseCalls              NurseCallRecord[]
+
+  @@index([participantId, status])
+}
+
+/// Nurse call outreach record and post-warning clinical action outcome for verification.
+model NurseCallRecord {
+  id                     String      @id @default(cuid())
+  flagId                 String?
+  flag                   ClinicFlag? @relation(fields: [flagId], references: [id], onDelete: SetNull)
+  participantId          String
+  participant            Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  requestedAt            DateTime    @default(now())
+  completedAt            DateTime?
+  status                 String      @default("requested") // "requested" | "completed" | "unreachable"
+  outcomeTier            String?     // "rough_patch" | "sustained_decline" | "full_relapse" | "crisis" | "false_alarm"
+  actionTaken            String?     // "advice_and_medication_check" | "booster_tms_cluster" | "new_tms_course_referral" | "urgent_care" | "none"
+  medicationChecked      Boolean     @default(false)
+  watchNextRounds        Int         @default(0)
+  boosterSessionsPlanned Int?
+  summaryNote            String?
+  isSimulated            Boolean     @default(false)
+
+  @@index([participantId, requestedAt])
+}
