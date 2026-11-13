@@ -19,6 +19,17 @@ It was built before the decisions below and before the question set, so this pla
 starts by bringing it onto them. Its review left one open finding, which step 2 closes:
 the check-in expects four items scored 1 to 5, and the PHQ-9 has no unfinished state.
 
+Checked on a second machine on 14 Nov: the install, the database setup with its seed,
+the type-check, the lint, the 20 unit tests and the production build all pass. The
+end-to-end tests were not run. The package audit reports five high-severity findings
+and one moderate, in three places:
+
+| Package | Finding | Fixed in | Where it matters |
+|---|---|---|---|
+| Zod 3 | Can run out of memory on oversized input | Zod 4, a breaking upgrade | On the path of every incoming request, since Zod validates the input |
+| Next.js 15 | Four findings in a stylesheet tool it carries | Next.js 16, a breaking upgrade | At build time, on our own stylesheets only |
+| Prisma 6 | One finding in its configuration tooling | A non-breaking update | On developers' machines |
+
 ## Decisions behind this plan
 
 `decisions.md` is being changed on another open trail, so these rows are not added
@@ -38,7 +49,7 @@ planning, and are open in the same way.
 | B8 | Answers are not encrypted field by field. They are protected by pseudonymity, the service's encryption of disks and backups, and the access rules | Encrypted fields cannot be queried or counted, the one add-on for it is unmaintained, and an answer is a small number with no identity next to it | Field encryption of every answer |
 | B9 | A stored fact is never changed afterwards: answers, missed rounds, agreements, warnings, calls. What can be worked out (round kinds, baselines) is computed by the tested functions. A warning is stored when raised, with the version of the rule that raised it. Deleting is a different thing and is allowed: when a patient asks, their rows are removed | Principle 6 needs every answer next to what happened afterwards, and a changed threshold must not rewrite history. The right to have one's data deleted comes first | Storing only current state; a store from which nothing can be removed |
 | B10 | Developers and tests use a real PostgreSQL that arrives with the package install (`embedded-postgres`, which ships Windows, macOS and Linux builds). Nobody installs a database by hand | A machine checked for this plan had neither Docker nor PostgreSQL. Tests against the real engine check the same access rules that run when hosted | A different database for tests; asking each teammate to install one |
-| B11 | The library versions of the merged foundation stay for the weekend: Next.js 15, Prisma 6, Zod 3, Vitest 3. Newer major versions of all four exist | The foundation works and others are building on it. Prisma 6 talks to PostgreSQL without the extra adapter and configuration file that version 7 requires | Upgrading during the weekend |
+| B11 | Of the foundation's library versions, Prisma 6 and Vitest 3 stay for the weekend, with Prisma's non-breaking fix applied. Zod moves to version 4 in step 1. Whether Next.js moves to 16 is open point 6 | The foundation works and others are building on it, so nothing is upgraded without a reason. The audit is the reason for Zod, which sits on the path of incoming requests. Prisma 6 talks to PostgreSQL without the extra adapter and configuration file that version 7 requires | Upgrading everything during the weekend; leaving a high-severity finding in the input validator |
 
 ## Shape
 
@@ -90,11 +101,11 @@ foundation's schema; the last column says what step 2 changes.
 |---|---|---|
 | `Participant` | One person: simulated, from an open dataset, or live | Becomes the pseudonymous patient (B3): a random code, the clinic, the enrolment date, the chosen days and time, the time zone. Age, gender and study scores stay only on rows from an open dataset or the simulator; a live patient never has them |
 | `MeasurementConsent` | Which method is switched on | Keeps the current state. A new `ConsentEvent` holds each switch turned on or off, with the date and the version of the text shown, and covers all three layers (B4) |
-| `CheckInRound` | Each scheduled round: answered, "Not today" or missed | Two taps scored 0 to 4, as in `questions.md`. Energy, rumination, the combined score, the single-item score and the free-text note go. Added: whether the reminder went out |
-| `Phq9Assessment` | The nine answers and the total | Added: an unfinished state that keeps its answers, and the round it belongs to, so a late answer lands on the right round |
+| `CheckInRound` | Each scheduled round: answered, "Not today" or missed | Two taps scored 0 to 4, as in `questions.md`. Energy, rumination, the combined score, the single-item score and the free-text note go. So do the two self-harm fields: the two taps ask nothing about self-harm, which belongs to the PHQ-9 alone. Added: whether the reminder went out |
+| `Phq9Assessment` | The nine answers and the total | Added: an unfinished state that keeps its answers, and the round it belongs to, so a late answer lands on the right round. Its "crisis path shown" field goes, since `CrisisEvent` records that |
 | `PersonalBaseline` | A person's own usual values | Fits as it is |
 | `PatientSuggestion` | That the one suggestion was shown and whether its button was pressed | The mood-before and mood-after fields go: no question is asked after a suggestion |
-| `ClinicFlag` | A warning as the clinic sees it: the area and since when | Added: which kind raised it and the rule's version. A self-harm answer is no longer a kind of flag; it gets its own table |
+| `ClinicFlag` | A warning as the clinic sees it: the area and since when | Added: which kind raised it and the rule's version. A self-harm answer is no longer a kind of flag; it gets its own table. The two fields for a patient sharing details with the clinic stay but are not used: no screen in this build offers it, and access refuses it. D8 gives the clinic the area only; what the patient adds, they add in the call |
 | `NurseCallRecord` | What the nurse found and which step followed, linked to its flag | Already matches the steps after a warning. The free-text note goes. Added: which staff member recorded it |
 | Ring, activity, rhythm, camera, speech, game and routine tables | Derived numbers per day or per session | Unchanged. Never video or audio |
 
@@ -132,7 +143,7 @@ Each measure uses something that exists and is maintained, and each has a test.
 | Health data in logs | Logs carry event ids, never answers or codes | A test reads the log output of a full round |
 | Data sent to an outside AI | The app has no AI library and calls no AI service. No AI takes part in the rule | The gate fails if such a dependency appears |
 | Secrets in the repository | Environment variables only, listed with empty values in `.env.example` and checked at start | The app refuses to start with one missing |
-| A vulnerable package | Exact versions, a lockfile, and an audit of known vulnerabilities in the gate | The gate fails on a high-severity finding |
+| A vulnerable package | Exact versions, a lockfile, and an audit of known vulnerabilities in the gate. A finding that is knowingly left open is listed in the repository with its reason | The gate fails on a high-severity finding that is not on that list |
 | A lost or stolen database copy | The service encrypts disks and backups (B5); the rows are pseudonymous (B3) | Not testable here; checked when hosting is set up |
 | Withdrawal is not honoured | Switching a layer off stops collection at once. When a patient asks for deletion, their rows are removed; what stays is the access log, which holds no answers | After deletion, no answer of that patient can be read by any path |
 
@@ -164,21 +175,26 @@ different folders and can be built at the same time.
 
 | Step | What | Delivers | Needs | Can run beside |
 |---|---|---|---|---|
-| 1 | PostgreSQL and tooling | The schema on PostgreSQL with the local database from the package install (B2, B10); pnpm (B6); the layer rule; the environment check; `test:db` | | 3, 4 |
-| 2 | The schema onto the decisions | The changes under "What is stored", the new tables, and the simulator and seed adjusted to them. Closes the open finding on the foundation's review | 1 | 3, 4 |
+| 1 | PostgreSQL and tooling | The schema on PostgreSQL with the local database from the package install (B2, B10); pnpm (B6); Zod 4 and Prisma's fix (B11); the audit in the gate; the layer rule; the environment check; `test:db` | | 3, 4 |
+| 2 | The schema onto the decisions | The changes under "What is stored" and the new tables, with everything that reads the changed fields adjusted in the same step so the gate stays green: the Zod schemas, the simulator and seed, the shell pages, the demo route and their tests. Closes the open finding on the foundation's review | 1 | 3, 4 |
 | 3 | The rule | Modules 1 and 3 to 8 | | 1, 2, 4 |
 | 4 | Rounds | Module 2 | | 1, 2, 3 |
-| 5 | Storage, access and use cases | Modules 9, 10 and 13 | 2, 3, 4 | |
-| 6 | Sign-in | Module 11 | 5 | 7 |
-| 7 | Messages to the clinic | Module 12 | 5 | 6 |
-| 8 | Patient screens | Module 14 | 5 | 9 |
-| 9 | Clinic screens | Module 15 | 5, 7 | 8 |
-| 10 | The demo path | Module 16: the three demo moments, produced by the real rule | 8, 9 | |
-| 11 | A security review of the whole | Findings, fixed as their own changes | | |
+| 5 | Storage, access, use cases and messages | Modules 9, 10, 12 and 13. They go together because a use case stores an answer and its message to the clinic in one database step | 2, 3, 4 | |
+| 6 | Sign-in | Module 11 | 5 | 7, 8 |
+| 7 | Patient screens | Module 14 | 5 | 6, 8 |
+| 8 | Clinic screens | Module 15 | 5 | 6, 7 |
+| 9 | The demo path | Module 16: the three demo moments, produced by the real rule, with the live camera reading if the camera page is ready | 7, 8 | |
+| 10 | A security review of the whole | Findings, fixed as their own changes | | |
 
 Steps 3 and 4 are workstream 3's routing rule and the logic of workstream 2 in
-`plan.md`; steps 8 and 9 are workstreams 2 and 5. The ring maths and the camera page
-(workstreams 3 and 4) need only the tables that already exist and can start now.
+`plan.md`; steps 7 and 8 are workstreams 2 and 5.
+
+Two workstreams of `plan.md` run beside this plan and are not broken into modules here:
+
+| Workstream | What | Needs | Meets this plan at |
+|---|---|---|---|
+| 3, signal maths | Rhythm, sleep regularity and personal-baseline functions for the ring, as pure functions in `src/domain/` | Only the tables that exist | Step 9: the ring's history in the demo |
+| 4, camera check | The page measuring facial expressivity and head movement in the browser | Only the tables that exist; its content security policy needs are listed under "Not checked" | Step 9: the live reading in the demo |
 
 The final submission is on Sunday at 10:00. If time runs short, these are cut first, in
 this order, and the pitch says so: the second barrier in the database, the second factor
@@ -197,9 +213,13 @@ checks, the label on simulated data, and the tests for the rule.
    notification later; in the demo the reminder is shown as a state on the screen.
 5. The two taps or the PHQ-2 (`questions.md`, open point 1). Either fits, since the
    wording is data.
-6. Moving from npm to pnpm changes the commands everyone types (B6). Does the teammate
+6. Should Next.js move from 15 to 16 now, while the app is small? The audit's four
+   findings there are in a build tool that handles only our own stylesheets. Proposal:
+   try the upgrade in step 1 with Next.js's own migration tool; if it is not clean
+   within that step, stay on 15 and list the findings as knowingly left open.
+7. Moving from npm to pnpm changes the commands everyone types (B6). Does the teammate
    who built the foundation agree?
-7. Who builds which step?
+8. Who builds which step?
 
 ## For someone who knows Finnish health law
 
