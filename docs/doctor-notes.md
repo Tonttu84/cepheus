@@ -273,6 +273,19 @@ what you want and so on.
 **Idea**: that no longer works once the depression is severe, but it could work in a
 game like that.
 
+> ideaalisesti tollanen peli rakentais sillan sieltä "ylläpito"vaiheesta johonkin missä se ihminen aktiivisesti tekee ei-masentuneita asioita :D
+
+**Idea**: ideally such a game would build a bridge from the "maintenance" phase to
+something where the person actively does non-depressed things :D
+
+> siis jotain idk, luovaa
+
+Something, I don't know, creative.
+
+> mut se on aika high bar
+
+But that is quite a high bar.
+
 Checked: not yet. The writing claim (that it helps in milder depression and not in
 severe depression) has not been looked up. An app that contacts friends on a person's
 behalf would need that person's clear consent each time; the research on what users
