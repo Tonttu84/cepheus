@@ -114,5 +114,10 @@ Each is its own trail. Nobody is assigned yet: claim one in a comment.
    days, so it would have to be requested now.
 5. Does anything here not fit what the Aalto mentors (5th floor, booth 11) say they
    want? Questions for them are in `docs/general-plan.md`, section 7.
+6. May we publish a public copy of this repository on GitHub for the final submission?
+   Judges and peer reviewers need a source link they can open, and this repository is
+   private. A public copy shows everything in it, including the anonymous doctor's
+   notes. Proposal: yes, pushed once the demo path is frozen on Saturday evening and
+   again just before submitting. Whose GitHub account hosts it?
 
 Decisions in this plan become rows in `docs/decisions.md` when the team accepts it.
