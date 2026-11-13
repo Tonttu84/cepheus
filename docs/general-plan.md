@@ -101,10 +101,33 @@ shown as a label.
 ## 5. Hardware and data at hand
 
 - An Oura ring: gives sleep timing, night waking and per-minute activity, which is the
-  best sign. No live stream (data lags by hours); access needs an OAuth app, and newer
-  rings need a membership; a data export works without one.
-- An Arduino USB camera: enough for facial expressivity, head movement and a gaze task.
+  best sign. No live stream (data lags until the phone app syncs); access needs an OAuth
+  app, and newer rings need a membership. The account data export works without one but
+  can take up to 10 days, so request it at once. The rhythm measures need 7+ days of data.
+- An Arduino USB Camera: a standard driver-free webcam (up to 4K, ring light, built-in
+  microphone). Enough for facial expressivity, head movement and the read-aloud. Ask it
+  for 720p and switch the ring light on.
 - An AI-assisted tracking camera demoed at the venue: make and developer access unknown.
+
+Build order for the sensing (`research/6-sensing-feasibility.md`; hours are estimates):
+
+| Step | Route | Hours |
+|---|---|---|
+| 1. Daily check-in and fortnightly PHQ-9 | Web form | 3 |
+| 2. Rhythm and sleep-regularity numbers | Own formulas, first on a simulated person, then on open activity data | 3-4 |
+| 3. Facial expressivity and head movement | MediaPipe Face Landmarker in the browser; frames processed in memory, only numbers stored | 3-5 |
+| 4. Speech rate and pauses, if time | Fixed passage with a known syllable count | 3-4 |
+| 5. Live Oura data, if time | Browser sign-in, sleep and activity endpoints | 2-4 more |
+| Skip | Gaze task (6-8 h, weak accuracy), phone mobility and steps (native app only) | |
+
+Simulated input must be labelled as simulated in the demo; the code that computes the
+numbers is real. A general AI model may turn a week of numbers into a plain summary for
+a clinician; it must not read mood from a face or voice, or decide when to alert.
+
+Credits (Junction platform, "Developer Tools and Assets"): Claude API 20 USD per
+participant, claimed through the link on its page there; Gemini API credits through a
+form that one person per team fills in (18 or older); OpenAI Codex 100 USD per
+participant (how to claim not checked); Verda 200 EUR; Modal 100 USD per participant.
 - Open data for a demo: one patient's 239 days of diary reports through a depressive
   transition (Kossakowski 2017); activity data from 23 patients and 32 controls
   (Depresjon); phone sensing from 48 students (StudentLife).
