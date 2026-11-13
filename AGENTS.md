@@ -94,7 +94,7 @@ These hold whatever is built.
 | `AGENTS.md`, `CLAUDE.md` | These rules; `CLAUDE.md` only points Claude Code at `AGENTS.md` |
 | `docs/general-plan.md` | The problem, what the research says, candidate cores, build order, open decisions |
 | `docs/doctor-notes.md` | A doctor's remarks, anonymous, with what a literature check found |
-| `docs/research/` | The evidence check and six research reports, with sources |
+| `docs/research/` | The evidence check and the numbered research reports, with sources |
 | `docs/side-challenges.md` | The side challenge we entered (Entire), what it still needs from us, and a map of the others |
 | `docs/decisions.md` | Decisions, one row each |
 
