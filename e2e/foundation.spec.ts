@@ -1,0 +1,106 @@
+import { expect, test } from "@playwright/test";
+
+test.describe("Cepheus Foundation Shell & Safety Invariants", () => {
+  test("1. Overview (/) loads, labels simulated data, shows crisis path, and switches demo moments", async ({
+    page,
+  }) => {
+    const response = await page.goto("/");
+    expect(response?.status()).toBe(200);
+
+    // Simulated data badge is clearly displayed
+    const badges = page.getByTestId("simulated-badge");
+    await expect(badges.first()).toBeVisible();
+    await expect(badges.first()).toContainText("Simulated data");
+
+    // Always-visible crisis path with 112 and MIELI 09 2525 0111
+    const crisisRegion = page.getByRole("region", {
+      name: /Immediate support and emergency help/i,
+    });
+    await expect(crisisRegion).toBeVisible();
+    await expect(crisisRegion).toContainText("112");
+    await expect(crisisRegion).toContainText("09 2525 0111");
+    await expect(crisisRegion).toContainText(
+      "Direct connection to a person — nothing automated in between."
+    );
+
+    // Switch between the 3 demo moments: well, small_dip, sustained_drift
+    const wellTab = page.getByTestId("moment-well");
+    const smallDipTab = page.getByTestId("moment-small_dip");
+    const sustainedDriftTab = page.getByTestId("moment-sustained_drift");
+
+    await wellTab.click();
+    await expect(page.getByTestId("moment-panel-well")).toBeVisible();
+    await expect(page.getByTestId("moment-panel-well")).toContainText("Day 18");
+
+    await smallDipTab.click();
+    await expect(page.getByTestId("moment-panel-small_dip")).toBeVisible();
+    await expect(page.getByTestId("moment-panel-small_dip")).toContainText(
+      "Take a 10-minute walk outside"
+    );
+
+    await sustainedDriftTab.click();
+    await expect(
+      page.getByTestId("moment-panel-sustained_drift")
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("moment-panel-sustained_drift")
+    ).toContainText("Day 56");
+  });
+
+  test("2. /check-in, /camera, /patient, and /clinic return 200 and keep the crisis path visible", async ({
+    page,
+  }) => {
+    const routes = ["/check-in", "/camera", "/patient", "/clinic"];
+
+    for (const route of routes) {
+      const response = await page.goto(route);
+      expect(response?.status(), `Expected 200 on ${route}`).toBe(200);
+
+      const crisisRegion = page.getByRole("region", {
+        name: /Immediate support and emergency help/i,
+      });
+      await expect(crisisRegion).toBeVisible();
+      await expect(crisisRegion).toContainText("112");
+      await expect(crisisRegion).toContainText("09 2525 0111");
+
+      const badge = page.getByTestId("simulated-badge").first();
+      await expect(badge).toBeVisible();
+      await expect(badge).toContainText("Simulated data");
+    }
+  });
+
+  test("3. /patient shows a single low-effort suggestion and contains no streak counters", async ({
+    page,
+  }) => {
+    const response = await page.goto("/patient");
+    expect(response?.status()).toBe(200);
+
+    await expect(page.getByTestId("patient-suggestion-card")).toBeVisible();
+    await expect(page.getByTestId("patient-suggestion-title")).toContainText(
+      "Take a 10-minute walk outside"
+    );
+
+    const mainText = await page.locator("main").innerText();
+    expect(mainText.toLowerCase()).not.toContain("streak");
+  });
+
+  test("4. /api/health and /api/demo?moment=small_dip return valid 200 JSON with isSimulated: true", async ({
+    request,
+  }) => {
+    const healthRes = await request.get("/api/health");
+    expect(healthRes.status()).toBe(200);
+    const healthJson = await healthRes.json();
+    expect(healthJson.ok).toBe(true);
+    expect(healthJson.database).toBe("sqlite");
+    expect(typeof healthJson.participantCount).toBe("number");
+    expect(healthJson.isSimulated).toBe(true);
+
+    const demoRes = await request.get("/api/demo?moment=small_dip");
+    expect(demoRes.status()).toBe(200);
+    const demoJson = await demoRes.json();
+    expect(demoJson.ok).toBe(true);
+    expect(demoJson.isSimulated).toBe(true);
+    expect(demoJson.moment.key).toBe("small_dip");
+    expect(demoJson.moment.dayIndex).toBe(29);
+  });
+});
