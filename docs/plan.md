@@ -234,5 +234,6 @@ Everything above is a proposal. These are the points where an answer is needed m
     want? Questions for them are in `docs/general-plan.md`, section 7, and at the end of
     `docs/research/7-behaviour-flags.md` (on another open trail).
 
-The decisions behind this plan are rows D7 to D13 in `docs/decisions.md`. A decision
-that the team overturns gets a new row there that names the one it replaces.
+The owner's decisions behind this plan are rows D7 to D15 in `docs/decisions.md`. Each
+is marked there as open to the team, with the question above that covers it. When the
+team answers, a row is added that confirms the decision or names the one it replaces.
