@@ -1,12 +1,12 @@
 # Side challenges
 
-Status 13 Nov 2026, close to midnight. A proposal, open for comments on its trail:
-nothing here is settled until the team has answered. The questions for the team are at
-the end.
+Status 13 Nov 2026, close to midnight. A first version of these notes was merged into
+`main` by the project owner on 13 Nov. They remain open to comment, and the questions
+for the team are at the end.
 
 Side challenges ("tech challenges") are entered on top of the main challenge. The
-proposed rule, which also stands in the team plan (`docs/plan.md`, on another open
-trail): nothing is built only to enter one. We would enter one that matches how we
+proposed rule, which also stands in the team plan (`docs/plan.md`): nothing is built
+only to enter one. We would enter one that matches how we
 already work, and keep a map of the others in case one turns out to fit.
 
 ## Proposed entry: Best Use of Entire (MLH)

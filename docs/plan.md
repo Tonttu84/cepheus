@@ -1,16 +1,17 @@
 # Team plan (proposal, open for comments)
 
-Status 13 Nov 2026, close to midnight. This is a proposal from one team member's planning
-sessions, not yet agreed by the team. Nothing in it is settled until the team has
-answered. Comment on its trail in Entire's web client: object, ask, or claim a
-workstream. The open questions are collected at the end. `docs/general-plan.md` and
+Status 13 Nov 2026, close to midnight. A first version of this plan was merged into
+`main` by the project owner on 13 Nov. This version adds the twice-weekly schedule and
+one list of open questions, and it remains a proposal: the points in that list are not
+settled until teammates have answered. Comment on its trail in Entire's web client:
+object, ask, or claim a workstream. `docs/general-plan.md` and
 `docs/research/` hold the background and sources; where they differ from this file, this
 file is the newer proposal.
 
-Related proposals on other open trails, each with its own question for the team: the
-Entire side challenge and a map of the others (`docs/side-challenges.md`), research on
-everyday behaviour as flags (`docs/research/7-behaviour-flags.md`), and an agent guide
-from Entire Brain (`.entire/agent-guide.md`).
+Related: the Entire side challenge and a map of the others (`docs/side-challenges.md`).
+Two more proposals are on other open trails, each with its own question for the team:
+research on everyday behaviour as flags (`docs/research/7-behaviour-flags.md`) and an
+agent guide from Entire Brain (`.entire/agent-guide.md`).
 
 ## What we build
 
@@ -233,4 +234,5 @@ Everything above is a proposal. These are the points where an answer is needed m
     want? Questions for them are in `docs/general-plan.md`, section 7, and at the end of
     `docs/research/7-behaviour-flags.md` (on another open trail).
 
-Decisions in this plan become rows in `docs/decisions.md` when the team accepts it.
+The decisions behind this plan are rows D7 to D13 in `docs/decisions.md`. A decision
+that the team overturns gets a new row there that names the one it replaces.

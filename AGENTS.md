@@ -93,6 +93,7 @@ These hold whatever is built.
 | --- | --- |
 | `AGENTS.md`, `CLAUDE.md` | These rules; `CLAUDE.md` only points Claude Code at `AGENTS.md` |
 | `docs/general-plan.md` | The problem, what the research says, candidate cores, build order, open decisions |
+| `docs/plan.md` | The team plan: what we build, how often we ask, scope, workstreams and the open questions |
 | `docs/doctor-notes.md` | A doctor's remarks, anonymous, with what a literature check found |
 | `docs/research/` | The evidence check and the numbered research reports, with sources |
 | `docs/side-challenges.md` | The side challenge we entered (Entire), what it still needs from us, and a map of the others |
