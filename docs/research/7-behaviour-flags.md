@@ -225,6 +225,13 @@ In each case, the flag to the clinic in the demo should fire only when the devic
 Added by the team after the research, to take to the Aalto mentors (5th floor, booth
 11). They test this whole line of thought against people who run a clinic's research.
 
+**First answer, 13 Nov.** The mentors' view, as reported by the team member who asked:
+a signal that has not been studied is fine to include, as long as there is a way to
+verify it, by funding a study or simply by collecting data. This bears on question 2
+and on every untested signal in this report. The team's response is in `../plan.md`:
+each signal is stored next to what happened afterwards, and the unverified assumptions
+are listed there with how each would be checked. Questions 1 and 3 to 7 are still open.
+
 1. Would a clinic act on a flag that names only an area, such as "sleep" or "daily
    routine", or does it need to see the measure before it calls a patient?
 2. No study has tested showering, laundry or other home routines as relapse signals. Do
