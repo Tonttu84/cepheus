@@ -1,7 +1,7 @@
 # Sensing feasibility: what can be shown working this weekend
 
 Status 13 Nov 2026. Practical follow-up to `1-physical-signs.md`, `2-mental-measures.md`
-and `general-plan.md`. Research only: nothing was installed, downloaded or signed into.
+and `../general-plan.md`. Research only: nothing was installed, downloaded or signed into.
 Every claim below names the page it came from; "not confirmed" means this run did not
 find it on an official page. Version numbers are as read on 13 Nov 2026.
 

@@ -1,6 +1,6 @@
 # Physical and behavioural signs of depression measurable at home
 
-Checked 2026-11-13 with web search, building on `../evidence-check.md` (section 5). Most sources were read at abstract or search-snippet level. Full text was read only for Cummins et al. 2023 (speech) and the Mental Elf review of Tonon et al. 2026 (actigraphy). Figures marked "(secondary)" come from news or aggregator pages, not the paper. "No source found" means this run found none, not that none exists. Prices are rough consumer prices from general knowledge of the market, not checked in this run; treat them as estimates.
+Checked 2026-11-13 with web search, building on `evidence-check.md` (section 5). Most sources were read at abstract or search-snippet level. Full text was read only for Cummins et al. 2023 (speech) and the Mental Elf review of Tonon et al. 2026 (actigraphy). Figures marked "(secondary)" come from news or aggregator pages, not the paper. "No source found" means this run found none, not that none exists. Prices are rough consumer prices from general knowledge of the market, not checked in this run; treat them as estimates.
 
 **Key distinction used throughout.** *Group marker*: differs between depressed and healthy groups. *Within-person marker*: moves inside one person as they worsen or recover. A maintenance product needs the second.
 

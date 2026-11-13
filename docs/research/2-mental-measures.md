@@ -1,6 +1,6 @@
 # Mental and behavioural measures for repeated use at home
 
-Checked 2026-11-13 with web search. This builds on `../evidence-check.md` (sections 3, 5, 6, 13) and does not repeat it. Unless a line says "page read", figures come from search-result abstracts, repository records or indexing pages; full texts were not opened. "No source found" means this run found nothing, not that nothing exists. Bodily sensor signals and location/movement sensors are out of scope (another agent).
+Checked 2026-11-13 with web search. This builds on `evidence-check.md` (sections 3, 5, 6, 13) and does not repeat it. Unless a line says "page read", figures come from search-result abstracts, repository records or indexing pages; full texts were not opened. "No source found" means this run found nothing, not that nothing exists. Bodily sensor signals and location/movement sensors are out of scope (another agent).
 
 Verdict scale: **supported**, **partly supported**, **contested**, **unsupported**.
 

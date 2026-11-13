@@ -1,6 +1,6 @@
 # What shifts mood state quickly, at what effort, and how to learn it per person
 
-Checked 2026-11-13 with web search; builds on `../evidence-check.md` (sections 2, 3, 4, 7, 12) and does not repeat it. Sources were read at abstract or index-record level through search results; no full text was opened in this run, so effect sizes are as given in abstracts or in secondary citations, flagged where secondary. "No source found" means this run found nothing, not that nothing exists.
+Checked 2026-11-13 with web search; builds on `evidence-check.md` (sections 2, 3, 4, 7, 12) and does not repeat it. Sources were read at abstract or index-record level through search results; no full text was opened in this run, so effect sizes are as given in abstracts or in secondary citations, flagged where secondary. "No source found" means this run found nothing, not that nothing exists.
 
 Effort scale (my judgement, not from the sources): **none** = passive, happens to you (light, ambient sound); **low** = one tap and under 5 minutes of following along; **medium** = leaving the house, phoning someone, 10–30 minutes of guided attention; **high** = sustained self-generated mental work (reappraisal, recalling and holding a memory, planning).
 
