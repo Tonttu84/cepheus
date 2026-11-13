@@ -1,10 +1,18 @@
 # Side challenges
 
-Status 13 Nov 2026, 22:10. Side challenges ("tech challenges") are entered on top of the
-main challenge. The team's rule: nothing is built only to enter one. We enter one that
-matches how we already work, and keep a map of others in case one turns out to fit.
+Status 13 Nov 2026, close to midnight. A proposal, open for comments on its trail:
+nothing here is settled until the team has answered. The questions for the team are at
+the end.
 
-## Entered: Best Use of Entire (MLH)
+Side challenges ("tech challenges") are entered on top of the main challenge. The
+proposed rule, which also stands in the team plan (`docs/plan.md`, on another open
+trail): nothing is built only to enter one. We would enter one that matches how we
+already work, and keep a map of the others in case one turns out to fit.
+
+## Proposed entry: Best Use of Entire (MLH)
+
+It is ticked in the draft submission saved on the Junction platform on 13 Nov, which
+can still be changed.
 
 Prize: a mini portable projector. Chosen because the repository lives on Entire and the
 team already works through its trails.
@@ -42,17 +50,17 @@ team already works through its trails.
 |---|---|---|---|
 | 1 | Sessions for everyone: enable Entire for the coding agent you use. Do not import earlier session history; sessions from before the repository was shared hold private notes and event codes | Each teammate | Saturday morning |
 | 2 | One real handover: a teammate's agent resumes a trail that another person's agent started (`entire trail resume`), and we note what context it had without being told | Two teammates, unassigned | Saturday |
-| 3 | Graph: install the plugin, tell agents in `AGENTS.md` to search the graph before searching files, and record token use for the same kind of task with and without it | Whoever takes the foundation workstream | Once there is code, Saturday |
-| 4 | Brain: install the plugin and ask it one real question, such as why a decision in `docs/decisions.md` was made, and note whether the answer is right | Unassigned | Saturday evening, once sessions exist |
+| 3 | Graph: install the plugin (done on one machine), tell agents in `AGENTS.md` to search the graph before searching files, and record token use for the same kind of task with and without it | Whoever takes the foundation workstream in the team plan | Once there is code, Saturday |
+| 4 | Brain: it is installed and set up on one machine, and its agent guide is proposed on another open trail, with a rule that agents only read from it. Still to do: ask it one real question, such as why a decision in `docs/decisions.md` was made, and note whether the answer is right | Unassigned | Saturday evening, once sessions exist |
 | 5 | Review on Entire's side: add Entire's preset review agents and switch on the approvals gate, so findings appear on each trail and a merge needs a review | The project owner | Saturday morning |
 | 6 | Clean history: keep Conventional Commits, one logical change per commit, and every change through a reviewed trail; point to the history in the submission | Everyone | Throughout |
 | 7 | Numbers: run the token reports and keep the figures in this file. "Measurable token efficiency" needs a before and an after | Unassigned | End of Saturday, and Sunday morning |
-| 8 | For the submission: links to the trails, one generated summary of the agents' work (`entire dispatch`), the token figures, and a short account of the flow | Whoever takes the pitch workstream | Sunday morning |
+| 8 | For the submission: links to the trails, one generated summary of the agents' work (`entire dispatch`), the token figures, and a short account of the flow | Whoever takes the pitch workstream in the team plan | Sunday morning |
 
-Not yet tried by us: session capture from Claude Code on any machine, the Graph and
-Brain plugins, `entire trail resume`, `entire search`, `entire dispatch`, review agents,
-the approvals gate, and the token reports. The commands are listed by the installed
-tool; what they do in practice is still to be seen.
+Not yet tried by us: session capture from Claude Code on any machine, Graph's search,
+asking Brain a real question, `entire trail resume`, `entire search`, `entire dispatch`,
+review agents, the approvals gate, and the token reports. The commands are listed by
+the installed tool; what they do in practice is still to be seen.
 
 ## Map of other side challenges (none entered)
 
@@ -72,3 +80,14 @@ offers.
 | Modal, Verda | Cash and credits; credits | A model we serve ourselves on GPUs | No: nothing in the plan needs GPUs |
 | CRACI | LEGO sets; build minutes | The project's CI running on CRACI | No for now: it works through GitHub, and our repository is on Entire |
 | MongoDB, Vultr, Cloudinary, Context.dev, Oxylabs, Solana, Atech | Various | Their service in the core flow | No: none matches the product |
+
+## Questions for the team
+
+1. Does anyone object to entering "Best Use of Entire", or to entering no other side
+   challenge for now?
+2. Who takes rows 2, 4 and 7 of the to-do table (the handover, the Brain question, the
+   token numbers)?
+3. Is anything in the map wrong for your part of the work, for example a service you
+   would in fact use?
+4. Is everyone willing to enable session tracking for their own coding agent, knowing
+   that it shares agent conversations with the team?
