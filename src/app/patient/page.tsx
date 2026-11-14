@@ -1,5 +1,6 @@
 import { PATIENT_SUGGESTIONS } from "@/lib/constants";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
+import { PatientStepPersonalizer } from "@/components/patient-step-personalizer";
 import { SimulatedBadge } from "@/components/simulated-badge";
 
 export default function PatientPage() {
@@ -66,6 +67,11 @@ export default function PatientPage() {
           </button>
         </div>
       </section>
+
+      <PatientStepPersonalizer
+        participantCode={dataset.participant.externalId}
+        dayIndex={29}
+      />
 
       {/* Reassurance note */}
       <section className="rounded-xl border border-stone-200 bg-stone-100/70 p-4 text-xs leading-relaxed text-stone-600">

@@ -1,6 +1,7 @@
 import { BROAD_AREA_LABELS, type BroadAreaKey } from "@/lib/constants";
 import { toSafeClinicFlagView } from "@/lib/schemas";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
+import { ClinicNurseBriefPanel } from "@/components/clinic-nurse-brief-panel";
 import { SimulatedBadge } from "@/components/simulated-badge";
 
 export default function ClinicPage() {
@@ -120,6 +121,15 @@ export default function ClinicPage() {
             </button>
           </div>
         </section>
+      ) : null}
+
+      {safeFlag ? (
+        <ClinicNurseBriefPanel
+          participantCode={dataset.participant.externalId}
+          sinceDate={safeFlag.sinceDate}
+          broadAreas={safeFlag.broadAreas}
+          ringActiveDuringSilence={safeFlag.ringActiveDuringSilence}
+        />
       ) : null}
 
       {/* Privacy & Clinical Boundary Footer Note */}
