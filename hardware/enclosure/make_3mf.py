@@ -1,8 +1,10 @@
 """
 Packages the 7 unique Cepheus Desk Buddy STLs into one multi-plate Bambu Studio / PrusaSlicer .3mf file:
   - Plate 1: cepheus_top_shell (Peach PLA)
-  - Plate 2: cepheus_bottom_tray, cepheus_privacy_visor, cepheus_visor_arms,
-             cepheus_hinge_pins, cepheus_uno_pins, cepheus_paw_pads (White PLA)
+  - Plate 2: cepheus_bottom_tray (White PLA)
+  - Plate 3: all small White PLA parts together in low-Z orientations
+             (cepheus_privacy_visor, cepheus_visor_arms, cepheus_paw_pads,
+              cepheus_hinge_pins, cepheus_uno_pins)
 """
 
 import json
@@ -13,7 +15,6 @@ import zipfile
 from xml.sax.saxutils import escape
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
-STL_DIR = os.path.join(OUT_DIR, "stl")
 
 
 def read_binary_stl(path):
@@ -59,27 +60,28 @@ def center_on_bed(verts):
 
 def make_3mf(out_path):
     # Bambu Studio 256x256 bed coordinates:
-    #   Plate 1 center = (128.0, 128.0, 0)
-    #   Plate 2 center = (128.0 + 307.2, 128.0, 0) = (435.2, 128.0, 0)
+    #   Plate 1 center = (128.0, 128.0, 0)  -> [  0.0, 256.0]
+    #   Plate 2 center = (435.2, 128.0, 0)  -> [307.2, 563.2]
+    #   Plate 3 center = (742.4, 128.0, 0)  -> [614.4, 870.4]
     parts_spec = [
         # (filename, display_name, plate_id, extruder_idx, rot_z_90, build_xy)
         ("cepheus_top_shell.stl", "cepheus_top_shell", 1, 1, False, (128.0, 128.0)),
-        ("cepheus_bottom_tray.stl", "cepheus_bottom_tray", 2, 2, False, (397.2, 128.0)),
-        ("cepheus_privacy_visor.stl", "cepheus_privacy_visor", 2, 2, True, (491.2, 128.0)),
-        ("cepheus_visor_arms.stl", "cepheus_visor_arms", 2, 2, False, (533.2, 162.0)),
-        ("cepheus_hinge_pins.stl", "cepheus_hinge_pins", 2, 2, False, (533.2, 106.0)),
-        ("cepheus_uno_pins.stl", "cepheus_uno_pins", 2, 2, False, (533.2, 84.0)),
-        ("cepheus_paw_pads.stl", "cepheus_paw_pads", 2, 2, False, (435.2, 232.0)),
+        ("cepheus_bottom_tray.stl", "cepheus_bottom_tray", 2, 2, False, (435.2, 128.0)),
+        ("cepheus_privacy_visor.stl", "cepheus_privacy_visor", 3, 2, False, (702.0, 148.0)),
+        ("cepheus_visor_arms.stl", "cepheus_visor_arms", 3, 2, False, (824.0, 148.0)),
+        ("cepheus_paw_pads.stl", "cepheus_paw_pads", 3, 2, False, (702.0, 68.0)),
+        ("cepheus_hinge_pins.stl", "cepheus_hinge_pins", 3, 2, False, (824.0, 82.0)),
+        ("cepheus_uno_pins.stl", "cepheus_uno_pins", 3, 2, False, (824.0, 56.0)),
     ]
 
     objects_xml = []
     build_items_xml = []
     settings_objs_xml = []
-    plate1_instances_xml = []
-    plate2_instances_xml = []
+    plate_instances = {1: [], 2: [], 3: []}
 
     for idx, (fname, label, plate_id, ext_id, rot90, (bx, by)) in enumerate(parts_spec, start=1):
-        stl_path = os.path.join(STL_DIR, fname)
+        stl_in_sub = os.path.join(OUT_DIR, "stl", fname)
+        stl_path = stl_in_sub if os.path.exists(stl_in_sub) else os.path.join(OUT_DIR, fname)
         verts, tris = read_binary_stl(stl_path)
         if rot90:
             verts = rotate_z_90(verts)
@@ -125,10 +127,7 @@ def make_3mf(out_path):
             f'      <metadata key="identify_id" value="{100 + idx}"/>\n'
             f"    </model_instance>"
         )
-        if plate_id == 1:
-            plate1_instances_xml.append(inst_xml)
-        else:
-            plate2_instances_xml.append(inst_xml)
+        plate_instances[plate_id].append(inst_xml)
 
     model_xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -163,13 +162,19 @@ def make_3mf(out_path):
         '    <metadata key="plater_id" value="1"/>\n'
         '    <metadata key="plater_name" value="Plate 1 - Peach Body"/>\n'
         '    <metadata key="locked" value="false"/>\n'
-        + "\n".join(plate1_instances_xml)
+        + "\n".join(plate_instances[1])
         + "\n  </plate>\n"
         "  <plate>\n"
         '    <metadata key="plater_id" value="2"/>\n'
-        '    <metadata key="plater_name" value="Plate 2 - White Parts"/>\n'
+        '    <metadata key="plater_name" value="Plate 2 - White Base Tray"/>\n'
         '    <metadata key="locked" value="false"/>\n'
-        + "\n".join(plate2_instances_xml)
+        + "\n".join(plate_instances[2])
+        + "\n  </plate>\n"
+        "  <plate>\n"
+        '    <metadata key="plater_id" value="3"/>\n'
+        '    <metadata key="plater_name" value="Plate 3 - White Small Parts"/>\n'
+        '    <metadata key="locked" value="false"/>\n'
+        + "\n".join(plate_instances[3])
         + "\n  </plate>\n"
         "</config>\n"
     )
@@ -212,5 +217,4 @@ def make_3mf(out_path):
 
 
 if __name__ == "__main__":
-    os.makedirs(STL_DIR, exist_ok=True)
-    make_3mf(os.path.join(STL_DIR, "cepheus_desk_buddy.3mf"))
+    make_3mf(os.path.join(OUT_DIR, "stl", "cepheus_desk_buddy.3mf"))

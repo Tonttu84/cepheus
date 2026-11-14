@@ -167,7 +167,7 @@ These hold whatever is built.
 | `src/lib/` | Database client (`db.ts`), Zod schemas, constants, i18n translation dictionary, simulation |
 | `prisma/` | Prisma schema (`schema.prisma`, PostgreSQL) and seed script (`seed.ts`) |
 | `scripts/` | Tooling scripts: dev database (`dev-db.mjs`), package audit (`audit.mjs`), requests checker, face model setup |
-| `hardware/` | Arduino UNO Q edge monitoring Python script (`edge_monitor.py`) and dependencies |
+| `hardware/` | Arduino UNO Q edge monitor (`hardware/uno-q/`) and 3D-printable Desk Buddy enclosure (`hardware/enclosure/`) |
 | `e2e/` | Playwright browser end-to-end tests (foundation, camera, monitoring) |
 
 ## Quirks

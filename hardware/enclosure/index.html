@@ -249,10 +249,10 @@
       <div class="specs">
         <strong>Print material:</strong> 100% solid Peach &amp; White PLA<br />
         <strong>Joints (screwless):</strong> Front hook + 2 snap-tabs + split visor pins<br />
-        <strong>Outer buddy:</strong> 169 &times; 166 &times; 159 mm (incl. ears)<br />
-        <strong>Arduino UNO Q (ABX00162):</strong> 68.58 &times; 53.34 mm (front bay)<br />
-        <strong>8-in-1 Hub (TPX00241):</strong> 119 &times; 27.8 &times; 16 mm + 53.8 mm plug bay<br />
-        <strong>USB Camera (TPX00246):</strong> &Oslash; 62 mm ring puck + 28 mm USB-A head
+        <strong>Outer buddy:</strong> 111 &times; 107 &times; 110 mm (incl. ears)<br />
+        <strong>Arduino UNO Q (ABX00162):</strong> 68.58 &times; 53.34 mm (inside bay)<br />
+        <strong>8-in-1 Hub (TPX00241):</strong> External (cables exit rear notch)<br />
+        <strong>USB Camera (TPX00246):</strong> &Oslash; 62 mm ring puck + rear USB cable
       </div>
     </div>
   </aside>
@@ -269,7 +269,7 @@
     scene.background = new THREE.Color(0xf5f1e8);
 
     const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.5, 4000);
-    camera.position.set(-220, 185, 245);
+    camera.position.set(-165, 135, 185);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -282,7 +282,7 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.set(0, 72, 0);
+    controls.target.set(0, 52, 0);
 
     // Warm studio lighting + soft ground grid
     const hemi = new THREE.HemisphereLight(0xfffcf5, 0x9b9488, 1.15);
@@ -312,13 +312,12 @@
     scene.add(grid);
 
     const partsMeta = [
-      { key: "Shell_Top", label: "Buddy Body (Peach PLA)", color: "#f8b18a", explodeY: 78, explodeZ: 0 },
-      { key: "Privacy_Visor", label: "Sleep Mask (White PLA)", color: "#f6f4ef", explodeY: 78, explodeZ: 0 },
-      { key: "HW_Paws", label: "Paw Pads (White PLA)", color: "#f6f4ef", explodeY: 78, explodeZ: 0 },
+      { key: "Shell_Top", label: "Buddy Body (Peach PLA)", color: "#f8b18a", explodeY: 62, explodeZ: 0 },
+      { key: "Privacy_Visor", label: "Sleep Mask (White PLA)", color: "#f6f4ef", explodeY: 62, explodeZ: 0 },
+      { key: "HW_Paws", label: "Paw Pads (White PLA)", color: "#f6f4ef", explodeY: 62, explodeZ: 0 },
       { key: "Tray_Bottom", label: "Base Plinth (White PLA)", color: "#f6f4ef", explodeY: 0, explodeZ: 0 },
-      { key: "HW_Arduino_UNO_Q", label: "Arduino UNO Q", color: "#0b6e73", explodeY: 14, explodeZ: 0 },
-      { key: "HW_USB_C_Hub_8in1", label: "8-in-1 USB-C Hub", color: "#767b82", explodeY: 18, explodeZ: -18 },
-      { key: "HW_USB_Camera", label: "Arduino USB Camera", color: "#2d3033", explodeY: 36, explodeZ: 22 },
+      { key: "HW_Arduino_UNO_Q", label: "Arduino UNO Q", color: "#0b6e73", explodeY: 12, explodeZ: 0 },
+      { key: "HW_USB_Camera", label: "Arduino USB Camera", color: "#2d3033", explodeY: 32, explodeZ: 18 },
     ];
 
     const partObjects = {};
@@ -483,25 +482,25 @@
         obj.position.set(base.x, base.y + meta.explodeY * t, base.z + meta.explodeZ * t);
       });
       if (faceInlayNode && faceInlayBasePos) {
-        faceInlayNode.position.set(faceInlayBasePos.x, faceInlayBasePos.y + 78 * t, faceInlayBasePos.z);
+        faceInlayNode.position.set(faceInlayBasePos.x, faceInlayBasePos.y + 62 * t, faceInlayBasePos.z);
       }
       if (visorArmsNode && visorArmsBasePos) {
-        visorArmsNode.position.set(visorArmsBasePos.x, visorArmsBasePos.y + 78 * t, visorArmsBasePos.z);
+        visorArmsNode.position.set(visorArmsBasePos.x, visorArmsBasePos.y + 62 * t, visorArmsBasePos.z);
       }
       if (hingePinsNode && hingePinsBasePos) {
-        hingePinsNode.position.set(hingePinsBasePos.x, hingePinsBasePos.y + 78 * t, hingePinsBasePos.z);
+        hingePinsNode.position.set(hingePinsBasePos.x, hingePinsBasePos.y + 62 * t, hingePinsBasePos.z);
       }
       if (unoPinsNode && unoPinsBasePos) {
-        unoPinsNode.position.set(unoPinsBasePos.x, unoPinsBasePos.y + 14 * t, unoPinsBasePos.z);
+        unoPinsNode.position.set(unoPinsBasePos.x, unoPinsBasePos.y + 12 * t, unoPinsBasePos.z);
       }
     });
 
     // Camera view presets
     const views = {
-      iso: { pos: [-220, 185, 245], target: [0, 72, 0] },
-      top: { pos: [0, 315, 15], target: [0, 18, 0] },
-      rear: { pos: [175, 150, -245], target: [0, 56, 0] },
-      side: { pos: [-295, 100, 0], target: [0, 72, 0] },
+      iso: { pos: [-165, 135, 185], target: [0, 52, 0] },
+      top: { pos: [0, 240, 12], target: [0, 12, 0] },
+      rear: { pos: [135, 115, -185], target: [0, 44, 0] },
+      side: { pos: [-220, 75, 0], target: [0, 52, 0] },
     };
     document.querySelectorAll("[data-view]").forEach((btn) => {
       btn.addEventListener("click", () => {

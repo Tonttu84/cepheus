@@ -18,21 +18,24 @@ import bpy
 from mathutils import Euler, Matrix, Vector
 
 # ==============================================================================
-# DATASHEET-ACCURATE ENVELOPE + SPACIOUS CABLE BAY (mm)
+# COMPACT DATASHEET-ACCURATE ENVELOPE + SPACIOUS CABLE BAY (mm)
 # ==============================================================================
-OUTER_W = 162.0          # Cozy plump width (clears 119 mm TPX00241 + 175 mm pigtail)
-OUTER_D = 164.0          # Spacious depth: gives 53+ mm plug/cable bay in front of Hub
-BASE_TRAY_H = 26.0       # Clean white base plinth
-TOTAL_H = 152.0          # Head dome height (ears rise gently above)
-WALL = 3.8
-FLOOR_T = 3.2
+OUTER_W = 154.0          # Compact plump width (clears 119 mm TPX00241 + 175 mm pigtail)
+OUTER_D = 154.0          # Compact depth: clears UNO Q + Hub + 28 mm USB-A plug cleanly
+BASE_TRAY_H = 23.0       # Clean white base plinth
+TOTAL_H = 136.0          # Compact head dome height (cuts ~18% layer count vs 152 mm)
+WALL = 2.6               # 6-7 PLA perimeters: strong shell with ~32% less wall filament/time
+FLOOR_T = 2.4
 FRONT_TILT_DEG = 6.0
 
 # Camera window + Flip-Up Sleep Visor Pivot
-HEAD_PIVOT_Y = -6.0
-HEAD_PIVOT_Z = 92.0
+HEAD_PIVOT_Y = -5.5
+HEAD_PIVOT_Z = 80.0
 CAM_WINDOW_D = 56.0      # Clean front aperture (inner step seats Ø 62 mm TPX00246 puck)
 VISOR_OPEN_DEG = 56.0    # Flips UP 56 deg cleanly in front of the ears
+VISOR_SPAN_X = 146.0
+VISOR_R_IN = 74.8
+VISOR_R_OUT = 78.2
 
 # Arduino UNO Q (ABX00162) — 68.58 x 53.34 mm
 UNO_PCB_W = 68.58
@@ -41,8 +44,8 @@ UNO_PCB_T = 1.6
 UNO_STANDOFF_H = 5.0
 UNO_STANDOFF_OD = 6.4
 UNO_SCREW_HOLE_D = 2.7
-UNO_OFFSET_X = 48.0      # Leaves ~48 mm on left for 175 mm USB-C cable curve
-UNO_OFFSET_Y = 8.0       # Front bay: Y = -74.0 .. -20.66 mm
+UNO_OFFSET_X = 44.0      # Leaves ~38 mm on left for 175 mm USB-C cable curve
+UNO_OFFSET_Y = 12.0      # Front bay: Y = -65.0 .. -11.66 mm (+4.1 mm corner clear)
 UNO_HOLES = [
     (13.97, 2.54),
     (15.24, 50.80),
@@ -51,22 +54,22 @@ UNO_HOLES = [
 ]
 
 # Arduino USB-C Hub 8-in-1 (TPX00241) — 119 x 27.8 x 16 mm
-# Placed in rear bay with 53.8 mm open plug/bend clearance in front of USB-A ports B2 & B3!
+# Placed in rear bay with ~40 mm plug/bend space in front of USB-A ports (+11.8 mm past 28 mm plug)
 HUB_W = 119.0
 HUB_D = 27.8
 HUB_H = 16.0
-HUB_CENTER_Y = 47.0      # Y = +33.1 .. +60.9 mm
+HUB_CENTER_Y = 42.0      # Y = +28.1 .. +55.9 mm
 REAR_HUB_WINDOW_W = 92.0
 REAR_HUB_WINDOW_H = 16.5
 
 # Arduino USB Camera (TPX00246) — Ø 62 mm round ring-light puck + 60 x 40 mm clip
 CAM_HEAD_D = 62.0
 CAM_HEAD_T = 22.0
-CAM_CENTER_Z = 94.0
+CAM_CENTER_Z = 82.0
 
 # Sculpted cute front paws on lower belly (replaces physical buttons)
-PAW_SPACING = 68.0
-PAW_CENTER_Z = 42.0
+PAW_SPACING = 62.0
+PAW_CENTER_Z = 37.0
 
 # Screwless Shell Connectors (Front Hook + 2 PLA-Safe Cantilever Snap-Tabs + Split Visor Pins)
 LIP_H = 2.8
@@ -74,13 +77,12 @@ LIP_CLEARANCE = 0.25
 SNAP_Y = 12.0            # Side snap-tab center Y (between UNO Q and Hub)
 SNAP_W = 14.0            # Tab width along Y
 SNAP_ARM_T = 1.6         # Flex arm thickness
-SNAP_ARM_H = 11.0        # Flex height above BASE_TRAY_H
-SNAP_BARB_OUT = 1.0      # Outward catch barb depth
+SNAP_ARM_H = 10.0        # Flex height above BASE_TRAY_H
+SNAP_BARB_OUT = 0.85     # Outward catch barb depth
 VISOR_PIN_D = 8.0        # Compliant split snap-pin diameter on HingeNub
 VISOR_HOLE_D = 8.4       # Matching bore in VisorPivot (0.2 mm radial clearance)
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
-STL_DIR = os.path.join(OUT_DIR, "stl")
 
 
 # ==============================================================================
@@ -157,21 +159,22 @@ def superellipse_point(theta, rx, ry, power=2.5):
 def buddy_section_params(z, shrink=0.0):
     h = TOTAL_H - shrink
     z_clamped = max(0.0, min(z, h))
+    t2 = TOTAL_H * 0.565
 
-    if z_clamped < 26.0:
-        u = z_clamped / 26.0
-        w_scale = 0.93 + 0.07 * math.sin(u * math.pi * 0.5)
-    elif z_clamped < 86.0:
-        u = (z_clamped - 26.0) / 60.0
+    if z_clamped < BASE_TRAY_H:
+        u = z_clamped / BASE_TRAY_H
+        w_scale = 0.95 + 0.05 * math.sin(u * math.pi * 0.5)
+    elif z_clamped < t2:
+        u = (z_clamped - BASE_TRAY_H) / max(1.0, t2 - BASE_TRAY_H)
         w_scale = 1.0 - 0.08 * (u ** 1.4)
     else:
-        u = min(1.0, (z_clamped - 86.0) / max(1.0, h - 86.0))
+        u = min(1.0, (z_clamped - t2) / max(1.0, h - t2))
         w_scale = 0.92 * math.sqrt(max(0.03, 1.0 - (u ** 2.0) * 0.97))
 
     rx = max(4.0, (OUTER_W / 2.0) * w_scale - shrink)
     ry = max(4.0, (OUTER_D / 2.0) * w_scale - shrink)
     lean_y = z_clamped * math.tan(math.radians(FRONT_TILT_DEG)) * 0.40
-    power = 2.65 - 0.65 * max(0.0, (z_clamped - 55.0) / max(1.0, TOTAL_H - 55.0))
+    power = 3.20 - 1.20 * max(0.0, (z_clamped - TOTAL_H * 0.36) / max(1.0, TOTAL_H * 0.64))
     return rx, ry, lean_y, power
 
 
@@ -335,7 +338,7 @@ def create_ellipsoid(name, rx, ry, rz, u_segs=32, v_segs=24):
     return obj
 
 
-def wrap_2d_polygon_on_cylinder(name, pts_2d, dr_back, dr_front, half_x=77.0, r_out=83.0):
+def wrap_2d_polygon_on_cylinder(name, pts_2d, dr_back, dr_front, half_x=VISOR_SPAN_X / 2.0, r_out=VISOR_R_OUT):
     """Projects a 2D (px, pz) polygon onto the exact curved Privacy_Visor outer surface."""
     mesh = bpy.data.meshes.new(name)
     obj = bpy.data.objects.new(name, mesh)
@@ -438,7 +441,7 @@ def create_front_hook_wedge(name, width_x, height_z, depth_y):
     return obj
 
 
-def create_flip_sleep_visor(name, x_span=154.0, r_in=79.2, r_out=83.0, theta_min_deg=-28.0, theta_max_deg=36.0):
+def create_flip_sleep_visor(name, x_span=VISOR_SPAN_X, r_in=VISOR_R_IN, r_out=VISOR_R_OUT, theta_min_deg=-28.0, theta_max_deg=36.0):
     """
     100% solid-filament curved Sleep Mask (prints upright with 0 supports on the sleeping face!)
     plus detachable flat-printed Visor Arms & Hinge Snap-Pins for support-free PLA printing.
@@ -489,7 +492,7 @@ def create_flip_sleep_visor(name, x_span=154.0, r_in=79.2, r_out=83.0, theta_min
     # Side peg sockets on Privacy_Visor so the flat-printed Visor Arms snap/glue cleanly onto the mask edges
     for side in [-1.0, 1.0]:
         tab_slot = create_rounded_prism(f"VisorArmSlot_{side}", 4.0, 6.0, 12.0, 0.5, -6.0)
-        tab_slot.location = Vector((side * (half_x - 2.0), -69.5, 0.0))
+        tab_slot.location = Vector((side * (half_x - 2.0), -65.3, 0.0))
         apply_boolean(obj, tab_slot, "DIFFERENCE")
 
     # Cute debossed sleeping eyes `( ◡   ◡ )` + eyelashes + tiny smile directly on the white visor STL!
@@ -519,14 +522,14 @@ def build_visor_arms_and_pins():
     Separate flat-printable side temple arms (`Visor_Arms`) + 2 compliant split snap-pins (`Hinge_Pins`)
     so there are ZERO horizontal cantilevers or supports during PLA printing!
     """
-    half_x = 154.0 / 2.0
+    half_x = VISOR_SPAN_X / 2.0
     arms = []
     for side in [-1.0, 1.0]:
-        arm = create_rounded_prism(f"VisorArm_{side}", 5.0, 74.0, 11.5, 2.4, -5.75)
-        arm.location = Vector((side * (half_x - 1.6), -36.0, 0.0))
+        arm = create_rounded_prism(f"VisorArm_{side}", 5.0, 70.0, 11.5, 2.4, -5.75)
+        arm.location = Vector((side * (half_x - 1.6), -34.0, 0.0))
 
         tab = create_rounded_prism(f"ArmFrontTab_{side}", 3.6, 5.5, 11.0, 0.4, -5.5)
-        tab.location = Vector((side * (half_x - 2.0), -71.0, 0.0))
+        tab.location = Vector((side * (half_x - 2.0), -66.8, 0.0))
         apply_boolean(arm, tab, "UNION")
 
         ear_pivot = create_cylinder(f"VisorPivot_{side}", 22.0, 5.5, 36)
@@ -556,20 +559,20 @@ def build_visor_arms_and_pins():
     for side in [-1.0, 1.0]:
         shaft = create_cylinder(f"HingePin_{side}", VISOR_PIN_D, 13.0, 32)
         shaft.rotation_euler = Euler((0.0, math.pi / 2.0, 0.0), "XYZ")
-        shaft.location = Vector((side * 73.5, 0.0, 0.0))
+        shaft.location = Vector((side * 70.0, 0.0, 0.0))
 
         cap = create_cylinder(f"HingeCap_{side}", VISOR_PIN_D + 1.6, 1.8, 32)
         cap.rotation_euler = Euler((0.0, math.pi / 2.0, 0.0), "XYZ")
-        cap.location = Vector((side * 79.2, 0.0, 0.0))
+        cap.location = Vector((side * 75.7, 0.0, 0.0))
         apply_boolean(shaft, cap, "UNION")
 
         inner_lip = create_cylinder(f"HingeInnerLip_{side}", VISOR_PIN_D + 0.8, 1.8, 32)
         inner_lip.rotation_euler = Euler((0.0, math.pi / 2.0, 0.0), "XYZ")
-        inner_lip.location = Vector((side * 67.6, 0.0, 0.0))
+        inner_lip.location = Vector((side * 64.1, 0.0, 0.0))
         apply_boolean(shaft, inner_lip, "UNION")
 
         split = create_rounded_prism(f"HingeSplit_{side}", 7.0, 12.0, 1.5, 0.2, -0.75)
-        split.location = Vector((side * 69.5, 0.0, 0.0))
+        split.location = Vector((side * 66.0, 0.0, 0.0))
         apply_boolean(shaft, split, "DIFFERENCE")
         pins.append(shaft)
 
@@ -634,7 +637,7 @@ def build_uno_click_pins():
     stl_pins = []
     for idx in range(4):
         p = make_one_pin(f"UnoPinSTL_{idx}")
-        p.rotation_euler = Euler((-math.pi / 2.0, 0.0, 0.0), "XYZ")
+        p.rotation_euler = Euler((math.pi / 2.0, 0.0, 0.0), "XYZ")
         p.location = Vector((-13.5 + idx * 9.0, 0.0, 1.28))
         bpy.ops.object.select_all(action="DESELECT")
         p.select_set(True)
@@ -646,7 +649,7 @@ def build_uno_click_pins():
     return glb_group, stl_group
 
 
-def export_split_flat_stl(obj, x_split_offset, filename):
+def export_split_flat_stl(obj, x_split_offset, filename, flip_z=False):
     """Exports Left & Right halves side-by-side flat on Z=0 for 0-support PLA printing."""
     dup_l = obj.copy()
     dup_l.data = obj.data.copy()
@@ -667,7 +670,9 @@ def export_split_flat_stl(obj, x_split_offset, filename):
     bm.to_mesh(dup_r.data)
     bm.free()
 
-    for d, rot_y, x_pos in [(dup_l, math.pi / 2.0, -x_split_offset), (dup_r, -math.pi / 2.0, x_split_offset)]:
+    rot_l = -math.pi / 2.0 if flip_z else math.pi / 2.0
+    rot_r = math.pi / 2.0 if flip_z else -math.pi / 2.0
+    for d, rot_y, x_pos in [(dup_l, rot_l, -x_split_offset), (dup_r, rot_r, x_split_offset)]:
         d.location = Vector((0.0, 0.0, 0.0))
         d.rotation_euler = Euler((0.0, rot_y, 0.0), "XYZ")
         bpy.ops.object.select_all(action="DESELECT")
@@ -836,9 +841,9 @@ def build_bottom_tray():
 
     # 1) Screwless Front Tongue Hook (reuses tested 45-deg ramped wedge rotated -90 deg -> points -Y)
     _, ry_lip, cy_lip, _ = buddy_section_params(BASE_TRAY_H, shrink=WALL * 0.52)
-    front_hook = create_snap_barb_wedge("FrontHookTab", 18.0, 2.4, 1.8, 1.0)
+    front_hook = create_snap_barb_wedge("FrontHookTab", 18.0, 2.2, 1.2, 1.0)
     front_hook.rotation_euler = Euler((0.0, 0.0, -math.pi / 2.0), "XYZ")
-    front_hook.location = Vector((0.0, cy_lip - ry_lip + 0.65, BASE_TRAY_H + 1.5))
+    front_hook.location = Vector((0.0, cy_lip - ry_lip + 0.85, BASE_TRAY_H + 1.4))
     apply_boolean(tray, front_hook, "UNION")
 
     # 2) Two Wide PLA-Safe Cantilever Snap-Tabs at left & right (X = ±75 mm, Y = +12 mm)
@@ -877,18 +882,18 @@ def build_top_shell():
     )
     apply_boolean(shell, groove, "DIFFERENCE")
 
-    # 1) Matching Front Hook Pocket inside front wall (1.4 mm deep so outer wall never breaks through)
+    # 1) Matching Front Hook Pocket inside front wall (>1.0 mm solid outer wall, zero breakthrough)
     _, ry_lip, cy_lip, _ = buddy_section_params(BASE_TRAY_H, shrink=WALL * 0.52)
-    hook_pocket = create_rounded_prism("FrontHookPocket", 23.4, 2.4, 2.8, 0.4, BASE_TRAY_H + 0.6)
-    hook_pocket.location = Vector((0.0, cy_lip - ry_lip - 0.3, 0.0))
+    hook_pocket = create_rounded_prism("FrontHookPocket", 22.0, 1.6, 2.6, 0.3, BASE_TRAY_H + 0.6)
+    hook_pocket.location = Vector((0.0, cy_lip - ry_lip + 0.50, 0.0))
     apply_boolean(shell, hook_pocket, "DIFFERENCE")
 
     # 2) Two Snap-Tab Catch Pockets inside left & right walls (no floating bosses!)
     rx_lip, _, _, _ = buddy_section_params(BASE_TRAY_H, shrink=WALL)
     for side in [-1.0, 1.0]:
-        pocket_x = side * (rx_lip + 0.3)
+        pocket_x = side * (rx_lip + 0.2)
         snap_pocket = create_rounded_prism(
-            f"SnapPocket_{side}", 2.6, SNAP_W + 1.4, 3.6, 0.6, BASE_TRAY_H + SNAP_ARM_H - 3.6
+            f"SnapPocket_{side}", 2.0, SNAP_W + 1.4, 3.6, 0.6, BASE_TRAY_H + SNAP_ARM_H - 3.6
         )
         snap_pocket.location = Vector((pocket_x, SNAP_Y, 0.0))
         apply_boolean(shell, snap_pocket, "DIFFERENCE")
@@ -901,25 +906,25 @@ def build_top_shell():
 
     # Cute soft rounded ears (seated safely behind flipped-up visor)
     for side in [-1.0, 1.0]:
-        ear = create_ellipsoid(f"CuteEar_{side}", 16.0, 12.0, 20.0, 32, 24)
+        ear = create_ellipsoid(f"CuteEar_{side}", 14.5, 11.0, 18.0, 32, 24)
         ear.rotation_euler = Euler((math.radians(-8.0), side * math.radians(-16.0), 0.0), "XYZ")
-        ear.location = Vector((side * 46.0, 16.0, 140.0))
+        ear.location = Vector((side * 42.0, 14.0, TOTAL_H - 11.0))
         apply_boolean(shell, ear, "UNION")
 
     # Cute chubby side arms & visor hinge sockets (NO horizontal pins sticking out -> zero external supports!)
     for side in [-1.0, 1.0]:
         hinge_nub = create_ellipsoid(f"HingeNub_{side}", 7.5, 10.0, 10.0, 28, 20)
-        hinge_nub.location = Vector((side * 69.5, HEAD_PIVOT_Y, HEAD_PIVOT_Z))
+        hinge_nub.location = Vector((side * 66.0, HEAD_PIVOT_Y, HEAD_PIVOT_Z))
         apply_boolean(shell, hinge_nub, "UNION")
 
         pin_socket = create_cylinder(f"HingeSocket_{side}", VISOR_HOLE_D, 14.0, 32)
         pin_socket.rotation_euler = Euler((0.0, math.pi / 2.0, 0.0), "XYZ")
-        pin_socket.location = Vector((side * 69.5, HEAD_PIVOT_Y, HEAD_PIVOT_Z))
+        pin_socket.location = Vector((side * 66.0, HEAD_PIVOT_Y, HEAD_PIVOT_Z))
         apply_boolean(shell, pin_socket, "DIFFERENCE")
 
-        arm_nub = create_ellipsoid(f"ChubbyArm_{side}", 11.0, 15.0, 18.0, 28, 20)
+        arm_nub = create_ellipsoid(f"ChubbyArm_{side}", 10.0, 14.0, 16.0, 28, 20)
         arm_nub.rotation_euler = Euler((math.radians(14.0), side * math.radians(12.0), 0.0), "XYZ")
-        arm_nub.location = Vector((side * 73.0, -8.0, 56.0))
+        arm_nub.location = Vector((side * 69.0, -7.0, 50.0))
         apply_boolean(shell, arm_nub, "UNION")
 
     # Cute sculpted front PAWS directly on lower belly (solid body, zero button cutouts!)
@@ -1118,12 +1123,13 @@ def assign_enclosure_materials(tray, shell, visor):
     set_obj_material(visor, mat_white)
 
 
-def export_stl_object(obj, filename, target_dir=STL_DIR):
-    os.makedirs(target_dir, exist_ok=True)
+def export_stl_object(obj, filename):
     bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
-    path = os.path.join(target_dir, filename)
+    stl_dir = os.path.join(OUT_DIR, "stl")
+    os.makedirs(stl_dir, exist_ok=True)
+    path = os.path.join(stl_dir, filename)
     bpy.ops.wm.stl_export(
         filepath=path,
         export_selected_objects=True,
@@ -1263,32 +1269,36 @@ def shift_mesh_to_bed(obj, target_xy=None):
         v.co.z -= min_z
 
 
-def build_flat_paw_pads_stl(paws_obj):
-    """Creates a bed-flat copy of left+right paw pads sitting at Z=0 for clean printing."""
-    dup = paws_obj.copy()
-    dup.data = paws_obj.data.copy()
-    bpy.context.collection.objects.link(dup)
-    # Center around X=0, Y=0 and lay flat facing +Z
-    xs = [v.co.x for v in dup.data.vertices]
-    ys = [v.co.y for v in dup.data.vertices]
-    zs = [v.co.z for v in dup.data.vertices]
-    cx, cy, cz = (min(xs) + max(xs)) * 0.5, (min(ys) + max(ys)) * 0.5, (min(zs) + max(zs)) * 0.5
-    for v in dup.data.vertices:
-        v.co -= Vector((cx, cy, cz))
-    dup.rotation_euler = Euler((-math.pi / 2.0, 0.0, 0.0), "XYZ")
-    bpy.ops.object.select_all(action="DESELECT")
-    dup.select_set(True)
-    bpy.context.view_layer.objects.active = dup
-    bpy.ops.object.transform_apply(rotation=True)
-    shift_mesh_to_bed(dup, (0.0, 0.0))
-    return dup
+def build_flat_paw_pads_stl():
+    """Creates a bed-flat pair of paw pads lying on Z=0 (~4.7 mm tall, 0 supports)."""
+    paw_objs = []
+    for side in [-1.0, 1.0]:
+        parts = []
+        main_pad = create_ellipsoid(f"FlatMainPad_{side}", 5.6, 1.8, 4.2, 24, 16)
+        main_pad.location = Vector((0.0, 0.0, -1.5))
+        parts.append(main_pad)
+        for b_idx, (bx, bz) in enumerate([(-5.2, 4.2), (0.0, 5.6), (5.2, 4.2)]):
+            bean = create_ellipsoid(f"FlatToeBean_{side}_{b_idx}", 2.2, 1.8, 2.5, 20, 14)
+            bean.location = Vector((bx, 1.1, bz))
+            parts.append(bean)
+        one_paw = join_objects(parts, f"FlatPaw_{side}")
+        one_paw.rotation_euler = Euler((math.pi / 2.0, 0.0, 0.0), "XYZ")
+        one_paw.location = Vector((side * 14.0, 0.0, 0.0))
+        bpy.ops.object.select_all(action="DESELECT")
+        one_paw.select_set(True)
+        bpy.context.view_layer.objects.active = one_paw
+        bpy.ops.object.transform_apply(location=True, rotation=True)
+        paw_objs.append(one_paw)
+
+    flat_paws = join_objects(paw_objs, "Flat_Paw_Pads")
+    shift_mesh_to_bed(flat_paws, (0.0, 0.0))
+    return flat_paws
 
 
-def export_combined_plates(tray, shell, visor, arms, pins, uno_pins_stl, flat_paws):
+def export_small_parts_plate(visor_stl, uno_pins_stl, flat_paws):
     """
-    Exports:
-      - cepheus_white_plate.stl (all White PLA parts neatly arranged on Z=0)
-      - cepheus_all_parts.stl   (every printable part in one single STL file on Z=0)
+    Exports cepheus_small_parts_plate.stl with all 5 small parts arranged flat on one build plate
+    (max Z = 15.8 mm) so every small part prints together in minimum time.
     """
     def clone_at(src, rot_z_deg, target_xy):
         d = src.copy()
@@ -1303,9 +1313,8 @@ def export_combined_plates(tray, shell, visor, arms, pins, uno_pins_stl, flat_pa
         shift_mesh_to_bed(d, target_xy)
         return d
 
-    def clone_split_flat_arms(src, x_split, rot_z_deg, target_xy):
-        # Reuse already-exported flat STL cleanly via import so exact flat orientation is preserved
-        bpy.ops.wm.stl_import(filepath=os.path.join(STL_DIR, src))
+    def import_stl_at(src_name, rot_z_deg, target_xy):
+        bpy.ops.wm.stl_import(filepath=os.path.join(OUT_DIR, "stl", src_name))
         d = bpy.context.selected_objects[0]
         d.rotation_euler = Euler((0.0, 0.0, math.radians(rot_z_deg)), "XYZ")
         bpy.ops.object.select_all(action="DESELECT")
@@ -1315,25 +1324,15 @@ def export_combined_plates(tray, shell, visor, arms, pins, uno_pins_stl, flat_pa
         shift_mesh_to_bed(d, target_xy)
         return d
 
-    # White parts plate (~245 x 170 mm):
-    #   Tray_Bottom centered at (-38, 0)
-    #   Privacy_Visor rotated 90 deg at (+64, 0)
-    #   Visor_Arms at (+102, +34), Hinge_Pins at (+102, -30), UNO_Pins at (+102, -55), Paw_Pads at (+102, -78)
-    w_tray = clone_at(tray, 0.0, (-38.0, 0.0))
-    w_visor = clone_at(visor, 90.0, (56.0, 0.0))
-    w_arms = clone_split_flat_arms("cepheus_visor_arms.stl", 16.0, 0.0, (98.0, 34.0))
-    w_pins = clone_split_flat_arms("cepheus_hinge_pins.stl", 10.0, 0.0, (98.0, -22.0))
-    w_uno = clone_at(uno_pins_stl, 0.0, (98.0, -44.0))
-    w_paws = clone_at(flat_paws, 0.0, (86.0, -68.0))
+    p_visor = clone_at(visor_stl, 0.0, (-36.0, 22.0))
+    p_arms = import_stl_at("cepheus_visor_arms.stl", 0.0, (86.0, 22.0))
+    p_paws = clone_at(flat_paws, 0.0, (-36.0, -42.0))
+    p_pins = import_stl_at("cepheus_hinge_pins.stl", 0.0, (86.0, -34.0))
+    p_uno = clone_at(uno_pins_stl, 0.0, (86.0, -56.0))
 
-    white_plate = join_objects([w_tray, w_visor, w_arms, w_pins, w_uno, w_paws], "Cepheus_White_Plate")
-    export_stl_object(white_plate, "cepheus_white_plate.stl", target_dir=OUT_DIR)
-
-    # Combined single-STL of ALL parts (Peach Shell_Top beside White Plate):
-    a_shell = clone_at(shell, 0.0, (-212.0, 0.0))
-    all_parts = join_objects([white_plate, a_shell], "Cepheus_All_Parts")
-    export_stl_object(all_parts, "cepheus_all_parts.stl", target_dir=OUT_DIR)
-    bpy.data.objects.remove(all_parts, do_unlink=True)
+    small_plate = join_objects([p_visor, p_arms, p_paws, p_pins, p_uno], "Cepheus_Small_Parts_Plate")
+    export_stl_object(small_plate, "cepheus_small_parts_plate.stl")
+    bpy.data.objects.remove(small_plate, do_unlink=True)
 
 
 def main():
@@ -1364,35 +1363,37 @@ def main():
     export_stl_object(shell, "cepheus_top_shell.stl")
     shell.location.z = 0.0
 
+    # Tilt Privacy_Visor -86 deg around X so it lies level face-up (15.8 mm tall vs 87.8 mm upright!)
     saved_v_loc = visor.location.copy()
-    visor.location = Vector((0.0, 0.0, 0.0))
     visor_stl = visor.copy()
     visor_stl.data = visor.data.copy()
     bpy.context.collection.objects.link(visor_stl)
-    shift_mesh_to_bed(visor_stl)
+    visor_stl.location = Vector((0.0, 0.0, 0.0))
+    visor_stl.rotation_euler = Euler((math.radians(-86.0), 0.0, 0.0), "XYZ")
+    bpy.ops.object.select_all(action="DESELECT")
+    visor_stl.select_set(True)
+    bpy.context.view_layer.objects.active = visor_stl
+    bpy.ops.object.transform_apply(rotation=True)
+    shift_mesh_to_bed(visor_stl, (0.0, 0.0))
     export_stl_object(visor_stl, "cepheus_privacy_visor.stl")
-    bpy.data.objects.remove(visor_stl, do_unlink=True)
-    visor.location = saved_v_loc
 
-    # Export arms & pins flat on Z=0 side-by-side for 100% support-free PLA printing
+    # Export arms flat & pins wide-cap-down on Z=0 for 0-support PLA printing
     export_split_flat_stl(arms, 16.0, "cepheus_visor_arms.stl")
-    export_split_flat_stl(pins, 10.0, "cepheus_hinge_pins.stl")
+    export_split_flat_stl(pins, 10.0, "cepheus_hinge_pins.stl", flip_z=True)
 
-    flat_paws = build_flat_paw_pads_stl(paws)
+    flat_paws = build_flat_paw_pads_stl()
     export_stl_object(flat_paws, "cepheus_paw_pads.stl")
 
     shift_mesh_to_bed(uno_pins_stl)
     export_stl_object(uno_pins_stl, "cepheus_uno_pins.stl")
 
-    # Export combined build-plate STLs (1 White plate + 1 All-in-one STL)
-    shell.location.z = -BASE_TRAY_H
-    visor.location = Vector((0.0, 0.0, 0.0))
-    export_combined_plates(tray, shell, visor, arms, pins, uno_pins_stl, flat_paws)
-    shell.location.z = 0.0
-    visor.location = saved_v_loc
+    # Export all 5 small parts combined onto one fast plate STL
+    export_small_parts_plate(visor_stl, uno_pins_stl, flat_paws)
 
+    bpy.data.objects.remove(visor_stl, do_unlink=True)
     bpy.data.objects.remove(flat_paws, do_unlink=True)
     bpy.data.objects.remove(uno_pins_stl, do_unlink=True)
+    visor.location = saved_v_loc
 
     for obj in [tray, shell, visor, arms, pins, paws, uno_pins_glb]:
         set_smooth_shading(obj)

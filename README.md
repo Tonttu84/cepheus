@@ -105,6 +105,7 @@ Playwright.
 | `src/usecases/` | Application use cases checking access and coordinating domain rules |
 | `src/server/` | Database persistence, security helpers, Fitbit client, monitoring store |
 | `src/app/` | Next.js screens, prototypes, and API routes for sync and ingest |
+| `hardware/` | Arduino UNO Q edge monitor (`hardware/uno-q/`) and 3D-printable Desk Buddy enclosure (`hardware/enclosure/`) |
 | `docs/` | Architecture plans, decisions (`docs/decisions.md`), and research checks |
 
 ## Run it
