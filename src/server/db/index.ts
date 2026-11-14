@@ -3,7 +3,8 @@ import { getPrisma } from "@/lib/db";
 import type { Ports } from "@/usecases/ports";
 import { createAccessLogRepository } from "./access-log";
 import { createCallRepository } from "./calls";
-import { createDbContext } from "./context";
+import { getEnv } from "@/server/env";
+import { createDbContext, type DbContextOptions } from "./context";
 import { createCrisisRepository } from "./crisis";
 import {
   createBaselineNotWellRepository,
@@ -15,8 +16,16 @@ import { createPatientRepository } from "./patients";
 import { createPhq9Repository } from "./phq9";
 import { createRoundRepository } from "./rounds";
 
-export function createPrismaPorts(prisma: PrismaClient = getPrisma()): Ports {
-  const ctx = createDbContext(prisma);
+/**
+ * The use case ports on PostgreSQL. Item answers are written to the database
+ * only when `storeItemAnswers` is on (`STORE_ITEM_ANSWERS` by default);
+ * otherwise in-progress answers live in the process's shared memory store.
+ */
+export function createPrismaPorts(
+  prisma: PrismaClient = getPrisma(),
+  options: DbContextOptions = { storeItemAnswers: getEnv().STORE_ITEM_ANSWERS }
+): Ports {
+  const ctx = createDbContext(prisma, options);
 
   return {
     clock: { now: () => new Date().toISOString() },
