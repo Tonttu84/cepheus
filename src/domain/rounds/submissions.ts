@@ -18,6 +18,93 @@ export interface SubmissionApplicationResult {
 }
 
 /**
+ * Checks whether a PHQ-9 submission must be refused.
+ * Returns an error message if refused, or null if accepted.
+ */
+function checkPhq9Refusal(ctx: Phq9SubmissionContext): string | null {
+  let isRoundOpen = ctx.isRoundOpen;
+  if (isRoundOpen === undefined) {
+    if (ctx.round && ctx.moment) {
+      const curMs =
+        typeof ctx.moment === "string"
+          ? new Date(ctx.moment).getTime()
+          : ctx.moment.getTime();
+      const openMs = new Date(ctx.round.opensAt).getTime();
+      const endMs = new Date(ctx.round.endsAt).getTime();
+      isRoundOpen = curMs >= openMs && curMs < endMs;
+    } else {
+      isRoundOpen = true;
+    }
+  }
+
+  if (!isRoundOpen) {
+    return "Cannot submit PHQ-9: round is not open";
+  }
+
+  if (!ctx.isDue) {
+    return "Cannot submit PHQ-9: PHQ-9 is not due in this round";
+  }
+
+  const roundStatus: RoundStatus | null =
+    ctx.roundStatus !== undefined
+      ? ctx.roundStatus
+      : ctx.currentSubmission
+      ? ctx.currentSubmission.kind === "answer"
+        ? "answered"
+        : "not_today"
+      : null;
+
+  if (roundStatus === "not_today") {
+    return "Cannot submit PHQ-9 after 'Not today'";
+  }
+
+  if (roundStatus !== "answered") {
+    return "Cannot submit PHQ-9 before taps are answered";
+  }
+
+  return null;
+}
+
+/**
+ * Moves PHQ-9 progress forward according to Requirement 3 and Ruling (b):
+ * - Moves progress forward and never backward:
+ *   - "not_started" -> "unfinished" or "completed"
+ *   - "unfinished" -> "completed"
+ *   - "completed" stays "completed"
+ * - Duplicate submissions report isDuplicate: true.
+ */
+function advancePhq9Progress(
+  currentProgress: Phq9Progress,
+  targetProgress: "unfinished" | "completed"
+): Phq9ApplicationResult {
+  if (currentProgress === "completed") {
+    return {
+      progress: "completed",
+      isDuplicate: true,
+    };
+  }
+
+  if (currentProgress === "unfinished") {
+    if (targetProgress === "completed") {
+      return {
+        progress: "completed",
+        isDuplicate: false,
+      };
+    }
+    return {
+      progress: "unfinished",
+      isDuplicate: true,
+    };
+  }
+
+  // currentProgress is "not_started"
+  return {
+    progress: targetProgress,
+    isDuplicate: false,
+  };
+}
+
+/**
  * Applies a PHQ-9 submission to update PHQ-9 progress in a round.
  * Requirement 3, Ruling (b) & Review finding 1:
  * - Accepted any time the round is open, the PHQ-9 is due in it, and the taps have been answered.
@@ -52,45 +139,9 @@ export function applyPhq9Submission(
     ctx = context ?? { isDue: true };
   }
 
-  // Determine whether the round is open
-  let isRoundOpen = ctx.isRoundOpen;
-  if (isRoundOpen === undefined) {
-    if (ctx.round && ctx.moment) {
-      const curMs =
-        typeof ctx.moment === "string"
-          ? new Date(ctx.moment).getTime()
-          : ctx.moment.getTime();
-      const openMs = new Date(ctx.round.opensAt).getTime();
-      const endMs = new Date(ctx.round.endsAt).getTime();
-      isRoundOpen = curMs >= openMs && curMs < endMs;
-    } else {
-      isRoundOpen = true;
-    }
-  }
-
-  if (!isRoundOpen) {
-    return { ok: false, error: "Cannot submit PHQ-9: round is not open" };
-  }
-
-  if (!ctx.isDue) {
-    return { ok: false, error: "Cannot submit PHQ-9: PHQ-9 is not due in this round" };
-  }
-
-  const roundStatus: RoundStatus | null =
-    ctx.roundStatus !== undefined
-      ? ctx.roundStatus
-      : ctx.currentSubmission
-      ? ctx.currentSubmission.kind === "answer"
-        ? "answered"
-        : "not_today"
-      : null;
-
-  if (roundStatus === "not_today") {
-    return { ok: false, error: "Cannot submit PHQ-9 after 'Not today'" };
-  }
-
-  if (roundStatus !== "answered") {
-    return { ok: false, error: "Cannot submit PHQ-9 before taps are answered" };
+  const refusalError = checkPhq9Refusal(ctx);
+  if (refusalError) {
+    return { ok: false, error: refusalError };
   }
 
   const targetProgress =
@@ -102,42 +153,9 @@ export function applyPhq9Submission(
     };
   }
 
-  if (currentProgress === "completed") {
-    return {
-      ok: true,
-      value: {
-        progress: "completed",
-        isDuplicate: true,
-      },
-    };
-  }
-
-  if (currentProgress === "unfinished") {
-    if (targetProgress === "completed") {
-      return {
-        ok: true,
-        value: {
-          progress: "completed",
-          isDuplicate: false,
-        },
-      };
-    }
-    return {
-      ok: true,
-      value: {
-        progress: "unfinished",
-        isDuplicate: true,
-      },
-    };
-  }
-
-  // currentProgress is "not_started"
   return {
     ok: true,
-    value: {
-      progress: targetProgress,
-      isDuplicate: false,
-    },
+    value: advancePhq9Progress(currentProgress, targetProgress),
   };
 }
 

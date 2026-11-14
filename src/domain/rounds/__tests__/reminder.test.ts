@@ -326,3 +326,81 @@ describe("reminder time zone resolution and missing time zone handling", () => {
     ).toBe(false);
   });
 });
+
+describe("reminder due time on clock-change days (Europe/Helsinki)", () => {
+  const timeZone = "Europe/Helsinki";
+
+  it("spring forward: round opened Saturday 28 March 2026, reminder due Sunday 29 March 2026 at 09:00 local (06:00 UTC)", () => {
+    // Hand-worked UTC instants for Europe/Helsinki (clocks went forward that night):
+    // Round opens on Saturday 28 March 2026 (EET, UTC+2).
+    // On the night between Saturday 28 and Sunday 29 March 2026, clocks spring forward at 03:00 to 04:00 (EET UTC+2 -> EEST UTC+3).
+    // The reminder is due at 09:00 local wall clock on Sunday 29 March 2026.
+    // In EEST (UTC+3), 09:00 local is 06:00:00 UTC (not 07:00 UTC):
+    //   09:00 local - 3 hours offset = 06:00:00 UTC.
+    // One minute before 09:00 local (08:59 local) is:
+    //   08:59 local - 3 hours offset = 05:59:00 UTC.
+    //
+    // If a naive calculation added 24 hours to Saturday 09:00 local (07:00 UTC),
+    // it would incorrectly produce 07:00 UTC instead of 06:00 UTC.
+    const round: Round = {
+      number: 1,
+      localDate: "2026-03-28", // Saturday
+      opensAt: "2026-03-28T10:00:00.000Z", // Saturday 12:00 EET
+      endsAt: "2026-03-31T10:00:00.000Z", // Tuesday 13:00 EEST
+    };
+
+    expect(getReminderDueInstant(round, timeZone)).toBe("2026-03-29T06:00:00.000Z");
+
+    // Check one minute before (08:59 local = 05:59 UTC): not due
+    const oneMinuteBefore = "2026-03-29T05:59:00.000Z";
+    expect(isReminderDue(round, { moment: oneMinuteBefore, timeZone })).toBe(false);
+    expect(checkReminder(round, { moment: oneMinuteBefore, timeZone })).toEqual({
+      due: false,
+      reason: "reminder time has not arrived yet",
+    });
+
+    // Check exactly at the instant (09:00 local = 06:00 UTC): due
+    const exactlyAtInstant = "2026-03-29T06:00:00.000Z";
+    expect(isReminderDue(round, { moment: exactlyAtInstant, timeZone })).toBe(true);
+    expect(checkReminder(round, { moment: exactlyAtInstant, timeZone })).toEqual({
+      due: true,
+    });
+  });
+
+  it("fall back: round opened Saturday 24 October 2026, reminder due Sunday 25 October 2026 at 09:00 local (07:00 UTC)", () => {
+    // Hand-worked UTC instants for Europe/Helsinki (clocks went back that night):
+    // Round opens on Saturday 24 October 2026 (EEST, UTC+3).
+    // On the night between Saturday 24 and Sunday 25 October 2026, clocks fall back at 04:00 to 03:00 (EEST UTC+3 -> EET UTC+2).
+    // The reminder is due at 09:00 local wall clock on Sunday 25 October 2026.
+    // In EET (UTC+2), 09:00 local is 07:00:00 UTC (not 06:00 UTC):
+    //   09:00 local - 2 hours offset = 07:00:00 UTC.
+    // One minute before 09:00 local (08:59 local) is:
+    //   08:59 local - 2 hours offset = 06:59:00 UTC.
+    //
+    // If a naive calculation added 24 hours to Saturday 09:00 local (06:00 UTC),
+    // it would incorrectly produce 06:00 UTC instead of 07:00 UTC.
+    const round: Round = {
+      number: 1,
+      localDate: "2026-10-24", // Saturday
+      opensAt: "2026-10-24T09:00:00.000Z", // Saturday 12:00 EEST
+      endsAt: "2026-10-27T10:00:00.000Z", // Tuesday 12:00 EET
+    };
+
+    expect(getReminderDueInstant(round, timeZone)).toBe("2026-10-25T07:00:00.000Z");
+
+    // Check one minute before (08:59 local = 06:59 UTC): not due
+    const oneMinuteBefore = "2026-10-25T06:59:00.000Z";
+    expect(isReminderDue(round, { moment: oneMinuteBefore, timeZone })).toBe(false);
+    expect(checkReminder(round, { moment: oneMinuteBefore, timeZone })).toEqual({
+      due: false,
+      reason: "reminder time has not arrived yet",
+    });
+
+    // Check exactly at the instant (09:00 local = 07:00 UTC): due
+    const exactlyAtInstant = "2026-10-25T07:00:00.000Z";
+    expect(isReminderDue(round, { moment: exactlyAtInstant, timeZone })).toBe(true);
+    expect(checkReminder(round, { moment: exactlyAtInstant, timeZone })).toEqual({
+      due: true,
+    });
+  });
+});
