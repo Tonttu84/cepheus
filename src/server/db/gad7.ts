@@ -65,7 +65,7 @@ export function createGad7Repository(ctx: DbContext): Gad7Repository {
     },
 
     async saveGad7(assessment) {
-      const { clinicId, schedule } = await loadParticipantScope(ctx.client(), assessment.patientId);
+      const { clinicId, isSimulated, schedule } = await loadParticipantScope(ctx.client(), assessment.patientId);
       if (!schedule) throw new Error("Patient has no schedule");
       const round = listRounds(schedule, assessment.roundNumber).at(-1)!;
       const columns = {
@@ -84,7 +84,12 @@ export function createGad7Repository(ctx: DbContext): Gad7Repository {
             roundNumber: assessment.roundNumber,
           },
         },
-        create: { participantId: assessment.patientId, roundNumber: assessment.roundNumber, ...columns },
+        create: {
+          participantId: assessment.patientId,
+          roundNumber: assessment.roundNumber,
+          isSimulated,
+          ...columns,
+        },
         update: columns,
       });
       rememberAnswers(ctx, assessment);

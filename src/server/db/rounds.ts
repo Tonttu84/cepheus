@@ -56,7 +56,7 @@ export function createRoundRepository(ctx: DbContext): RoundRepository {
     },
 
     async saveRound(round) {
-      const { clinicId, schedule } = await loadParticipantScope(ctx.client(), round.patientId);
+      const { clinicId, isSimulated, schedule } = await loadParticipantScope(ctx.client(), round.patientId);
       if (!schedule) throw new Error("Patient has no schedule");
       const columns = {
         clinicId,
@@ -72,7 +72,7 @@ export function createRoundRepository(ctx: DbContext): RoundRepository {
         where: {
           participantId_roundNumber: { participantId: round.patientId, roundNumber: round.roundNumber },
         },
-        create: { participantId: round.patientId, roundNumber: round.roundNumber, ...columns },
+        create: { participantId: round.patientId, roundNumber: round.roundNumber, isSimulated, ...columns },
         update: columns,
       });
     },

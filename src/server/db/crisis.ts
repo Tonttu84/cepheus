@@ -34,7 +34,7 @@ export function createCrisisRepository(ctx: DbContext): CrisisRepository {
     },
 
     async saveCrisisEvent(event) {
-      const { clinicId } = await loadParticipantScope(ctx.client(), event.patientId);
+      const { clinicId, isSimulated } = await loadParticipantScope(ctx.client(), event.patientId);
       await ctx.client().crisisEvent.upsert({
         where: {
           participantId_roundNumber: { participantId: event.patientId, roundNumber: event.roundNumber },
@@ -44,6 +44,7 @@ export function createCrisisRepository(ctx: DbContext): CrisisRepository {
           participantId: event.patientId,
           roundNumber: event.roundNumber,
           clinicId,
+          isSimulated,
           itemId: itemIdToColumn(event.itemId),
           value: event.value,
           occurredAt: new Date(event.occurredAt),

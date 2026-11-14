@@ -17,6 +17,8 @@ export interface ScheduleColumns {
 
 export interface ParticipantScope {
   readonly clinicId: string | null;
+  /** The participant's simulated mark, copied onto every row written about them. */
+  readonly isSimulated: boolean;
   readonly schedule: Schedule | null;
 }
 
@@ -65,6 +67,7 @@ export async function loadParticipantScope(
     where: { id: patientId },
     select: {
       clinicId: true,
+      isSimulated: true,
       enrolmentDate: true,
       scheduleDaysJson: true,
       scheduleTime: true,
@@ -72,5 +75,5 @@ export async function loadParticipantScope(
     },
   });
   if (!row) throw new Error("Patient not found");
-  return { clinicId: row.clinicId, schedule: toSchedule(row) };
+  return { clinicId: row.clinicId, isSimulated: row.isSimulated, schedule: toSchedule(row) };
 }

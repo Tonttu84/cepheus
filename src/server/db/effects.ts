@@ -50,6 +50,7 @@ export function createWarningRepository(ctx: DbContext): WarningRepository {
         data: {
           participantId: warning.patientId,
           clinicId: scope.clinicId,
+          isSimulated: scope.isSimulated,
           createdAt: new Date(warning.raisedAt),
           sinceDate: warning.since,
           triggerKind: warning.kind,
@@ -89,6 +90,7 @@ export function createSmallDipRepository(ctx: DbContext): SmallDipRepository {
         data: {
           participantId: dip.patientId,
           clinicId: scope.clinicId,
+          isSimulated: scope.isSimulated,
           roundNumber: dip.roundNumber,
           date: dip.date,
           ruleVersion: dip.version,
@@ -126,6 +128,7 @@ export function createBaselineNotWellRepository(ctx: DbContext): BaselineNotWell
         data: {
           participantId: notice.patientId,
           clinicId: scope.clinicId,
+          isSimulated: scope.isSimulated,
           ruleVersion: notice.version,
           notifiedAt: new Date(notice.notifiedAt),
           ...causeToColumns(notice.causedBy),

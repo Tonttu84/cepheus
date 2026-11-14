@@ -625,6 +625,7 @@ model SmallDip {
   causeRoundNumber Int?
   causeDate        String
   shownAt          DateTime
+  isSimulated      Boolean     @default(false)
 
   @@index([participantId, roundNumber])
   @@index([clinicId])
@@ -643,6 +644,7 @@ model BaselineNotice {
   causeRoundNumber Int?
   causeDate        String
   notifiedAt       DateTime
+  isSimulated      Boolean     @default(false)
 
   @@index([participantId])
   @@index([clinicId])
@@ -660,6 +662,7 @@ model ExtraAnswer {
   itemId        String
   value         Int // 0..4
   answeredAt    DateTime
+  isSimulated   Boolean     @default(false)
 
   @@unique([participantId, roundNumber])
   @@index([clinicId])
