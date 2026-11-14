@@ -63,16 +63,17 @@ Authenticated `/monitoring`, `/api/monitoring/summary`, `/api/fitbit/*`, and `/a
 
 ## Arduino UNO Q Setup
 
-1. Install Python dependencies on the Arduino UNO Q (`hardware/uno-q/requirements.txt`) and download MediaPipe's `face_landmarker.task`.
-2. Configure per-device SHA-256 hashed credentials in `.env` (`ARDUINO_DEVICE_KEYS_JSON='{"unoq-home-01":{"tokenHash":"<sha256-hex>","revoked":false}}'` or `ARDUINO_INGEST_TOKEN`) and set the matching `ARDUINO_INGEST_TOKEN` on the board. `edge_monitor.py` automatically attaches `timestampMs` and a single-use `nonce` for replay protection.
-3. Run:
+1. Install system audio/Bluetooth packages (`sudo apt install -y bluez pulseaudio-utils alsa-utils espeak-ng`) and Python dependencies on the Arduino UNO Q (`pip install -r hardware/uno-q/requirements.txt`). See `hardware/uno-q/deploy-2gb.md` for Bluetooth headphone pairing (`bluetoothctl`).
+2. Configure per-device SHA-256 hashed credentials in `.env` (`ARDUINO_DEVICE_KEYS_JSON='{"unoq-home-01":{"tokenHash":"<sha256-hex>","revoked":false}}'` or `ARDUINO_INGEST_TOKEN`) and set the matching `ARDUINO_INGEST_TOKEN` on the board. `edge_monitor.py` and `voice_kiosk.py` automatically attach `timestampMs` and a single-use `nonce` for replay protection.
+3. Run standalone passive camera sampling or the **Bluetooth headphone voice + simultaneous facial detection check-in**:
    ```bash
+   CEPHEUS_BASE_URL="http://<host-ip>:3000" \
    CEPHEUS_INGEST_URL="http://<host-ip>:3000/api/arduino/ingest" \
    ARDUINO_INGEST_TOKEN="<device-token>" \
-   python hardware/uno-q/edge_monitor.py
+   python3 hardware/uno-q/voice_kiosk.py --watch-bluetooth
    ```
-4. View incoming numeric summaries and desk ring-light cue status on `/monitoring`.
-5. **On-device voice note (Trail #24):** Any future spoken question mode on the UNO Q must keep audio on-device (e.g. sequential Piper TTS + `whisper.cpp`), never infer mood from voice, and expose an always-available crisis path to a human and `112`.
+4. View incoming numeric check-ins, facial/ambient summaries, and desk ring-light cue status on `/monitoring`.
+5. **On-device voice & privacy rules (Trail #24):** `voice_kiosk.py` keeps all audio and camera frames strictly in RAM on the UNO Q, maps spoken answers deterministically via local Vosk without voice mood reading, and exposes an immediate crisis path (`112`, MIELI `09 2525 0111`, TMS Clinic Nurse Line) with zero automated gating.
 
 ## Clinical & Privacy Boundaries Enforced
 

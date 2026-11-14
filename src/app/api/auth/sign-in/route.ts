@@ -3,6 +3,7 @@ import { SignInRequestSchema } from "@/lib/auth-types";
 import {
   applySessionCookie,
   authenticateStaffCredentials,
+  getStaffSecondFactorKind,
   simulatedFinnishEidProvider,
 } from "@/server/auth";
 import {
@@ -12,19 +13,19 @@ import {
 } from "@/server/security";
 
 async function handlePatientSignIn(
-  participantCode: "P-SIM-001" | "P-SIM-DEP-01" | "P-SIM-ANX-01"
+  participantCode: string
 ): Promise<NextResponse> {
   const session = await simulatedFinnishEidProvider.authenticateSimulatedPreset(
     participantCode
   );
   if (!session) {
     return NextResponse.json(
-      { ok: false, code: "unknown_preset", message: "Unknown participant preset." },
-      { status: 400 }
+      { ok: false, code: "invalid_credentials", message: "Invalid credentials." },
+      { status: 401 }
     );
   }
   const response = NextResponse.json(
-    { ok: true, session },
+    { ok: true, session, secondFactor: getStaffSecondFactorKind() },
     { headers: { "Cache-Control": "no-store" } }
   );
   applySessionCookie(response, session);
@@ -44,7 +45,11 @@ async function handleStaffSignIn(input: {
     );
   }
   const response = NextResponse.json(
-    { ok: true, session: staffResult.session },
+    {
+      ok: true,
+      session: staffResult.session,
+      secondFactor: getStaffSecondFactorKind(),
+    },
     { headers: { "Cache-Control": "no-store" } }
   );
   applySessionCookie(response, staffResult.session);

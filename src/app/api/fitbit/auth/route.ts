@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       state,
       codeVerifier,
       redirectUri,
-      participantCode: auth.session.participantCode,
+      patientId: auth.session.actor.patientId,
     },
     10 * 60_000
   );

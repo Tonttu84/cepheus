@@ -19,3 +19,9 @@ prisma/*.db-journal
 next-env.d.ts
 .private/
 .watch/
+__pycache__/
+*.py[cod]
+hardware/uno-q/vosk-model*/
+hardware/uno-q/*.onnx
+hardware/uno-q/lbfmodel.yaml
+

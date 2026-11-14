@@ -7,6 +7,7 @@ import {
   FITBIT_STATE_COOKIE,
   FITBIT_TOKEN_COOKIE,
   isFitbitConfigured,
+  type FitbitSealedSession,
 } from "@/server/fitbit/client";
 import {
   checkRateLimit,
@@ -22,7 +23,14 @@ interface SealedOAuthState {
   state: string;
   codeVerifier: string;
   redirectUri: string;
-  participantCode?: string;
+  patientId?: string;
+}
+
+function readCookie(request: Request, name: string): string | undefined {
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) return undefined;
+  const match = new RegExp(`(?:^|;\\s*)${name}=([^;]+)`).exec(cookieHeader);
+  return match ? decodeURIComponent(match[1]) : undefined;
 }
 
 export async function GET(request: Request) {
@@ -43,6 +51,20 @@ export async function GET(request: Request) {
   const reqUrl = new URL(request.url);
   const monitoringUrl = new URL("/monitoring", reqUrl.origin);
 
+  const queryPatientId =
+    reqUrl.searchParams.get("patientId") ??
+    reqUrl.searchParams.get("participantCode");
+  if (
+    queryPatientId &&
+    queryPatientId !== auth.session.actor.patientId &&
+    queryPatientId !== auth.session.participantCode
+  ) {
+    return NextResponse.json(
+      { ok: false, code: "forbidden", error: "Access denied." },
+      { status: 403 }
+    );
+  }
+
   if (!isFitbitConfigured()) {
     monitoringUrl.searchParams.set("fitbit", "not_configured");
     return NextResponse.redirect(monitoringUrl);
@@ -59,22 +81,33 @@ export async function GET(request: Request) {
   const code = reqUrl.searchParams.get("code") ?? "";
   const returnedState = reqUrl.searchParams.get("state") ?? "";
 
-  const cookieStore = await cookies();
-  const rawStateCookie = cookieStore.get(FITBIT_STATE_COOKIE)?.value;
+  let rawStateCookie = readCookie(request, FITBIT_STATE_COOKIE);
+  if (!rawStateCookie) {
+    const cookieStore = await cookies().catch(() => null);
+    rawStateCookie = cookieStore?.get(FITBIT_STATE_COOKIE)?.value;
+  }
   const sealedState = unsealJson<SealedOAuthState>(rawStateCookie);
 
   if (
     !sealedState ||
     !code ||
     !returnedState ||
-    !timingSafeEqualString(returnedState, sealedState.state) ||
-    (sealedState.participantCode &&
-      sealedState.participantCode !== auth.session.participantCode)
+    !timingSafeEqualString(returnedState, sealedState.state)
   ) {
     monitoringUrl.searchParams.set("fitbit", "state_error");
     const badResp = NextResponse.redirect(monitoringUrl);
     badResp.cookies.delete(FITBIT_STATE_COOKIE);
     return badResp;
+  }
+
+  if (
+    sealedState.patientId &&
+    sealedState.patientId !== auth.session.actor.patientId
+  ) {
+    return NextResponse.json(
+      { ok: false, code: "forbidden", error: "Access denied." },
+      { status: 403 }
+    );
   }
 
   try {
@@ -84,10 +117,11 @@ export async function GET(request: Request) {
       redirectUri: sealedState.redirectUri,
     });
 
-    const sealedSession = sealJson(
-      { ...session, participantCode: auth.session.participantCode },
-      30 * 24 * 60 * 60_000
-    );
+    const sessionWithPatient: FitbitSealedSession = {
+      ...session,
+      patientId: auth.session.actor.patientId,
+    };
+    const sealedSession = sealJson(sessionWithPatient, 30 * 24 * 60 * 60_000);
     monitoringUrl.searchParams.set("fitbit", "connected");
     const okResp = NextResponse.redirect(monitoringUrl);
     okResp.cookies.delete(FITBIT_STATE_COOKIE);

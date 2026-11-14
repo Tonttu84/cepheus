@@ -34,7 +34,7 @@ function isSameOrigin(request: Request): boolean {
 
 const patientStepBodySchema = z
   .object({
-    participantCode: z.string().min(2).max(64),
+    participantCode: z.string().min(2).max(64).optional(),
     dayIndex: z.number().int().min(1).max(3650),
     broadAreasShifted: z.array(z.string().min(1).max(40)).max(5),
     lowDaylight: z.boolean(),
@@ -96,7 +96,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const response = await generateTailoredPatientStep(parsed.data);
+  if (
+    parsed.data.participantCode &&
+    parsed.data.participantCode !== auth.session.participantCode &&
+    parsed.data.participantCode !== auth.session.actor.patientId
+  ) {
+    return NextResponse.json(
+      { ok: false, code: "forbidden", error: "Access denied." },
+      { status: 403 }
+    );
+  }
+
+  const response = await generateTailoredPatientStep({
+    ...parsed.data,
+    participantCode: auth.session.participantCode,
+  });
   return NextResponse.json({
     ok: true,
     isSimulated: parsed.data.isSimulated,

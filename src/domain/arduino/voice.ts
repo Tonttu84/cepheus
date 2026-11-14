@@ -24,6 +24,8 @@ const CRISIS_PHRASES = [
   "crisis",
   "emergency",
   "112",
+  "one one two",
+  "one hundred twelve",
   "hurt myself",
   "end my life",
   "call nurse",

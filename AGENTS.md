@@ -37,6 +37,10 @@ This file is for coding agents and for people. It holds the rules of this reposi
      this machine has not shown before. Pass on whatever it prints at once.
   Only read: do not comment, approve, add findings or merge unless your user asks. If
   `entire` is missing or not signed in, say so in one line and carry on (see Quirks).
+- Before starting a piece of work, read `docs/tasks.md` on `main`: it lists what is
+  done, what is taken (with the branch) and what is free. Do not start work that is
+  marked taken; take free work by publishing a branch early and changing its line in
+  the same trail.
 - Requests pop up without being asked for. Repeat steps 1 and 4 every time you fetch
   from the remote during a session: before starting a new piece of work and after
   finishing one. Tell your user at once, in a line each and before carrying on with
@@ -108,6 +112,9 @@ stays green. A reviewer asks for a reason when one is exceeded.
 - A function that is mostly control flow, one branch for each case with each branch
   calling something, may be longer. Say so in a comment above it.
 - Tests are exempt from the length limit, not from the others.
+- Only `src/server/db/` talks to the database; other code goes through the use
+  cases and ports; the test `src/__tests__/storage-boundary.test.ts` enforces it
+  and its exception list may only shrink.
 
 ## Rules of the problem
 
@@ -153,6 +160,7 @@ These hold whatever is built.
 | `docs/general-plan.md` | The problem, what the research says, candidate cores, build order, open decisions |
 | `docs/plan.md` | The team plan: what we build, how often we ask, scope, workstreams and the open questions |
 | `docs/build-plan.md` | The build plan: modules, schema changes, protection, test strategy |
+| `docs/tasks.md` | The work plan: what is on `main`, the open trails, and the work packages with what is taken and what is free. Read it before starting work |
 | `docs/doctor-notes.md` | A doctor's remarks, anonymous, with what a literature check found |
 | `docs/research/` | The evidence check and the numbered research reports, with sources |
 | `docs/questions.md` | The question set: which questionnaires, the two taps, the baseline, the warning rule and the crisis rule |
