@@ -99,4 +99,25 @@ describe("Crisis repository (*.dbtest.ts)", () => {
     expect(events[0].patientId).toBe(patientId);
     await prisma.crisisEvent.deleteMany({ where: { participantId: { in: [patientId, otherId] } } });
   });
+  it("stores a later acknowledgement and keeps the first event's item, value and time", async () => {
+    await repo().saveCrisisEvent(event(1, "2026-11-16T16:20:00.000Z", 1));
+    await repo().saveCrisisEvent({
+      ...event(1, "2026-11-16T17:00:00.000Z", 3),
+      itemId: "crisis_button",
+      acknowledgedAt: "2026-11-16T18:00:00.000Z",
+    });
+    expect(await repo().getCrisisEvents(patientId)).toEqual([
+      { ...event(1, "2026-11-16T16:20:00.000Z", 1), acknowledgedAt: "2026-11-16T18:00:00.000Z" },
+    ]);
+    await prisma.crisisEvent.deleteMany({ where: { participantId: patientId } });
+  });
+
+  it("keeps the first acknowledgement and never clears it", async () => {
+    const first = { ...event(1, "2026-11-16T16:20:00.000Z"), acknowledgedAt: "2026-11-16T18:00:00.000Z" };
+    await repo().saveCrisisEvent(first);
+    await repo().saveCrisisEvent({ ...first, acknowledgedAt: "2026-11-17T09:00:00.000Z" });
+    await repo().saveCrisisEvent({ ...first, acknowledgedAt: null });
+    expect(await repo().getCrisisEvents(patientId)).toEqual([first]);
+    await prisma.crisisEvent.deleteMany({ where: { participantId: patientId } });
+  });
 });

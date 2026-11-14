@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { StoredDataError } from "../errors";
 import { roundColumnsFor, toSchedule } from "../participant-scope";
 
 describe("participant scope helpers", () => {
@@ -45,5 +46,14 @@ describe("participant scope helpers", () => {
       dayIndex: 134,
       weekNumber: 20,
     });
+  });
+  it("refuses stored weekdays that are not JSON, or not a list of numbers, with a named error", () => {
+    for (const scheduleDaysJson of ["[1,", "\"1,4\"", "{\"a\":1}", "[\"1\",\"4\"]"]) {
+      expect(() => toSchedule({ ...row, scheduleDaysJson })).toThrow(StoredDataError);
+    }
+  });
+
+  it("refuses a stored schedule that is not valid with the same named error", () => {
+    expect(() => toSchedule({ ...row, scheduleDaysJson: "[1,9]" })).toThrow(StoredDataError);
   });
 });

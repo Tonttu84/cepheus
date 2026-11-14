@@ -58,6 +58,7 @@ model Clinic {
   smallDips             SmallDip[]
   baselineNotices       BaselineNotice[]
   extraAnswers          ExtraAnswer[]
+  gad7Assessments       Gad7Assessment[]
 }
 
 /// Named clinic staff account (nurse or admin). The only named people in the DB.
@@ -129,6 +130,7 @@ model Participant {
   smallDips             SmallDip[]
   baselineNotices       BaselineNotice[]
   extraAnswers          ExtraAnswer[]
+  gad7Assessments       Gad7Assessment[]
 
   @@index([clinicId])
 }
@@ -623,6 +625,7 @@ model SmallDip {
   causeRoundNumber Int?
   causeDate        String
   shownAt          DateTime
+  isSimulated      Boolean     @default(false)
 
   @@index([participantId, roundNumber])
   @@index([clinicId])
@@ -641,6 +644,7 @@ model BaselineNotice {
   causeRoundNumber Int?
   causeDate        String
   notifiedAt       DateTime
+  isSimulated      Boolean     @default(false)
 
   @@index([participantId])
   @@index([clinicId])
@@ -658,7 +662,40 @@ model ExtraAnswer {
   itemId        String
   value         Int // 0..4
   answeredAt    DateTime
+  isSimulated   Boolean     @default(false)
 
   @@unique([participantId, roundNumber])
+  @@index([clinicId])
+}
+
+/// GAD-7 questionnaire of a round (D35), following Phq9Assessment. The seven item
+/// columns stay null unless STORE_ITEM_ANSWERS is on; a completed one keeps its total.
+model Gad7Assessment {
+  id                  String      @id @default(cuid())
+  participantId       String
+  participant         Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId            String?
+  clinic              Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  scheduledAt         DateTime
+  completedAt         DateTime?
+  date                String // "YYYY-MM-DD"
+  dayIndex            Int
+  weekNumber          Int
+  roundNumber         Int
+  status              String // "completed" | "in_progress"
+  totalScore          Int? // 0..21
+  item1Nervous        Int?
+  item2ControlWorry   Int?
+  item3ExcessiveWorry Int?
+  item4Relaxing       Int?
+  item5Restless       Int?
+  item6Irritable      Int?
+  item7Afraid         Int?
+  isSimulated         Boolean     @default(false)
+  source              String      @default("live")
+  createdAt           DateTime    @default(now())
+
+  @@unique([participantId, roundNumber])
+  @@index([participantId, date])
   @@index([clinicId])
 }

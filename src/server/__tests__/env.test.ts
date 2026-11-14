@@ -277,4 +277,12 @@ describe("Environment Check (src/server/env.ts)", () => {
     expect(ok.VERDA_AI_ENABLED).toBe(true);
     expect(ok.VERDA_GEMMA_MODEL).toBe("google/gemma-3-27b-it");
   });
+
+  it("keeps item answers out of the database unless STORE_ITEM_ANSWERS is true", () => {
+    const url = "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus";
+    expect(parseEnv({ DATABASE_URL: url }).STORE_ITEM_ANSWERS).toBe(false);
+    expect(parseEnv({ DATABASE_URL: url, STORE_ITEM_ANSWERS: "" }).STORE_ITEM_ANSWERS).toBe(false);
+    expect(parseEnv({ DATABASE_URL: url, STORE_ITEM_ANSWERS: "yes" }).STORE_ITEM_ANSWERS).toBe(false);
+    expect(parseEnv({ DATABASE_URL: url, STORE_ITEM_ANSWERS: " TRUE " }).STORE_ITEM_ANSWERS).toBe(true);
+  });
 });

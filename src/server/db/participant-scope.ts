@@ -1,12 +1,16 @@
 import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 import {
   findUtcInstantForLocalWallClock,
   parseIsoDate,
   validateSchedule,
   type Schedule,
 } from "@/domain/rounds";
+import { StoredDataError } from "./errors";
+import { parseStoredJson } from "./stored-data";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const WEEKDAYS_JSON = z.array(z.number());
 
 export interface ScheduleColumns {
   readonly enrolmentDate: string | null;
@@ -17,6 +21,8 @@ export interface ScheduleColumns {
 
 export interface ParticipantScope {
   readonly clinicId: string | null;
+  /** The participant's simulated mark, copied onto every row written about them. */
+  readonly isSimulated: boolean;
   readonly schedule: Schedule | null;
 }
 
@@ -30,13 +36,13 @@ export function toSchedule(row: ScheduleColumns): Schedule | null {
   if (!row.enrolmentDate || !row.scheduleDaysJson || !row.scheduleTime) return null;
 
   const result = validateSchedule({
-    weekdays: JSON.parse(row.scheduleDaysJson),
+    weekdays: parseStoredJson(row.scheduleDaysJson, WEEKDAYS_JSON, "schedule weekdays"),
     timeOfDay: row.scheduleTime,
     timeZone: row.timeZone,
     enrolmentDate: row.enrolmentDate,
   });
   if (!result.ok) {
-    throw new Error(`Stored schedule is not valid: ${result.error}`);
+    throw new StoredDataError(`Stored schedule is not valid: ${result.error}`);
   }
   return result.value;
 }
@@ -65,6 +71,7 @@ export async function loadParticipantScope(
     where: { id: patientId },
     select: {
       clinicId: true,
+      isSimulated: true,
       enrolmentDate: true,
       scheduleDaysJson: true,
       scheduleTime: true,
@@ -72,5 +79,5 @@ export async function loadParticipantScope(
     },
   });
   if (!row) throw new Error("Patient not found");
-  return { clinicId: row.clinicId, schedule: toSchedule(row) };
+  return { clinicId: row.clinicId, isSimulated: row.isSimulated, schedule: toSchedule(row) };
 }

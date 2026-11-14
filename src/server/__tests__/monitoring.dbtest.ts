@@ -3,6 +3,8 @@ import type { PrismaClient } from "@prisma/client";
 import { evaluateArduinoEdgePayload } from "@/domain/arduino";
 import { mapHealthConnectPayloadToRingDays } from "@/domain/health-connect";
 import { getPrisma } from "@/lib/db";
+import { InMemoryAnswerStore } from "@/server/db/answer-store";
+import { PHQ9_COLUMNS } from "@/server/db/phq9-columns";
 import {
   buildSimulatedFitbitWeek,
   buildSimulatedHealthConnectPayload,
@@ -191,7 +193,8 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
         itemId: "9",
         value: 2,
       },
-      prisma
+      prisma,
+      { storeItemAnswers: true }
     );
     expect(phq9ItemRes.ok).toBe(true);
     if (phq9ItemRes.ok) {
@@ -297,7 +300,8 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     const say = (itemId: string, value: number) =>
       saveArduinoBedsideCheckIn(
         { deviceId: "unoq-dbtest", date: "2026-11-21", isSimulated: true, kind: "phq9_item", itemId, value },
-        prisma
+        prisma,
+        { storeItemAnswers: true }
       );
 
     expect((await say("1", 2)).ok).toBe(true);
@@ -329,5 +333,79 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     expect(done[0]?.status).toBe("completed");
     expect(done[0]?.totalScore).toBe(9);
     expect(done[0]?.completedAt).not.toBeNull();
+  });
+  it("keeps bedside PHQ-9 item answers in memory only when item answers are off", async () => {
+    const participantFilter = { participant: { externalId: HOME_DEMO_EXTERNAL_ID } };
+    await prisma.phq9Assessment.deleteMany({ where: participantFilter });
+    const memory = new InMemoryAnswerStore();
+    const say = (itemId: string, value: number) =>
+      saveArduinoBedsideCheckIn(
+        { deviceId: "unoq-dbtest", date: "2026-11-22", isSimulated: true, kind: "phq9_item", itemId, value },
+        prisma,
+        { storeItemAnswers: false, answerStore: memory }
+      );
+
+    for (const id of ["1", "2", "3", "4", "5", "6", "7", "8"]) {
+      expect((await say(id, 1)).ok).toBe(true);
+    }
+    const partial = await prisma.phq9Assessment.findMany({ where: participantFilter });
+    expect(partial).toHaveLength(1);
+    expect(partial[0]?.status).toBe("in_progress");
+    expect(partial[0]?.totalScore).toBeNull();
+    expect(PHQ9_COLUMNS.map((col) => partial[0]?.[col])).toEqual(Array(9).fill(null));
+    const roundNumber = partial[0]!.roundNumber;
+    expect(memory.get(partial[0]!.participantId, "phq9", roundNumber)).toHaveLength(8);
+
+    expect((await say("9", 0)).ok).toBe(true);
+    const done = await prisma.phq9Assessment.findMany({ where: participantFilter });
+    expect(done).toHaveLength(1);
+    expect(done[0]?.status).toBe("completed");
+    expect(done[0]?.totalScore).toBe(8);
+    expect(done[0]?.completedAt).not.toBeNull();
+    expect(PHQ9_COLUMNS.map((col) => done[0]?.[col])).toEqual(Array(9).fill(null));
+    expect(memory.size()).toBe(0);
+  });
+
+  it("still records the crisis event of a bedside self-harm answer when item answers are off", async () => {
+    const participantFilter = { participant: { externalId: HOME_DEMO_EXTERNAL_ID } };
+    await prisma.phq9Assessment.deleteMany({ where: participantFilter });
+    await prisma.crisisEvent.deleteMany({ where: participantFilter });
+    const memory = new InMemoryAnswerStore();
+
+    const res = await saveArduinoBedsideCheckIn(
+      { deviceId: "unoq-dbtest", date: "2026-11-23", isSimulated: true, kind: "phq9_item", itemId: "9", value: 2 },
+      prisma,
+      { storeItemAnswers: false, answerStore: memory }
+    );
+
+    expect(res.ok && res.showCrisisPath).toBe(true);
+    const row = await prisma.phq9Assessment.findFirstOrThrow({ where: participantFilter });
+    expect(row.status).toBe("in_progress");
+    expect(row.item9SelfHarm).toBeNull();
+    expect(memory.get(row.participantId, "phq9", row.roundNumber)).toEqual([{ id: "9", value: 2 }]);
+    const crisis = await prisma.crisisEvent.findFirstOrThrow({ where: { ...participantFilter, roundNumber: row.roundNumber } });
+    expect(crisis.value).toBe(2);
+  });
+
+  it("leaves a completed bedside PHQ-9 as it is when a later item arrives for its round and item answers are off", async () => {
+    const participantFilter = { participant: { externalId: HOME_DEMO_EXTERNAL_ID } };
+    await prisma.phq9Assessment.deleteMany({ where: participantFilter });
+    const memory = new InMemoryAnswerStore();
+    const say = (itemId: string, value: number) =>
+      saveArduinoBedsideCheckIn(
+        { deviceId: "unoq-dbtest", date: "2026-11-24", isSimulated: true, kind: "phq9_item", itemId, value },
+        prisma,
+        { storeItemAnswers: false, answerStore: memory }
+      );
+    for (const id of ["1", "2", "3", "4", "5", "6", "7", "8", "9"]) await say(id, 1);
+    const before = await prisma.phq9Assessment.findFirstOrThrow({ where: participantFilter });
+    expect(before.status).toBe("completed");
+
+    expect((await say("1", 3)).ok).toBe(true);
+
+    const after = await prisma.phq9Assessment.findMany({ where: participantFilter });
+    expect(after).toHaveLength(1);
+    expect(after[0]).toMatchObject({ status: "completed", totalScore: 9, completedAt: before.completedAt });
+    expect(memory.size()).toBe(0);
   });
 });

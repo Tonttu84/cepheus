@@ -23,6 +23,7 @@ export interface AppEnv {
   VERDA_INFERENCE_URL: string;
   VERDA_API_KEY: string;
   VERDA_GEMMA_MODEL: string;
+  STORE_ITEM_ANSWERS: boolean;
 }
 
 const optionalTrimmedString = z
@@ -196,6 +197,7 @@ const rawEnvSchema = z
     VERDA_INFERENCE_URL: optionalTrimmedString,
     VERDA_API_KEY: optionalTrimmedString,
     VERDA_GEMMA_MODEL: optionalTrimmedString,
+    STORE_ITEM_ANSWERS: optionalTrimmedString,
   })
   .superRefine((val, ctx) => {
     const isProduction = val.NODE_ENV === "production";
@@ -257,6 +259,7 @@ export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
     VERDA_INFERENCE_URL: result.data.VERDA_INFERENCE_URL,
     VERDA_API_KEY: result.data.VERDA_API_KEY,
     VERDA_GEMMA_MODEL: result.data.VERDA_GEMMA_MODEL || "google/gemma-3-27b-it",
+    STORE_ITEM_ANSWERS: result.data.STORE_ITEM_ANSWERS.toLowerCase() === "true",
   };
 }
 

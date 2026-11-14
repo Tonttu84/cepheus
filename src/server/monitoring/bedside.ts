@@ -1,9 +1,11 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { Prisma, type Phq9Assessment, type PrismaClient } from "@prisma/client";
 import { decideAccess } from "@/domain/access";
 import { isCrisis } from "@/domain/crisis";
 import { CRISIS_RESOURCES } from "@/lib/constants";
 import { getPrisma } from "@/lib/db";
+import { sharedAnswerStore, type InMemoryAnswerStore } from "@/server/db/answer-store";
 import { PHQ9_COLUMN_BY_ID, PHQ9_COLUMNS, type Phq9ItemColumn } from "@/server/db/phq9-columns";
+import { getEnv } from "@/server/env";
 import {
   DEMO_CLINIC_ID,
   ensureHomeDemoParticipant,
@@ -39,6 +41,12 @@ export type BedsideCheckInInput =
       readonly isSimulated: boolean;
       readonly kind: "crisis_button";
     };
+
+/** The same item-answer setting as the ports (`STORE_ITEM_ANSWERS`). */
+export interface BedsideStorageOptions {
+  readonly storeItemAnswers: boolean;
+  readonly answerStore?: InMemoryAnswerStore;
+}
 
 export interface BedsideCheckInOutcome {
   readonly ok: true;
@@ -159,11 +167,58 @@ async function writeNotTodayUnlessCompleted(
   }
 }
 
+type ItemValues = Record<Phq9ItemColumn, number | null>;
+
+function emptyItemValues(): ItemValues {
+  return Object.fromEntries(PHQ9_COLUMNS.map((k) => [k, null])) as ItemValues;
+}
+
+/** Item values so far: the row's columns, or with item answers off the in-memory answers. */
+function itemValuesSoFar(
+  existing: Phq9Assessment | null,
+  participantId: string,
+  roundNumber: number,
+  options: BedsideStorageOptions
+): ItemValues {
+  const values = emptyItemValues();
+  if (options.storeItemAnswers) {
+    for (const k of PHQ9_COLUMNS) values[k] = existing ? existing[k] : null;
+    return values;
+  }
+  const memory = options.answerStore ?? sharedAnswerStore;
+  for (const answer of memory.get(participantId, "phq9", roundNumber) ?? []) {
+    const col = PHQ9_COLUMN_BY_ID[answer.id as keyof typeof PHQ9_COLUMN_BY_ID];
+    if (col) values[col] = answer.value;
+  }
+  return values;
+}
+
+function rememberBedsideAnswers(
+  participantId: string,
+  roundNumber: number,
+  itemValues: ItemValues,
+  isComplete: boolean,
+  options: BedsideStorageOptions
+): void {
+  if (options.storeItemAnswers) return;
+  const memory = options.answerStore ?? sharedAnswerStore;
+  if (isComplete) {
+    memory.delete(participantId, "phq9", roundNumber);
+    return;
+  }
+  const answers = Object.entries(PHQ9_COLUMN_BY_ID).flatMap(([id, col]) => {
+    const value = itemValues[col];
+    return value === null ? [] : [{ id, value }];
+  });
+  memory.set(participantId, "phq9", roundNumber, answers);
+}
+
 async function upsertBedsidePhq9Item(
   participant: { id: string; clinicId: string | null },
   input: Extract<BedsideCheckInInput, { kind: "phq9_item" }>,
   source: string,
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  options: BedsideStorageOptions
 ): Promise<number> {
   const openRoundNumber = await resolveRoundNumber(participant.id, input.date, prisma);
   const inProgress = await prisma.phq9Assessment.findFirst({
@@ -182,9 +237,10 @@ async function upsertBedsidePhq9Item(
     throw new Error(`Invalid PHQ-9 itemId: ${input.itemId}`);
   }
 
-  const itemValues = Object.fromEntries(
-    PHQ9_COLUMNS.map((k) => [k, existing ? existing[k] : null])
-  ) as Record<Phq9ItemColumn, number | null>;
+  // With item answers off a completed row has no items left to add to, so it stays as it is.
+  if (!options.storeItemAnswers && existing?.status === "completed") return roundNumber;
+
+  const itemValues = itemValuesSoFar(existing, participant.id, roundNumber, options);
   itemValues[col] = input.value;
 
   const scores = PHQ9_COLUMNS.map((k) => itemValues[k]);
@@ -201,7 +257,7 @@ async function upsertBedsidePhq9Item(
     completedInRoundNumber: isComplete ? openRoundNumber : null,
     status: isComplete ? "completed" : "in_progress",
     totalScore,
-    ...itemValues,
+    ...(options.storeItemAnswers ? itemValues : emptyItemValues()),
     isSimulated: input.isSimulated,
     source,
   };
@@ -211,6 +267,7 @@ async function upsertBedsidePhq9Item(
     update: data,
     create: { participantId: participant.id, roundNumber, ...data },
   });
+  rememberBedsideAnswers(participant.id, roundNumber, itemValues, isComplete, options);
   return roundNumber;
 }
 
@@ -246,7 +303,8 @@ async function recordBedsideCrisisEvent(
  */
 export async function saveArduinoBedsideCheckIn(
   input: BedsideCheckInInput,
-  prisma: PrismaClient = getPrisma()
+  prisma: PrismaClient = getPrisma(),
+  options: BedsideStorageOptions = { storeItemAnswers: getEnv().STORE_ITEM_ANSWERS }
 ): Promise<
   | BedsideCheckInOutcome
   | { ok: false; status: 403; error: string; showCrisisPath: boolean; crisisResources: typeof CRISIS_RESOURCES | null }
@@ -274,7 +332,7 @@ export async function saveArduinoBedsideCheckIn(
   if (input.kind === "taps" || input.kind === "not_today") {
     roundNumber = await upsertBedsideRound(participant, input, source, prisma);
   } else if (input.kind === "phq9_item") {
-    roundNumber = await upsertBedsidePhq9Item(participant, input, source, prisma);
+    roundNumber = await upsertBedsidePhq9Item(participant, input, source, prisma, options);
   }
 
   if (showCrisisPath) {

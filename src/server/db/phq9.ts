@@ -15,16 +15,30 @@ function progressFromColumn(status: string): Phq9Progress {
   throw new Error(`Unknown PHQ-9 status: ${status}`);
 }
 
-function toStoredPhq9(row: Phq9Assessment): StoredPhq9 {
+function answersFromColumns(row: Phq9Assessment) {
+  return ITEM_IDS.flatMap((id) => {
+    const value = row[PHQ9_COLUMN_BY_ID[id]];
+    return value === null ? [] : [{ id, value }];
+  });
+}
+
+/**
+ * With item answers off, an unfinished questionnaire's answers come from
+ * memory (none after a restart) and a completed one keeps its total only.
+ */
+function answersOf(ctx: DbContext, row: Phq9Assessment, progress: Phq9Progress) {
+  if (ctx.storeItemAnswers) return answersFromColumns(row);
+  if (progress !== "unfinished") return [];
+  return ctx.answers().get(row.participantId, "phq9", row.roundNumber) ?? [];
+}
+
+function toStoredPhq9(ctx: DbContext, row: Phq9Assessment): StoredPhq9 {
   const progress = progressFromColumn(row.status);
   return {
     patientId: row.participantId,
     roundNumber: row.roundNumber,
     progress,
-    answers: ITEM_IDS.flatMap((id) => {
-      const value = row[PHQ9_COLUMN_BY_ID[id]];
-      return value === null ? [] : [{ id, value }];
-    }),
+    answers: answersOf(ctx, row, progress),
     total: row.totalScore,
     completedAt: row.completedAt?.toISOString() ?? null,
     completedInRoundNumber: row.completedInRoundNumber,
@@ -32,13 +46,17 @@ function toStoredPhq9(row: Phq9Assessment): StoredPhq9 {
   };
 }
 
-function itemColumns(assessment: StoredPhq9) {
+function itemColumns(answers: StoredPhq9["answers"]) {
   return Object.fromEntries(
-    ITEM_IDS.map((id) => [
-      PHQ9_COLUMN_BY_ID[id],
-      assessment.answers.find((answer) => answer.id === id)?.value ?? null,
-    ])
+    ITEM_IDS.map((id) => [PHQ9_COLUMN_BY_ID[id], answers.find((answer) => answer.id === id)?.value ?? null])
   );
+}
+
+function rememberAnswers(ctx: DbContext, assessment: StoredPhq9): void {
+  if (ctx.storeItemAnswers) return;
+  const { patientId, roundNumber } = assessment;
+  if (assessment.progress === "completed") ctx.answers().delete(patientId, "phq9", roundNumber);
+  else ctx.answers().set(patientId, "phq9", roundNumber, assessment.answers);
 }
 
 export function createPhq9Repository(ctx: DbContext): Phq9Repository {
@@ -47,7 +65,7 @@ export function createPhq9Repository(ctx: DbContext): Phq9Repository {
       where: { participantId: patientId },
       orderBy: { roundNumber: "asc" },
     });
-    return rows.map(toStoredPhq9);
+    return rows.map((row) => toStoredPhq9(ctx, row));
   }
 
   return {
@@ -59,7 +77,7 @@ export function createPhq9Repository(ctx: DbContext): Phq9Repository {
     },
 
     async savePhq9(assessment) {
-      const { clinicId, schedule } = await loadParticipantScope(ctx.client(), assessment.patientId);
+      const { clinicId, isSimulated, schedule } = await loadParticipantScope(ctx.client(), assessment.patientId);
       if (!schedule) throw new Error("Patient has no schedule");
       const round = listRounds(schedule, assessment.roundNumber).at(-1)!;
       const columns = {
@@ -70,7 +88,7 @@ export function createPhq9Repository(ctx: DbContext): Phq9Repository {
         totalScore: assessment.total ?? null,
         completedAt: assessment.completedAt ? new Date(assessment.completedAt) : null,
         completedInRoundNumber: assessment.completedInRoundNumber ?? null,
-        ...itemColumns(assessment),
+        ...itemColumns(ctx.storeItemAnswers ? assessment.answers : []),
       };
       await ctx.client().phq9Assessment.upsert({
         where: {
@@ -79,9 +97,15 @@ export function createPhq9Repository(ctx: DbContext): Phq9Repository {
             roundNumber: assessment.roundNumber,
           },
         },
-        create: { participantId: assessment.patientId, roundNumber: assessment.roundNumber, ...columns },
+        create: {
+          participantId: assessment.patientId,
+          roundNumber: assessment.roundNumber,
+          isSimulated,
+          ...columns,
+        },
         update: columns,
       });
+      rememberAnswers(ctx, assessment);
     },
   };
 }

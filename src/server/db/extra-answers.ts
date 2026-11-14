@@ -31,7 +31,7 @@ export function createExtraAnswerRepository(ctx: DbContext): ExtraAnswerReposito
     },
 
     async saveExtraAnswer(answer) {
-      const { clinicId } = await loadParticipantScope(ctx.client(), answer.patientId);
+      const { clinicId, isSimulated } = await loadParticipantScope(ctx.client(), answer.patientId);
       const columns = {
         clinicId,
         itemId: answer.itemId,
@@ -42,7 +42,7 @@ export function createExtraAnswerRepository(ctx: DbContext): ExtraAnswerReposito
         where: {
           participantId_roundNumber: { participantId: answer.patientId, roundNumber: answer.roundNumber },
         },
-        create: { participantId: answer.patientId, roundNumber: answer.roundNumber, ...columns },
+        create: { participantId: answer.patientId, roundNumber: answer.roundNumber, isSimulated, ...columns },
         update: columns,
       });
     },

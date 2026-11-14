@@ -10,7 +10,7 @@ describe("PHQ-9 repository (*.dbtest.ts)", () => {
   let clinicId: string;
   let patientId: string;
   let otherId: string;
-  const repo = () => createPhq9Repository(createDbContext(prisma));
+  const repo = () => createPhq9Repository(createDbContext(prisma, { storeItemAnswers: true }));
   const clear = () => prisma.phq9Assessment.deleteMany({ where: { participantId: { in: [patientId, otherId] } } });
 
   const participant = (label: string) =>

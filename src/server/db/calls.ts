@@ -11,6 +11,7 @@ export function createCallRepository(ctx: DbContext): CallRepository {
         data: {
           participantId: call.patientId,
           clinicId: scope.clinicId,
+          isSimulated: scope.isSimulated,
           status: "completed",
           date: call.date,
           position: call.position ?? null,

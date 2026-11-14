@@ -7,8 +7,10 @@ import type {
   StoredWarning,
   WarningRepository,
 } from "@/usecases/ports";
+import { z } from "zod";
 import type { FlagArea } from "@/domain/flags";
 import type { DbContext } from "./context";
+import { StoredDataError } from "./errors";
 import { loadParticipantScope } from "./participant-scope";
 
 interface CauseColumns {
@@ -33,12 +35,21 @@ function causeToColumns(cause: StoredCause): CauseColumns {
   };
 }
 
+const STORED_DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const STORED_CAUSE = z.discriminatedUnion("causeType", [
+  z.object({ causeType: z.literal("round"), causeRoundNumber: z.number().int(), causeDate: STORED_DATE }),
+  z.object({ causeType: z.enum(["phq9", "gad7"]), causeDate: STORED_DATE }),
+]);
+
 function columnsToCause(row: StoredCauseColumns): StoredCause {
-  const date = row.causeDate as string;
-  if (row.causeType === "round") {
-    return { type: "round", roundNumber: row.causeRoundNumber as number, date };
+  const result = STORED_CAUSE.safeParse(row);
+  if (!result.success) throw new StoredDataError("Stored cause does not have the expected shape");
+  const cause = result.data;
+  if (cause.causeType === "round") {
+    return { type: "round", roundNumber: cause.causeRoundNumber, date: cause.causeDate };
   }
-  return { type: row.causeType as "phq9" | "gad7", date };
+  return { type: cause.causeType, date: cause.causeDate };
 }
 
 export function createWarningRepository(ctx: DbContext): WarningRepository {
@@ -50,6 +61,7 @@ export function createWarningRepository(ctx: DbContext): WarningRepository {
         data: {
           participantId: warning.patientId,
           clinicId: scope.clinicId,
+          isSimulated: scope.isSimulated,
           createdAt: new Date(warning.raisedAt),
           sinceDate: warning.since,
           triggerKind: warning.kind,
@@ -89,6 +101,7 @@ export function createSmallDipRepository(ctx: DbContext): SmallDipRepository {
         data: {
           participantId: dip.patientId,
           clinicId: scope.clinicId,
+          isSimulated: scope.isSimulated,
           roundNumber: dip.roundNumber,
           date: dip.date,
           ruleVersion: dip.version,
@@ -126,6 +139,7 @@ export function createBaselineNotWellRepository(ctx: DbContext): BaselineNotWell
         data: {
           participantId: notice.patientId,
           clinicId: scope.clinicId,
+          isSimulated: scope.isSimulated,
           ruleVersion: notice.version,
           notifiedAt: new Date(notice.notifiedAt),
           ...causeToColumns(notice.causedBy),
