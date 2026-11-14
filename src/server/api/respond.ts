@@ -71,9 +71,13 @@ const CONFLICT_PREFIXES = [
 /** The status for a use case's refusal, or null when the error is not a known refusal (storage failed). */
 function refusalStatus(error: string): number | null {
   if (ACCESS_REFUSALS.has(error)) return 403;
-  if (error === "Patient not found") return 404;
+  if (error === "Patient not found" || error === "Crisis event not found") return 404;
   if (error.startsWith("Invalid ")) return 400;
-  if (CONFLICT_PREFIXES.some((prefix) => error.startsWith(prefix))) return 409;
+  if (
+    error === "Crisis event already acknowledged" ||
+    CONFLICT_PREFIXES.some((prefix) => error.startsWith(prefix))
+  )
+    return 409;
   return null;
 }
 

@@ -1,12 +1,14 @@
 import type { z } from "zod";
 import { createDocument, type ZodOpenApiOperationObject, type ZodOpenApiPathsObject } from "zod-openapi";
 import {
+  AcknowledgeCrisisEventRequestSchema,
   CheckInExtraAnswerRequestSchema,
   CheckInGad7RequestSchema,
   CheckInNotTodayRequestSchema,
   CheckInPhq9RequestSchema,
   CheckInTapsRequestSchema,
   PatientEvaluateParamsSchema,
+  RecordNurseCallRequestSchema,
   RoundsCloseRequestSchema,
 } from "./route-schemas";
 
@@ -49,6 +51,26 @@ export const API_ROUTES: readonly RouteEntry[] = [
     body: CheckInExtraAnswerRequestSchema,
   },
   { path: "/api/clinic/flags", method: "get", caller: "staff", summary: "The flags of the caller's clinic: patient, area, dates" },
+  {
+    path: "/api/clinic/crisis-events",
+    method: "get",
+    caller: "staff",
+    summary: "Unacknowledged crisis events for patients of the caller's clinic",
+  },
+  {
+    path: "/api/clinic/crisis-events/acknowledge",
+    method: "post",
+    caller: "staff",
+    summary: "Acknowledge a patient's unacknowledged crisis event",
+    body: AcknowledgeCrisisEventRequestSchema,
+  },
+  {
+    path: "/api/clinic/nurse-calls",
+    method: "post",
+    caller: "staff",
+    summary: "Record the outcome of a nurse call about a flag",
+    body: RecordNurseCallRequestSchema,
+  },
   { path: "/api/rounds/close", method: "post", caller: "system", summary: "Close one patient's elapsed rounds", body: RoundsCloseRequestSchema },
   {
     path: "/api/patients/{patientId}/evaluate",

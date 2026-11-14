@@ -71,3 +71,42 @@ export const PatientEvaluateParamsSchema = z
   .object({ patientId: PatientIdSchema })
   .strict()
   .meta({ description: "The patient whose warning rule is run" });
+
+export const AcknowledgeCrisisEventRequestSchema = z
+  .object({
+    patientId: PatientIdSchema,
+    roundNumber: z.number().int().positive().meta({ description: "Round number of the crisis event" }),
+  })
+  .strict()
+  .meta({ description: "Acknowledge a patient's unacknowledged crisis event" });
+
+export const RecordNurseCallRequestSchema = z
+  .object({
+    patientId: PatientIdSchema,
+    flagId: z.string().min(1).max(64).nullable().optional().meta({ description: "The clinic flag being addressed" }),
+    status: z.enum(["requested", "completed", "unreachable"]).default("completed"),
+    outcomeTier: z
+      .enum(["rough_patch", "sustained_decline", "full_relapse", "crisis", "false_alarm"])
+      .nullable()
+      .optional()
+      .meta({ description: "What the nurse found during outreach" }),
+    actionTaken: z
+      .enum([
+        "advice_and_medication_check",
+        "booster_tms_cluster",
+        "new_tms_course_referral",
+        "urgent_care",
+        "none",
+      ])
+      .nullable()
+      .optional()
+      .meta({ description: "Clinical action step decided following the call" }),
+    medicationChecked: z.boolean().default(false),
+    watchNextRounds: z.number().int().min(0).max(12).default(0),
+    boosterSessionsPlanned: z.number().int().min(0).max(20).nullable().optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().meta({ description: "YYYY-MM-DD local date of the call" }),
+    position: z.enum(["before", "after"]).optional().meta({ description: "Position relative to round of that date" }),
+  })
+  .strict()
+  .meta({ description: "Record the outcome of a nurse call about a flag" });
+
