@@ -1,14 +1,45 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import {
   PatientEidSignInPanel,
   StaffSignInPanel,
 } from "@/components/auth-forms";
 import { useAuth } from "@/components/auth-provider";
+import type { AuthSession } from "@/lib/auth-types";
 
-export default function SignInPage() {
+function safeReturnUrl(target: string | null): string | null {
+  if (!target) return null;
+  const trimmed = target.trim();
+  if (
+    trimmed.startsWith("/") &&
+    !trimmed.startsWith("//") &&
+    !trimmed.includes("\\") &&
+    !trimmed.includes(":")
+  ) {
+    return trimmed;
+  }
+  return null;
+}
+
+function SignInContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
   const { session, signOut } = useAuth();
+
+  const handleSuccess = (signedInSession?: AuthSession) => {
+    if (returnTo) {
+      const safe = safeReturnUrl(returnTo);
+      if (safe) {
+        router.push(safe);
+        return;
+      }
+    }
+    router.push(signedInSession?.kind === "staff" ? "/clinic" : "/check-in");
+  };
 
   return (
     <div data-testid="sign-in-page" className="space-y-8">
@@ -82,16 +113,24 @@ export default function SignInPage() {
           <h2 className="mb-3 font-display text-lg font-semibold text-ink-primary">
             Participant e-ID
           </h2>
-          <PatientEidSignInPanel />
+          <PatientEidSignInPanel onSuccess={handleSuccess} />
         </section>
 
         <section className="rounded-2xl border border-border-hairline bg-surface-card p-6">
           <h2 className="mb-3 font-display text-lg font-semibold text-ink-primary">
             Clinic staff
           </h2>
-          <StaffSignInPanel />
+          <StaffSignInPanel onSuccess={handleSuccess} />
         </section>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignInContent />
+    </Suspense>
   );
 }

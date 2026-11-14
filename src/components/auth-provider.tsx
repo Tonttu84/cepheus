@@ -16,9 +16,12 @@ export type SignInResult =
   | { ok: true; session: AuthSession }
   | { ok: false; message: string };
 
+export type SecondFactorKind = "time_based" | "fixed_demo";
+
 export interface AuthContextValue {
   session: AuthSession | null;
   demoMode: boolean;
+  secondFactor: SecondFactorKind;
   isLoading: boolean;
   signIn: (req: SignInRequest) => Promise<SignInResult>;
   signOut: () => Promise<void>;
@@ -31,12 +34,14 @@ interface SessionApiResponse {
   ok?: boolean;
   session?: AuthSession | null;
   demoMode?: boolean;
+  secondFactor?: SecondFactorKind;
 }
 
 interface SignInApiResponse {
   ok?: boolean;
   session?: AuthSession;
   message?: string;
+  secondFactor?: SecondFactorKind;
 }
 
 export function AuthProvider({
@@ -49,6 +54,7 @@ export function AuthProvider({
   const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(initialSession);
   const [demoMode, setDemoMode] = useState(false);
+  const [secondFactor, setSecondFactor] = useState<SecondFactorKind>("fixed_demo");
   const [isLoading, setIsLoading] = useState(initialSession === null);
 
   const refreshSession = useCallback(async () => {
@@ -64,6 +70,9 @@ export function AuthProvider({
       const data = (await response.json()) as SessionApiResponse;
       setSession(data.session ?? null);
       setDemoMode(Boolean(data.demoMode));
+      setSecondFactor(
+        data.secondFactor === "time_based" ? "time_based" : "fixed_demo"
+      );
     } catch {
       setSession(null);
     } finally {
@@ -75,31 +84,37 @@ export function AuthProvider({
     void refreshSession();
   }, [refreshSession]);
 
-  const signIn = useCallback(async (req: SignInRequest): Promise<SignInResult> => {
-    try {
-      const response = await fetch("/api/auth/sign-in", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-        body: JSON.stringify(req),
-      });
-      const data = (await response.json()) as SignInApiResponse;
-      if (!response.ok || !data.ok || !data.session) {
+  const signIn = useCallback(
+    async (req: SignInRequest): Promise<SignInResult> => {
+      try {
+        const response = await fetch("/api/auth/sign-in", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify(req),
+        });
+        const data = (await response.json()) as SignInApiResponse;
+        if (!response.ok || !data.ok || !data.session) {
+          return {
+            ok: false,
+            message: data.message ?? "Sign-in failed. Please check your details.",
+          };
+        }
+        setSession(data.session);
+        if (data.secondFactor) {
+          setSecondFactor(data.secondFactor);
+        }
+        router.refresh();
+        return { ok: true, session: data.session };
+      } catch {
         return {
           ok: false,
-          message: data.message ?? "Sign-in failed. Please check your details.",
+          message: "Unable to reach the sign-in service. Please try again.",
         };
       }
-      setSession(data.session);
-      router.refresh();
-      return { ok: true, session: data.session };
-    } catch {
-      return {
-        ok: false,
-        message: "Unable to reach the sign-in service. Please try again.",
-      };
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   const signOut = useCallback(async () => {
     try {
@@ -109,19 +124,22 @@ export function AuthProvider({
       });
     } finally {
       setSession(null);
+      router.push("/");
+      router.refresh();
     }
-  }, []);
+  }, [router]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
       demoMode,
+      secondFactor,
       isLoading,
       signIn,
       signOut,
       refreshSession,
     }),
-    [session, demoMode, isLoading, signIn, signOut, refreshSession]
+    [session, demoMode, secondFactor, isLoading, signIn, signOut, refreshSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
