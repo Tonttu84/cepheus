@@ -120,4 +120,29 @@ describe("Crisis repository (*.dbtest.ts)", () => {
     expect(await repo().getCrisisEvents(patientId)).toEqual([first]);
     await prisma.crisisEvent.deleteMany({ where: { participantId: patientId } });
   });
+
+  it("lists unacknowledged crisis events for a clinic and records acknowledging staff member", async () => {
+    const staffId = "staff-user-test-1";
+    await repo().saveCrisisEvent(event(1, "2026-11-16T16:20:00.000Z"));
+    await repo().saveCrisisEvent(event(2, "2026-11-17T16:20:00.000Z"));
+
+    const unackBefore = await repo().getUnacknowledgedCrisisEvents(clinicId);
+    expect(unackBefore.map((e) => e.roundNumber)).toEqual([1, 2]);
+
+    await repo().saveCrisisEvent({
+      ...event(1, "2026-11-16T16:20:00.000Z"),
+      acknowledgedAt: "2026-11-16T18:00:00.000Z",
+      acknowledgedByStaffId: staffId,
+    });
+
+    const unackAfter = await repo().getUnacknowledgedCrisisEvents(clinicId);
+    expect(unackAfter.map((e) => e.roundNumber)).toEqual([2]);
+
+    const events = await repo().getCrisisEvents(patientId);
+    const ack1 = events.find((e) => e.roundNumber === 1);
+    expect(ack1?.acknowledgedAt).toBe("2026-11-16T18:00:00.000Z");
+    expect(ack1?.acknowledgedByStaffId).toBe(staffId);
+
+    await prisma.crisisEvent.deleteMany({ where: { participantId: patientId } });
+  });
 });
