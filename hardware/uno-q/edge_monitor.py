@@ -57,6 +57,88 @@ def estimate_lux_proxy(gray_frame: np.ndarray) -> float:
     return round(max(0.0, (mean_luma / 255.0) * 500.0), 1)
 
 
+def cpu_supports_mediapipe() -> bool:
+    """MediaPipe's aarch64 wheel requires ARMv8.2+ LSE atomics (unavailable on Cortex-A53)."""
+    if os.uname().machine != "aarch64":
+        return True
+    try:
+        with open("/proc/cpuinfo", encoding="utf-8") as fh:
+            return "atomics" in fh.read()
+    except OSError:
+        return True
+
+
+def init_opencv_facemark(
+    model_path: str | None,
+) -> tuple[cv2.CascadeClassifier, Any] | None:
+    """Loads Haar frontal face detector + OpenCV FacemarkLBF 68-point model if present."""
+    candidates = [
+        model_path,
+        os.environ.get("OPENCV_FACEMARK_MODEL"),
+        os.path.join(os.path.dirname(__file__), "lbfmodel.yaml"),
+    ]
+    resolved = next((p for p in candidates if p and os.path.exists(p)), None)
+    if not resolved or not hasattr(cv2, "face"):
+        return None
+    local_cascade = os.path.join(
+        os.path.dirname(__file__), "haarcascade_frontalface_default.xml"
+    )
+    cascade_path = (
+        local_cascade
+        if os.path.exists(local_cascade)
+        else cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    )
+    cascade = cv2.CascadeClassifier(cascade_path)
+    if cascade.empty():
+        return None
+    facemark = cv2.face.createFacemarkLBF()
+    facemark.loadModel(resolved)
+    return cascade, facemark
+
+
+def extract_facemark_metrics(
+    pts: np.ndarray,
+    frame_shape: tuple[int, ...],
+) -> tuple[dict[str, float], tuple[float, float, float] | None]:
+    """Computes normalized 68-point expression ratios and head Euler angles (deg)."""
+    eye_dist = max(1.0, float(np.linalg.norm(pts[45] - pts[36])))
+    ratios = {
+        "mouthOpen": float(np.linalg.norm(pts[66] - pts[62])) / eye_dist,
+        "mouthWidth": float(np.linalg.norm(pts[54] - pts[48])) / eye_dist,
+        "leftEyeOpen": float(np.linalg.norm(pts[41] - pts[37])) / eye_dist,
+        "rightEyeOpen": float(np.linalg.norm(pts[47] - pts[43])) / eye_dist,
+        "leftBrowLift": float(pts[37][1] - pts[19][1]) / eye_dist,
+        "rightBrowLift": float(pts[44][1] - pts[24][1]) / eye_dist,
+    }
+    h, w = frame_shape[:2]
+    model_3d = np.array(
+        [
+            (0.0, 0.0, 0.0),          # Nose tip (30)
+            (0.0, -330.0, -65.0),     # Chin (8)
+            (-225.0, 170.0, -135.0),  # Left eye outer (36)
+            (225.0, 170.0, -135.0),   # Right eye outer (45)
+            (-150.0, -150.0, -125.0), # Left mouth corner (48)
+            (150.0, -150.0, -125.0),  # Right mouth corner (54)
+        ],
+        dtype=np.float64,
+    )
+    image_2d = np.array(
+        [pts[30], pts[8], pts[36], pts[45], pts[48], pts[54]], dtype=np.float64
+    )
+    cam_mat = np.array(
+        [[w, 0, w / 2], [0, w, h / 2], [0, 0, 1]], dtype=np.float64
+    )
+    ok, rvec, _ = cv2.solvePnP(
+        model_3d, image_2d, cam_mat, np.zeros((4, 1)), flags=cv2.SOLVEPNP_ITERATIVE
+    )
+    if not ok:
+        return ratios, None
+    rmat, _ = cv2.Rodrigues(rvec)
+    mat4 = np.eye(4, dtype=np.float64)
+    mat4[:3, :3] = rmat
+    return ratios, extract_euler_deg(mat4)
+
+
 def run_edge_window(
     duration_sec: int = 20,
     camera_index: int = 0,
@@ -79,7 +161,11 @@ def run_edge_window(
         raise RuntimeError(f"Could not open USB camera at index {camera_index}")
 
     landmarker = None
-    if face_landmarker_model and os.path.exists(face_landmarker_model):
+    if (
+        face_landmarker_model
+        and os.path.exists(face_landmarker_model)
+        and cpu_supports_mediapipe()
+    ):
         import mediapipe as mp
 
         options = mp.tasks.vision.FaceLandmarkerOptions(
@@ -90,6 +176,8 @@ def run_edge_window(
             output_facial_transformation_matrixes=True,
         )
         landmarker = mp.tasks.vision.FaceLandmarker.create_from_options(options)
+
+    cv_facemark = None if landmarker is not None else init_opencv_facemark(None)
 
     prev_gray: np.ndarray | None = None
     motion_scores: list[float] = []
@@ -142,6 +230,25 @@ def run_edge_window(
                     ).reshape(4, 4)
                     pitch, yaw, roll = extract_euler_deg(mat)
                     poses.append((ts_ms / 1000.0, pitch, yaw, roll))
+            elif cv_facemark is not None:
+                cascade, facemark = cv_facemark
+                faces = cascade.detectMultiScale(
+                    gray, scaleFactor=1.1, minNeighbors=5, minSize=(80, 80)
+                )
+                if len(faces) > 0:
+                    largest = max(faces, key=lambda f: f[2] * f[3])
+                    ok_fit, lm = facemark.fit(gray, np.array([largest]))
+                    if ok_fit and len(lm) > 0:
+                        pts = np.asarray(lm[0], dtype=np.float64).reshape(-1, 2)
+                        if len(pts) >= 68:
+                            face_frames += 1
+                            ratios, euler = extract_facemark_metrics(
+                                pts, frame_bgr.shape
+                            )
+                            for k, v in ratios.items():
+                                blendshape_series.setdefault(k, []).append(v)
+                            if euler is not None:
+                                poses.append((time.monotonic() - start_mono, *euler))
     finally:
         cap.release()
         if landmarker is not None:
