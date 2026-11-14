@@ -36,9 +36,11 @@ from typing import Any
 from bluetooth_audio import (
     AudioRoute,
     detect_audio_route,
+    ensure_headless_wireplumber_bluetooth,
     open_mic_pcm_stream,
     speak_text_routed,
     wait_for_bluetooth_headphones,
+    warm_tts_prompts,
 )
 from edge_monitor import (
     ConcurrentEdgeCamera,
@@ -52,6 +54,28 @@ CRISIS_SPOKEN_MESSAGE = (
     "or call the MIELI Crisis Helpline 24/7 at 09 2525 0111, "
     "or the TMS Clinic Nurse Line at 09 471 71200."
 )
+
+CHECKIN_QUESTIONS = (
+    (
+        "mood",
+        "How is your mood right now? Say zero for very low up to four for very good, or say not today.",
+    ),
+    (
+        "interest",
+        "How much do you feel like doing things right now? Say zero for not at all up to four for very much, or say not today.",
+    ),
+)
+
+ALL_FIXED_PROMPTS = [
+    f"Wellbeing check-in. {CRISIS_SPOKEN_MESSAGE}",
+    CRISIS_SPOKEN_MESSAGE,
+    CHECKIN_QUESTIONS[0][1],
+    CHECKIN_QUESTIONS[1][1],
+    "Please say a number from zero to four, say not today, or say help.",
+    "Okay, skipped for today with no penalty.",
+    "No problem, moving on with no penalty.",
+    "Thank you. Your check-in is saved.",
+]
 
 CRISIS_PHRASES = (
     "help",
@@ -589,18 +613,8 @@ def run_simultaneous_bedside_cycle(
         speak_text_on_device(
             f"Wellbeing check-in. {CRISIS_SPOKEN_MESSAGE}", route=active_route
         )
-        questions = [
-            (
-                "mood",
-                "How is your mood right now? Say zero for very low up to four for very good, or say not today.",
-            ),
-            (
-                "interest",
-                "How much do you feel like doing things right now? Say zero for not at all up to four for very much, or say not today.",
-            ),
-        ]
         scores: dict[str, int] = {}
-        for key, prompt in questions:
+        for key, prompt in CHECKIN_QUESTIONS:
             kind, val = _ask_single_voice_question(
                 prompt, active_vosk, active_route, listen_timeout_sec, allow_keyboard_fallback
             )
@@ -638,19 +652,28 @@ def watch_bluetooth_and_run(
     Daemon loop: whenever Bluetooth headphones connect, automatically reads the
     check-in questions through them while running facial detection simultaneously.
     """
+    ensure_headless_wireplumber_bluetooth()
     vosk_model = _prepare_vosk_model(allow_keyboard_fallback)
+    warm_tts_prompts(ALL_FIXED_PROMPTS)
     print("[Bluetooth] Waiting for Bluetooth headphones to connect...", flush=True)
     was_connected = False
 
     while True:
         route = detect_audio_route(prefer_bt_mic=prefer_bt_mic)
         if route.bt_connected and not was_connected:
-            # Give BlueZ + PipeWire/PulseAudio a moment to finish binding the sink.
-            ready_route = wait_for_bluetooth_headphones(
-                poll_interval_sec=0.5, timeout_sec=5.0, prefer_bt_mic=prefer_bt_mic
+            ready_route = (
+                route
+                if route.bt_sink_ready
+                else wait_for_bluetooth_headphones(
+                    poll_interval_sec=0.5, timeout_sec=5.0, prefer_bt_mic=prefer_bt_mic
+                )
             )
+            if ready_route is None:
+                time.sleep(2.0)
+                continue
+
             run_simultaneous_bedside_cycle(
-                route=ready_route or route,
+                route=ready_route,
                 vosk_model=vosk_model,
                 listen_timeout_sec=listen_timeout_sec,
                 allow_keyboard_fallback=allow_keyboard_fallback,
@@ -710,6 +733,8 @@ def main() -> None:
         )
         return
 
+    ensure_headless_wireplumber_bluetooth()
+    warm_tts_prompts(ALL_FIXED_PROMPTS)
     if args.wait_for_bluetooth:
         print("[Bluetooth] Waiting for Bluetooth headphones to connect...", flush=True)
         route = wait_for_bluetooth_headphones(prefer_bt_mic=args.bluetooth_mic)

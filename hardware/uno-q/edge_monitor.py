@@ -419,6 +419,8 @@ def run_edge_window_with_config(
         raise RuntimeError(
             "OpenCV and NumPy are required (`pip install -r hardware/uno-q/requirements.txt`)."
         )
+    if hasattr(cv2, "setNumThreads"):
+        cv2.setNumThreads(2)
 
     cap = cv2.VideoCapture(config.camera_index)
     if hasattr(cv2, "CAP_PROP_BUFFERSIZE"):

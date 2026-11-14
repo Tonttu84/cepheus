@@ -132,6 +132,7 @@ class BluetoothAndSimultaneousVoiceCameraTests(unittest.TestCase):
     def test_routes_espeak_wav_directly_to_bluetooth_sink(self) -> None:
         route = bluetooth_audio.AudioRoute(
             bt_connected=True,
+            bt_sink_ready=True,
             bt_device_name="BT Headset",
             output_backend="pulse",
             output_sink="bluez_output.11_22_33_44_55_66.1",
@@ -295,6 +296,7 @@ class BluetoothAndSimultaneousVoiceCameraTests(unittest.TestCase):
 
         bt_route = bluetooth_audio.AudioRoute(
             bt_connected=True,
+            bt_sink_ready=True,
             bt_device_name="AirPods",
             output_backend="pulse",
             output_sink="bluez_output.AA_BB.1",
@@ -352,6 +354,7 @@ class BluetoothAndSimultaneousVoiceCameraTests(unittest.TestCase):
 
         bt_route = bluetooth_audio.AudioRoute(
             bt_connected=True,
+            bt_sink_ready=True,
             bt_device_name="Headphones",
             output_backend="pulse",
             output_sink="bluez_output.AA_BB.1",

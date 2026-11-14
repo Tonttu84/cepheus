@@ -1,6 +1,6 @@
 """
-Bluetooth headphone detection, routing, TTS playback, and live PCM mic capture
-for the Arduino UNO Q bedside unit.
+Bluetooth headphone detection, routing, in-RAM Piper TTS playback, and live PCM
+mic capture for the Arduino UNO Q bedside unit.
 
 Supports native PipeWire (`pw-dump`, `wpctl`, `pw-play`, `pw-record --raw`),
 PulseAudio / pipewire-pulse (`pactl`, `paplay`, `parec`), and ALSA (`aplay`,
@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import dataclasses
 import glob
+import io
 import json
 import os
 import re
@@ -19,12 +20,14 @@ import shutil
 import subprocess
 import sys
 import time
+import wave
 from typing import Any
 
 
 @dataclasses.dataclass(frozen=True)
 class AudioRoute:
     bt_connected: bool
+    bt_sink_ready: bool
     bt_device_name: str | None
     output_backend: str
     output_sink: str | None
@@ -33,6 +36,9 @@ class AudioRoute:
 
 
 AUDIO_UUID_PREFIXES = ("0000110b", "00001108", "0000111e", "0000110d")
+_PIPER_VOICE_INSTANCE: Any = None
+_PIPER_VOICE_MODEL_LOADED: str | None = None
+_WAV_CACHE: dict[str, bytes] = {}
 
 
 def _audio_env() -> dict[str, str]:
@@ -57,6 +63,30 @@ def _run_cmd(args: list[str], timeout: float = 3.0) -> str:
         return res.stdout if res.returncode == 0 else ""
     except (OSError, subprocess.SubprocessError):
         return ""
+
+
+def ensure_headless_wireplumber_bluetooth() -> None:
+    """Ensures WirePlumber allows Bluetooth audio over headless SSH sessions."""
+    if not shutil.which("wireplumber"):
+        return
+    conf_dir = os.path.expanduser("~/.config/wireplumber/wireplumber.conf.d")
+    conf_file = os.path.join(conf_dir, "51-bluez-headless.conf")
+    if os.path.isfile(conf_file):
+        return
+    try:
+        os.makedirs(conf_dir, exist_ok=True)
+        with open(conf_file, "w", encoding="utf-8") as fh:
+            fh.write(
+                "wireplumber.profiles = {\n"
+                "  main = {\n"
+                "    monitor.bluez.seat-monitoring = disabled\n"
+                "  }\n"
+                "}\n"
+            )
+        _run_cmd(["systemctl", "--user", "restart", "wireplumber"], timeout=5.0)
+        time.sleep(1.0)
+    except OSError:
+        pass
 
 
 def _parse_pactl_names(output: str) -> list[str]:
@@ -86,7 +116,9 @@ def _detect_bluez_connected_name() -> str | None:
     return None
 
 
-def _parse_pw_dump(raw_json: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+def _parse_pw_dump(
+    raw_json: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     try:
         items = json.loads(raw_json)
     except Exception:
@@ -121,8 +153,11 @@ def _maybe_switch_pipewire_bt_profile(
     if not shutil.which("wpctl"):
         return False
     bt_devs = [
-        d for d in devices
-        if str(d.get("info", {}).get("props", {}).get("device.name", "")).startswith("bluez_card.")
+        d
+        for d in devices
+        if str(d.get("info", {}).get("props", {}).get("device.name", "")).startswith(
+            "bluez_card."
+        )
     ]
     if not bt_devs:
         return False
@@ -182,11 +217,11 @@ def _detect_pipewire_route(
         if not str(s.get("info", {}).get("props", {}).get("node.name", "")).endswith(".monitor")
     ]
     in_src = _pick_source_by_priority(real_sources, env_in)
-    bt_active = bool(
-        bt_desc or (out_sink and out_sink.startswith(("bluez_output.", "bluez_sink.")))
-    )
+    bt_sink_ok = bool(out_sink and out_sink.startswith(("bluez_output.", "bluez_sink.")))
+    bt_active = bool(bt_desc or bt_sink_ok)
     return AudioRoute(
         bt_connected=bt_active,
+        bt_sink_ready=bt_sink_ok,
         bt_device_name=bt_desc,
         output_backend="pipewire",
         output_sink=out_sink,
@@ -288,12 +323,11 @@ def detect_audio_route(prefer_bt_mic: bool = False) -> AudioRoute:
         out_sink = _pick_pulse_sink(sinks, env_out)
         real_sources = [s for s in sources if not s.endswith(".monitor")]
         in_src = _pick_source_by_priority(real_sources, env_in)
-        bt_active = bool(
-            bt_name
-            or (out_sink and out_sink.startswith(("bluez_output.", "bluez_sink.")))
-        )
+        bt_sink_ok = bool(out_sink and out_sink.startswith(("bluez_output.", "bluez_sink.")))
+        bt_active = bool(bt_name or bt_sink_ok)
         return AudioRoute(
             bt_connected=bt_active,
+            bt_sink_ready=bt_sink_ok,
             bt_device_name=bt_name or (out_sink if bt_active else None),
             output_backend="pulse",
             output_sink=out_sink,
@@ -307,6 +341,7 @@ def detect_audio_route(prefer_bt_mic: bool = False) -> AudioRoute:
     alsa_in = env_in or _detect_alsa_capture_device()
     return AudioRoute(
         bt_connected=bool(bt_name),
+        bt_sink_ready=bool(env_out),
         bt_device_name=bt_name,
         output_backend="alsa" if shutil.which("aplay") else "none",
         output_sink=env_out or None,
@@ -320,26 +355,34 @@ def wait_for_bluetooth_headphones(
     timeout_sec: float | None = None,
     prefer_bt_mic: bool = False,
 ) -> AudioRoute | None:
-    """Blocks until Bluetooth headphones connect and their audio sink is ready."""
+    """Blocks until Bluetooth headphones connect and their PipeWire/PulseAudio sink binds."""
     start = time.monotonic()
+    warned_hijack = False
     while True:
         route = detect_audio_route(prefer_bt_mic=prefer_bt_mic)
-        if route.bt_connected:
-            if route.output_backend in ("pulse", "pipewire") and not (
-                route.output_sink
-                and route.output_sink.startswith(("bluez_output.", "bluez_sink."))
-            ):
-                time.sleep(1.2)
-                route = detect_audio_route(prefer_bt_mic=prefer_bt_mic)
+        if route.bt_connected and (route.bt_sink_ready or route.output_backend == "alsa"):
             return route
+        if route.bt_connected and not route.bt_sink_ready and not warned_hijack:
+            time.sleep(1.5)
+            route = detect_audio_route(prefer_bt_mic=prefer_bt_mic)
+            if route.bt_sink_ready:
+                return route
+            warned_hijack = True
+            print(
+                f"[WARN] '{route.bt_device_name}' is connected via Bluetooth, "
+                "but no PipeWire/PulseAudio Bluetooth sink appeared. "
+                "If a display-manager greeter (lightdm/gdm) is holding Bluetooth audio, run:\n"
+                "  sudo systemctl disable --now lightdm && systemctl --user restart wireplumber\n"
+                "  bluetoothctl disconnect && sleep 1 && bluetoothctl connect <MAC>",
+                file=sys.stderr,
+                flush=True,
+            )
         if timeout_sec is not None and (time.monotonic() - start) >= timeout_sec:
             return None
         time.sleep(poll_interval_sec)
 
 
-def _find_piper_binary_and_model() -> tuple[str | None, str | None]:
-    venv_piper = os.path.join(os.path.dirname(sys.executable), "piper")
-    piper_bin = venv_piper if os.path.isfile(venv_piper) else shutil.which("piper")
+def _find_piper_model_path() -> str | None:
     here = os.path.dirname(__file__)
     local_onnx = sorted(glob.glob(os.path.join(here, "*.onnx")))
     cached_onnx = sorted(glob.glob(os.path.expanduser("~/.cache/piper/*.onnx")))
@@ -348,8 +391,45 @@ def _find_piper_binary_and_model() -> tuple[str | None, str | None]:
         *local_onnx,
         *cached_onnx,
     ]
-    model = next((p for p in candidates if p and os.path.isfile(p)), None)
-    return piper_bin, model
+    return next((p for p in candidates if p and os.path.isfile(p)), None)
+
+
+def _find_piper_binary_and_model() -> tuple[str | None, str | None]:
+    venv_piper = os.path.join(os.path.dirname(sys.executable), "piper")
+    piper_bin = venv_piper if os.path.isfile(venv_piper) else shutil.which("piper")
+    return piper_bin, _find_piper_model_path()
+
+
+def _synthesize_piper_wav_in_ram(text: str, model_path: str) -> bytes | None:
+    global _PIPER_VOICE_INSTANCE, _PIPER_VOICE_MODEL_LOADED
+    cached = _WAV_CACHE.get(text)
+    if cached is not None:
+        return cached
+    try:
+        from piper.voice import PiperVoice
+
+        if _PIPER_VOICE_INSTANCE is None or _PIPER_VOICE_MODEL_LOADED != model_path:
+            _PIPER_VOICE_INSTANCE = PiperVoice.load(model_path)
+            _PIPER_VOICE_MODEL_LOADED = model_path
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wf:
+            _PIPER_VOICE_INSTANCE.synthesize_wav(text, wf)
+        wav_bytes = buf.getvalue()
+        if len(_WAV_CACHE) < 32:
+            _WAV_CACHE[text] = wav_bytes
+        return wav_bytes
+    except Exception:
+        return None
+
+
+def warm_tts_prompts(prompts: list[str]) -> None:
+    """Pre-loads Piper voice and caches fixed check-in WAV buffers in RAM (<1.5 MB)."""
+    model_path = _find_piper_model_path()
+    if not model_path:
+        return
+    print("[TTS] Pre-warming local Piper voice in RAM...", flush=True)
+    for text in prompts:
+        _synthesize_piper_wav_in_ram(text, model_path)
 
 
 def _build_wav_player_cmd(route: AudioRoute) -> list[str] | None:
@@ -378,6 +458,28 @@ def _build_wav_player_cmd(route: AudioRoute) -> list[str] | None:
     return None
 
 
+def _play_wav_bytes(wav_bytes: bytes, player_cmd: list[str]) -> bool:
+    approx_sec = max(1.0, len(wav_bytes) / 32000.0)
+    proc = subprocess.Popen(
+        player_cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=_audio_env(),
+    )
+    try:
+        proc.communicate(input=wav_bytes, timeout=max(12.0, approx_sec + 8.0))
+        return proc.returncode == 0
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=2.0)
+        print(
+            f"[WARN] Audio playback timed out on {player_cmd}; check active sink.",
+            file=sys.stderr,
+        )
+        return False
+
+
 def _pipe_tts_to_player(
     tts_cmd: list[str], player_cmd: list[str], stdin_bytes: bytes | None
 ) -> bool:
@@ -389,21 +491,10 @@ def _pipe_tts_to_player(
         stderr=subprocess.DEVNULL,
         env=env,
     )
-    p_play = subprocess.Popen(
-        player_cmd,
-        stdin=p_tts.stdout,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        env=env,
-    )
-    if p_tts.stdout is not None:
-        p_tts.stdout.close()
-    if stdin_bytes is not None and p_tts.stdin is not None:
-        p_tts.stdin.write(stdin_bytes)
-        p_tts.stdin.close()
-    p_tts.wait(timeout=30)
-    p_play.wait(timeout=30)
-    return p_play.returncode == 0
+    wav_bytes, _ = p_tts.communicate(input=stdin_bytes, timeout=25)
+    if p_tts.returncode != 0 or not wav_bytes:
+        return False
+    return _play_wav_bytes(wav_bytes, player_cmd)
 
 
 def speak_text_routed(text: str, route: AudioRoute | None = None) -> bool:
@@ -413,13 +504,11 @@ def speak_text_routed(text: str, route: AudioRoute | None = None) -> bool:
     print(f"[TTS -> {target_label}] {text}", flush=True)
 
     wav_player = _build_wav_player_cmd(active_route)
-    piper_bin, piper_model = _find_piper_binary_and_model()
-    if piper_bin and piper_model and wav_player:
-        return _pipe_tts_to_player(
-            [piper_bin, "-m", piper_model, "-f", "-"],
-            wav_player,
-            text.encode("utf-8"),
-        )
+    _, piper_model = _find_piper_binary_and_model()
+    if piper_model and wav_player:
+        wav_bytes = _synthesize_piper_wav_in_ram(text, piper_model)
+        if wav_bytes:
+            return _play_wav_bytes(wav_bytes, wav_player)
 
     espeak = shutil.which("espeak-ng") or shutil.which("espeak")
     if espeak and wav_player:
