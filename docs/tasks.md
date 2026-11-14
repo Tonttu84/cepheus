@@ -37,8 +37,39 @@ check-in API. The check-in, patient and clinic pages still show generated data.
 | 56 | Bedside unit: Bluetooth audio, spoken answers, live face check | Reviewed, changes needed (findings on the trail); still being tested on hardware |
 | 53 | Sign-in | Contained in main through trail 57; can be closed |
 | 58 | Patient state over time: a four-state trajectory, suggestions and clinic alarms across the forms, the bedside unit and the health data | Not reviewed yet. Touches suggestions and clinic alarms, so packages C and D1 below must build on it or wait for it |
-| 59 | Adds task P1.4 to this file (passive consent switches default to off; device status shown apart from consent) | Not reviewed yet; P1.4 is listed below as package M |
-| 60 | Monitoring, Fitbit and the Health Connect pairing bound to the signed-in patient | Not reviewed yet. Contains trail 55 and answers its findings; it also covers the Fitbit part of package H, which H therefore leaves out |
+| 59 | Added task P1.4 to this file | Merged; P1.4 is package M below |
+| 60 | Monitoring, Fitbit and the Health Connect pairing bound to the signed-in patient | Reviewed (findings on the trail). Contains trail 55 and fixes its two serious findings; two gaps in the Fitbit link are being fixed on its branch. It also covers the Fitbit part of package H, which H therefore leaves out |
+
+## Who owns which area
+
+Most conflicts on 14 and 15 Nov came from two people changing the same area at the
+same time. Until the demo, each area has one owner, named here by the trails they
+wrote (no names in files). A change inside your own area needs no one's leave. A
+change in someone else's area goes through them: a request in `docs/requests.md`, or
+a finding on their open trail. A small fix they are told about is fine.
+
+| Area | Paths | Owner |
+| --- | --- | --- |
+| Devices and home monitoring | `hardware/uno-q/`, `src/app/api/arduino/`, `src/app/api/fitbit/`, `src/app/api/webhooks/`, `src/app/api/monitoring/`, `src/server/monitoring/`, `src/server/fitbit/`, `src/domain/health-connect/`, `src/app/monitoring/`, `src/components/monitoring/` | Author of trails 55, 56 and 60 |
+| Sign-in, session and the page shell | `src/server/auth/`, `src/app/api/auth/`, `src/app/sign-in/`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/components/site-nav.tsx`, `src/components/header-auth-control.tsx`, `src/components/auth-*.tsx` | Author of trail 57 |
+| Storage and schema | `prisma/schema.prisma`, `src/server/db/` | Author of trail 47 |
+| Check-in, the clinic loop and the rules | `src/domain/` (except `health-connect`), `src/usecases/`, `src/server/api/`, `src/app/api/check-in/`, `src/app/api/clinic/`, `src/app/check-in/`, `src/app/clinic/`, `src/app/patient/`, `src/app/camera/`, and this file | Author of trail 61 |
+| Enclosure | `hardware/enclosure/` | Author of trail 45 |
+
+Files that every feature tends to touch, and how to keep out of each other's way:
+
+- **Pages** (`src/app/**/page.tsx`): a feature adds its own component under
+  `src/components/` and the page only places it. Do not rewrite a page to add a
+  feature.
+- **The schema**: additive changes only, one trail at a time, agreed with the owner
+  of storage first.
+- **The database**: only `src/server/db/` talks to it. A feature reads and writes
+  through the use cases and ports in `src/usecases/`. A test in the gate
+  (`src/__tests__/storage-boundary.test.ts`) fails when a new file outside
+  `src/server/db/` imports the database client; the few existing exceptions are
+  listed in the test and may only shrink.
+- **Browser-test helpers** (`e2e/helpers.ts`): extend it; do not add a second helper
+  file.
 
 ## Work packages
 
