@@ -5,6 +5,9 @@ Checked 2026-11-14 with web search and repository documentation. Builds on
 claim states its source: **official docs**, **repo docs**, or **secondary** (search
 summary or forum report).
 
+`../build-plan.md` is on trail 12 and not yet on `main`. Every build time in this report
+is an estimate, not a measurement.
+
 ## The answer in one paragraph
 
 **Use an existing open-source Health Connect webhook companion app and add one verified
@@ -110,6 +113,12 @@ Sources (B1):
    it once, taps **Pair**, and the app immediately sends a signed test ping (`{"test": true,
    "source": "health_connect"}`) so our screen can confirm connection without the patient
    ever typing a URL or secret (repo docs: `docs/pairing.md`).
+   - **Review note:** the `https://owen282000.github.io/...` form of this link sends the
+     patient's browser, with the secret in it, through a page on the companion app
+     author's site. The secret sits after `#`, so the browser does not send it to that
+     server, but the page's own script can read it. Pairing through the app's own
+     `lifedashboard://pair#...` link, or through a page we serve ourselves, keeps the
+     secret off a third party's page and is safer.
 2. **Pseudonymity (`build-plan.md` decision B3):** The webhook URL carries only an opaque
    webhook token or the pseudonymous participant ID, and the request is authenticated via
    `X-Signature: sha256=<HMAC-SHA256(secret, rawBody)>` (Life Dashboard) or a bearer token
@@ -220,11 +229,17 @@ Both top apps use nearly identical field names for `sleep`, `steps`, `active_cal
 
 | Dimension | Existing webhook app + Next.js route | Custom Cepheus Android app from scratch | Forking `life-dashboard-companion-app` (MIT) |
 | --- | --- | --- | --- |
-| Build time | **2–3 hours** (TypeScript only) | **8–14 hours** (Kotlin, Compose, WorkManager, outbox, QR scanner, plus the Next.js route) | **4–6 hours** (strip UI, hardcode Cepheus branding, build APK, plus the Next.js route) |
+| Build time (estimate) | **2–3 hours** (TypeScript only) | **8–14 hours** (Kotlin, Compose, WorkManager, outbox, QR scanner, plus the Next.js route) | **4–6 hours** (strip UI, hardcode Cepheus branding, build APK, plus the Next.js route) |
 | Fits single-repo TypeScript stack (D15) | Yes | No (adds Android Gradle build and Kotlin codebase) | No (adds Android Gradle build) |
 | Play Store review needed | Already passed (`com.hcwebhook.app` and `com.owen282000.lifedashboard` are on Google Play) | Yes, for Play Store distribution | Yes, for Play Store distribution |
 | iOS Apple Health support | Included (both apps have iOS versions posting the same JSON) | None (Android only) | Requires also forking `life-dashboard-companion-app-ios` |
 | Backfill (>30 days) & retry outbox | Already built and tested | Must be written and tested | Already built |
+
+**Open: licence.** Asking a patient to install HC Webhook (AGPL-3.0) unchanged, as a
+separate app that talks to our server, is one thing. Distributing a rebranded or
+modified copy is another and brings the AGPL's duties with it. Life Dashboard Companion
+is MIT, which allows a fork with its notice kept. Neither case has been checked with
+anyone who knows licensing; treat this as open.
 
 ---
 
@@ -252,6 +267,59 @@ Both top apps use nearly identical field names for `sleep`, `steps`, `active_cal
      per-participant webhook secret (stored as a hash or secret row for that
      pseudonymous participant) and renders a QR code with the Life Dashboard pairing link
      plus the plain webhook URL and header for HC Webhook users.
+
+### D1. Review notes on this design
+
+These notes answer review points on the design above. They add to it; they do not
+replace it.
+
+- **Secret storage.** An HMAC secret cannot be stored as a hash: the server needs the
+  secret itself to recompute the signature. Store it encrypted or as a protected secret
+  row. Only a bearer token can be stored as a hash.
+- **Rules still to state.** How a secret is rotated and revoked (for example when a
+  phone is lost or the patient switches wearable collection off); a size limit and a
+  rate limit on the route; and one uniform answer for a wrong signature and for an
+  unknown patient, so the route does not reveal which patients exist.
+- **Unknown fields and logs.** Fields the schema does not know are dropped, not stored.
+  The raw request body is never logged; logs carry an event id, never health values.
+- **Shape of the route.** The route should only check the signature and parse the body,
+  then hand over to a use case. That use case acts as the patient the secret belongs
+  to and asks the shared access rules (`server/access`) whether this write is allowed,
+  including the consent switch, before it maps and stores anything. This keeps the
+  consent check in one place instead of inside the route.
+- **Real data at the demo.** Data from a teammate's own ring is a real person's health
+  data, not simulated data. Using it needs that person's agreement, and every screen
+  that shows it needs a "live demo" label.
+
+---
+
+## What was built, and what the build plan would need
+
+This report first came with a proposed addition to the build plan. That addition is
+recorded here so the ideas are not lost:
+
+- **Decision B12:** health data from Android Health Connect (and Apple Health on iOS)
+  arrives through an existing open-source companion app posting to
+  `POST /api/webhooks/health-connect`, authenticated per patient by an HMAC-SHA256
+  secret paired by QR code, instead of a custom Android app or a per-vendor login.
+- **Module 17:** the route that receives that webhook, checks the signature and the
+  wearable consent switch, maps the payload into `RingDay` and updates `RhythmWindow`,
+  plus the QR pairing link on the patient settings screen.
+- **A `WebhookCredential` table:** one secret per patient, created when wearable
+  collection is switched on and deleted when it is switched off or the data is deleted.
+- **A protection row:** the route listed as an exception to "every route needs a
+  session", because it requires a valid signature or token instead.
+- **Step 11:** build the route, the pairing link and the mapping, after the sign-in
+  step.
+
+The route has since been built on trail 25 (`src/app/api/webhooks/health-connect/route.ts`
+and `src/domain/health-connect/`). As read on that branch, it rate-limits requests,
+refuses bodies over 512 KB, parses them with a Zod schema, accepts either an
+`X-Signature` HMAC or a bearer token checked against one shared secret from the
+environment, answers a test ping with `204`, and saves the mapped days for a single
+pseudonymous demo participant; per-patient secrets and pairing are not built yet. The
+points above, with the review notes in D1, should be folded into the build plan on
+trail 12 by its author.
 
 ---
 
