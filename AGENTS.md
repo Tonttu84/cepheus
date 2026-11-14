@@ -30,8 +30,13 @@ This file is for coding agents and for people. It holds the rules of this reposi
   3. Report one line per trail: its title, whether it is your user's or a teammate's,
      and the web address that `entire trail show <number>` prints. If nothing is open,
      say nothing.
+  4. Read `docs/requests.md` and tell your user every open request addressed to them or
+     to the team, in a line each.
   Only read: do not comment, approve, add findings or merge unless your user asks. If
   `entire` is missing or not signed in, say so in one line and carry on (see Quirks).
+  To ask something of a teammate, add a row to `docs/requests.md` through a trail and
+  put the request in the trail's title, so that other agents report it at their next
+  session start.
 - The author fixes what the review finds. A fix that goes beyond a finding is reviewed
   again.
 - Commit messages follow Conventional Commits: `type(scope): imperative summary`, at
