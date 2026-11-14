@@ -112,13 +112,20 @@ describe("generateSimulatedPersonWeeks", () => {
 
     for (const r of missedRounds) {
       expect(r.respondedAt).toBeNull();
+      expect(r.reminderSentAt).not.toBeNull();
       expect(r.moodScore).toBeNull();
       expect(r.interestScore).toBeNull();
-      expect(r.energyScore).toBeNull();
-      expect(r.ruminationScore).toBeNull();
-      expect(r.compositeScore).toBeNull();
-      expect(r.singleItemScore).toBeNull();
       expect(r.ringActiveAtRound).toBe(true);
+    }
+
+    const completedRounds = dataset.checkInRounds.filter((r) => r.status === "completed");
+    for (const r of completedRounds) {
+      expect(Number.isInteger(r.moodScore)).toBe(true);
+      expect(Number.isInteger(r.interestScore)).toBe(true);
+      expect(r.moodScore).toBeGreaterThanOrEqual(0);
+      expect(r.moodScore).toBeLessThanOrEqual(4);
+      expect(r.interestScore).toBeGreaterThanOrEqual(0);
+      expect(r.interestScore).toBeLessThanOrEqual(4);
     }
 
     const missedPhq9 = dataset.phq9Assessments.filter((p) => p.status === "missed");
@@ -138,10 +145,10 @@ describe("generateSimulatedPersonWeeks", () => {
     expect(wellSlice.ringDays).toHaveLength(18);
     expect(wellSlice.patientSuggestions).toHaveLength(0);
     expect(wellSlice.clinicFlags).toHaveLength(0);
-    const wellAvgComposite =
-      wellSlice.checkInRounds.reduce((acc, r) => acc + (r.compositeScore ?? 0), 0) /
+    const wellAvgMood =
+      wellSlice.checkInRounds.reduce((acc, r) => acc + (r.moodScore ?? 0), 0) /
       wellSlice.checkInRounds.length;
-    expect(wellAvgComposite).toBeGreaterThanOrEqual(4.0);
+    expect(wellAvgMood).toBeGreaterThanOrEqual(3.0);
     const day18Window = wellSlice.rhythmWindows[wellSlice.rhythmWindows.length - 1];
     expect(day18Window.sri).toBeGreaterThanOrEqual(80);
 
@@ -156,7 +163,7 @@ describe("generateSimulatedPersonWeeks", () => {
     expect(smallDipSlice.patientSuggestions[0].actionKey).toBe("short_walk");
     expect(smallDipSlice.patientSuggestions[0].status).toBe("shown");
     const round8 = smallDipSlice.checkInRounds.find((r) => r.roundNumber === 8);
-    expect(round8?.compositeScore).toBeCloseTo(3.0, 1);
+    expect(round8?.moodScore).toBe(1);
 
     // 3. Demo Moment "sustained_drift" -> Day 56 (Week 8)
     const driftSlice = sliceDatasetThroughDay(full, 56);

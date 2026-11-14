@@ -289,10 +289,17 @@ export function generateSimulatedPersonWeeks(
 
   const participant: SimulatedParticipantRecord = {
     externalId: SIMULATED_PARTICIPANT_EXTERNAL_ID,
+    participantCode: "P-SIM-001",
     label: "Simulated post-TMS participant",
     source: "synthetic",
     isSimulated: true,
     seed,
+    enrolmentDate: baseDate,
+    scheduleDaysJson: JSON.stringify([1, 4]),
+    scheduleTime: "18:00",
+    timeZone: "Europe/Helsinki",
+    takingPart: true,
+    ruleCheckConsent: false,
     tmsCompletedDate,
     currentDemoDay: 56,
     group: "post_tms_maintenance",
@@ -308,7 +315,7 @@ export function generateSimulatedPersonWeeks(
       method: "check_in",
       broadArea: "check_in",
       recordedDescription:
-        "Twice-weekly 4-question wellbeing check-in (mood, interest, energy, rumination). Missed answers are recorded as missed, never scored as zero.",
+        "Twice-weekly two-tap wellbeing check-in (mood and interest, 0–4). Missed answers are recorded as missed, never scored as zero.",
       enabled: true,
       isPersonalSign: true,
       consentedAt: consentTimestamp,
@@ -553,10 +560,10 @@ export function generateSimulatedPersonWeeks(
   }
 
   // -------------------------------------------------------------------------
-  // 2. Generate 16 Twice-Weekly CheckInRound rows
+  // 2. Generate 16 Twice-Weekly CheckInRound rows (two taps, 0..4 integers)
   // -------------------------------------------------------------------------
   const checkInRounds: SimulatedCheckInRoundRecord[] = [];
-  const defaultItemOrder = JSON.stringify(["mood", "interest", "energy", "rumination"]);
+  const defaultItemOrder = JSON.stringify(["mood", "interest"]);
 
   CHECK_IN_SCHEDULE_DAYS.forEach((dayIndex, idx) => {
     const roundNumber = idx + 1;
@@ -566,9 +573,11 @@ export function generateSimulatedPersonWeeks(
 
     // Rounds 15 & 16 (Days 52 & 55, Week 8): check-in silence while ring is active
     if (roundNumber >= 15) {
+      const nextMorning = addDaysIso(baseDate, dayIndex);
       checkInRounds.push({
         scheduledAt,
         respondedAt: null,
+        reminderSentAt: makeTimestamp(nextMorning, 9, 0),
         date,
         dayIndex,
         weekNumber,
@@ -576,14 +585,7 @@ export function generateSimulatedPersonWeeks(
         status: "missed",
         moodScore: null,
         interestScore: null,
-        energyScore: null,
-        ruminationScore: null,
-        compositeScore: null,
-        singleItemScore: null,
         itemOrderJson: null,
-        freeTextNote: null,
-        selfHarmTriggered: false,
-        crisisPathShown: false,
         responseLatencyMs: null,
         ringActiveAtRound: true,
         isSimulated: true,
@@ -594,71 +596,49 @@ export function generateSimulatedPersonWeeks(
 
     let moodScore: number;
     let interestScore: number;
-    let energyScore: number;
-    let ruminationScore: number;
 
     if (roundNumber <= 6) {
-      // Phase 1 (Days 3..20): Well baseline (~4.0 - 4.3 composite)
-      moodScore = roundTo(rng.clamp(rng.normal(4.2, 0.12), 4.0, 4.4), 1);
-      interestScore = roundTo(rng.clamp(rng.normal(4.2, 0.12), 4.0, 4.4), 1);
-      energyScore = roundTo(rng.clamp(rng.normal(4.05, 0.14), 3.8, 4.3), 1);
-      ruminationScore = roundTo(rng.clamp(rng.normal(1.85, 0.14), 1.6, 2.1), 1);
+      // Phase 1 (Days 3..20): Well baseline (3 or 4 on 0..4 scale)
+      moodScore = rng.next() < 0.7 ? 4 : 3;
+      interestScore = rng.next() < 0.7 ? 4 : 3;
     } else if (roundNumber === 7) {
-      // Day 24: Normal before the small dip (~3.95)
-      moodScore = 4.0;
-      interestScore = 4.0;
-      energyScore = 3.8;
-      ruminationScore = 2.0;
+      // Day 24: Normal before the small dip
+      moodScore = 3;
+      interestScore = 4;
     } else if (roundNumber === 8) {
-      // Day 27: Single-round small dip (~3.0 composite)
-      moodScore = 3.0;
-      interestScore = 3.1;
-      energyScore = 2.9;
-      ruminationScore = 3.0;
+      // Day 27: Single-round small dip (>= 2 below baseline mood)
+      moodScore = 1;
+      interestScore = 2;
     } else if (roundNumber === 9 || roundNumber === 10) {
-      // Days 31 & 34: Recovery after the one-tap suggestion (~3.9 - 4.1)
-      moodScore = roundNumber === 9 ? 3.9 : 4.1;
-      interestScore = roundNumber === 9 ? 4.0 : 4.1;
-      energyScore = roundNumber === 9 ? 3.8 : 4.0;
-      ruminationScore = roundNumber === 9 ? 2.1 : 1.9;
+      // Days 31 & 34: Recovery after the one-tap suggestion
+      moodScore = roundNumber === 9 ? 3 : 4;
+      interestScore = 3;
     } else if (roundNumber === 11) {
-      // Day 38: Start of Phase 3 drift (~3.1 composite)
-      moodScore = 3.1;
-      interestScore = 3.2;
-      energyScore = 3.0;
-      ruminationScore = 2.9;
+      // Day 38: Start of Phase 3 drift
+      moodScore = 2;
+      interestScore = 3;
     } else if (roundNumber === 12) {
-      // Day 41: Sustained dip round 1 (~2.3 composite)
-      moodScore = 2.3;
-      interestScore = 2.4;
-      energyScore = 2.2;
-      ruminationScore = 3.7;
+      // Day 41: Sustained dip round 1
+      moodScore = 1;
+      interestScore = 2;
     } else if (roundNumber === 13) {
-      // Day 45: Sustained dip round 2 (~2.1 composite)
-      moodScore = 2.1;
-      interestScore = 2.2;
-      energyScore = 2.0;
-      ruminationScore = 3.9;
+      // Day 45: Sustained dip round 2
+      moodScore = 1;
+      interestScore = 1;
     } else {
-      // Round 14 (Day 48): Sustained dip round 3 (~2.0 composite) before Week 8 silence
-      moodScore = 2.0;
-      interestScore = 2.0;
-      energyScore = 1.9;
-      ruminationScore = 4.1;
+      // Round 14 (Day 48): Sustained dip round 3 before Week 8 silence
+      moodScore = 0;
+      interestScore = 1;
     }
-
-    const compositeScore = roundTo(
-      (moodScore + interestScore + energyScore + (6 - ruminationScore)) / 4,
-      2
-    );
 
     const responseMinutesAfter = rng.int(12, 65);
     const respondedAt = makeTimestamp(date, 18, responseMinutesAfter);
-    const responseLatencyMs = rng.int(18_000, 42_000);
+    const responseLatencyMs = rng.int(8_000, 22_000);
 
     checkInRounds.push({
       scheduledAt,
       respondedAt,
+      reminderSentAt: null,
       date,
       dayIndex,
       weekNumber,
@@ -666,14 +646,7 @@ export function generateSimulatedPersonWeeks(
       status: "completed",
       moodScore,
       interestScore,
-      energyScore,
-      ruminationScore,
-      compositeScore,
-      singleItemScore: null,
       itemOrderJson: defaultItemOrder,
-      freeTextNote: null,
-      selfHarmTriggered: false,
-      crisisPathShown: false,
       responseLatencyMs,
       ringActiveAtRound: true,
       isSimulated: true,
@@ -692,6 +665,8 @@ export function generateSimulatedPersonWeeks(
       date: addDaysIso(baseDate, 0),
       dayIndex: 1,
       weekNumber: 1,
+      roundNumber: 1,
+      completedInRoundNumber: 1,
       status: "completed",
       totalScore: 3,
       item1Interest: 0,
@@ -703,7 +678,6 @@ export function generateSimulatedPersonWeeks(
       item7Concentration: 1,
       item8Psychomotor: 0,
       item9SelfHarm: 0,
-      crisisPathShown: false,
       baselineDelta: 0,
       isSimulated: true,
       source: "synthetic",
@@ -715,6 +689,8 @@ export function generateSimulatedPersonWeeks(
       date: addDaysIso(baseDate, 13),
       dayIndex: 14,
       weekNumber: 2,
+      roundNumber: 4,
+      completedInRoundNumber: 4,
       status: "completed",
       totalScore: 3,
       item1Interest: 0,
@@ -726,7 +702,6 @@ export function generateSimulatedPersonWeeks(
       item7Concentration: 0,
       item8Psychomotor: 0,
       item9SelfHarm: 0,
-      crisisPathShown: false,
       baselineDelta: 0,
       isSimulated: true,
       source: "synthetic",
@@ -738,6 +713,8 @@ export function generateSimulatedPersonWeeks(
       date: addDaysIso(baseDate, 27),
       dayIndex: 28,
       weekNumber: 4,
+      roundNumber: 8,
+      completedInRoundNumber: 8,
       status: "completed",
       totalScore: 5,
       item1Interest: 1,
@@ -749,7 +726,6 @@ export function generateSimulatedPersonWeeks(
       item7Concentration: 1,
       item8Psychomotor: 0,
       item9SelfHarm: 0,
-      crisisPathShown: false,
       baselineDelta: 2,
       isSimulated: true,
       source: "synthetic",
@@ -761,6 +737,8 @@ export function generateSimulatedPersonWeeks(
       date: addDaysIso(baseDate, 41),
       dayIndex: 42,
       weekNumber: 6,
+      roundNumber: 12,
+      completedInRoundNumber: 12,
       status: "completed",
       totalScore: 10,
       item1Interest: 2,
@@ -772,7 +750,6 @@ export function generateSimulatedPersonWeeks(
       item7Concentration: 1,
       item8Psychomotor: 0,
       item9SelfHarm: 0,
-      crisisPathShown: false,
       baselineDelta: 7,
       isSimulated: true,
       source: "synthetic",
@@ -784,6 +761,8 @@ export function generateSimulatedPersonWeeks(
       date: addDaysIso(baseDate, 55),
       dayIndex: 56,
       weekNumber: 8,
+      roundNumber: 16,
+      completedInRoundNumber: null,
       status: "missed",
       totalScore: null,
       item1Interest: null,
@@ -795,7 +774,6 @@ export function generateSimulatedPersonWeeks(
       item7Concentration: null,
       item8Psychomotor: null,
       item9SelfHarm: null,
-      crisisPathShown: false,
       baselineDelta: null,
       isSimulated: true,
       source: "synthetic",
@@ -1022,9 +1000,12 @@ export function generateSimulatedPersonWeeks(
   const windowStartDate = addDaysIso(baseDate, 0);
   const windowEndDate = addDaysIso(baseDate, 20);
 
-  const baselineComposites = checkInRounds
-    .filter((r) => r.dayIndex <= 21 && r.compositeScore !== null)
-    .map((r) => r.compositeScore as number);
+  const baselineMoodValues = checkInRounds
+    .filter((r) => r.dayIndex <= 21 && r.moodScore !== null)
+    .map((r) => r.moodScore as number);
+  const baselineInterestValues = checkInRounds
+    .filter((r) => r.dayIndex <= 21 && r.interestScore !== null)
+    .map((r) => r.interestScore as number);
   const baselineSriValues = rhythmWindows
     .filter((w) => w.dayIndex <= 21)
     .map((w) => w.sri);
@@ -1059,7 +1040,8 @@ export function generateSimulatedPersonWeeks(
   };
 
   const personalBaselines: SimulatedPersonalBaselineRecord[] = [
-    buildBaselineRow("check_in_composite", baselineComposites),
+    buildBaselineRow("check_in_mood", baselineMoodValues),
+    buildBaselineRow("check_in_interest", baselineInterestValues),
     buildBaselineRow("sleep_sri", baselineSriValues),
     buildBaselineRow("ring_ra", baselineRaValues),
     buildBaselineRow("ring_steps", baselineStepsValues),
@@ -1085,8 +1067,6 @@ export function generateSimulatedPersonWeeks(
       status: "completed",
       respondedAt: makeTimestamp(day28Date, 14, 30),
       armType: "intervention",
-      preMoodScore: 3.0,
-      postMoodScore: 3.8,
       nextCheckInDelta: 0.9,
       isSimulated: true,
     },
@@ -1103,6 +1083,7 @@ export function generateSimulatedPersonWeeks(
       sinceDate: day41Date,
       dayIndex: 45,
       triggerKind: "sustained_dip",
+      ruleVersion: 1,
       primaryArea: "check_in",
       broadAreasJson: JSON.stringify(["check_in", "sleep", "daily_routine"]),
       status: "open",
@@ -1153,7 +1134,6 @@ export function sliceDatasetThroughDay(
           ...s,
           status: "shown" as const,
           respondedAt: null,
-          postMoodScore: null,
           nextCheckInDelta: null,
         };
       }

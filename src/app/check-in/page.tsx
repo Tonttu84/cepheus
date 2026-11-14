@@ -24,8 +24,8 @@ export default function CheckInPage() {
           Twice-weekly wellbeing check-in &amp; fortnightly PHQ-9
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700">
-          Designed for low effort after TMS treatment. You can answer four brief
-          1–5 tap questions twice a week, or tap{" "}
+          Designed for low effort after TMS treatment. You can answer two brief
+          0–4 tap questions twice a week, or tap{" "}
           <strong className="font-semibold text-stone-900">
             &ldquo;Not today&rdquo;
           </strong>{" "}
@@ -69,7 +69,7 @@ export default function CheckInPage() {
         </div>
       </section>
 
-      {/* 4 Low-Effort Check-In Prompts Preview */}
+      {/* 2 Low-Effort Check-In Prompts Preview */}
       <section
         aria-label="Twice-weekly check-in prompts"
         className="rounded-xl border border-stone-200 bg-white p-6 shadow-xs"
@@ -77,11 +77,11 @@ export default function CheckInPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">
-              Twice-weekly check-in prompts (4 quick taps)
+              Twice-weekly check-in prompts (2 quick taps)
             </h2>
             <p className="mt-0.5 text-sm text-stone-600">
-              If 4 taps feel like too much today, you can answer a single
-              overall check-in question or choose &ldquo;Not today&rdquo;.
+              Two taps, zero typing — or choose &ldquo;Not today&rdquo; at no
+              cost when unwell.
             </p>
           </div>
           <button
@@ -111,7 +111,7 @@ export default function CheckInPage() {
                 {item.prompt}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {[1, 2, 3, 4, 5].map((choice) => (
+                {[0, 1, 2, 3, 4].map((choice) => (
                   <span
                     key={choice}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-stone-300 bg-white text-xs font-semibold text-stone-700"

@@ -8,10 +8,17 @@ export interface GenerateSimulationOptions {
 
 export interface SimulatedParticipantRecord {
   externalId: string;
+  participantCode: string;
   label: string;
   source: "synthetic";
   isSimulated: true;
   seed: number;
+  enrolmentDate: string;
+  scheduleDaysJson: string;
+  scheduleTime: string;
+  timeZone: string;
+  takingPart: true;
+  ruleCheckConsent: false;
   tmsCompletedDate: string;
   currentDemoDay: number;
   group: string;
@@ -65,6 +72,7 @@ export interface SimulatedRingDayRecord {
 export interface SimulatedCheckInRoundRecord {
   scheduledAt: Date;
   respondedAt: Date | null;
+  reminderSentAt: Date | null;
   date: string;
   dayIndex: number;
   weekNumber: number;
@@ -72,14 +80,7 @@ export interface SimulatedCheckInRoundRecord {
   status: "completed" | "not_today" | "missed";
   moodScore: number | null;
   interestScore: number | null;
-  energyScore: number | null;
-  ruminationScore: number | null;
-  compositeScore: number | null;
-  singleItemScore: number | null;
   itemOrderJson: string | null;
-  freeTextNote: string | null;
-  selfHarmTriggered: boolean;
-  crisisPathShown: boolean;
   responseLatencyMs: number | null;
   ringActiveAtRound: boolean;
   isSimulated: true;
@@ -92,6 +93,8 @@ export interface SimulatedPhq9AssessmentRecord {
   date: string;
   dayIndex: number;
   weekNumber: number;
+  roundNumber: number | null;
+  completedInRoundNumber: number | null;
   status: "completed" | "missed";
   totalScore: number | null;
   item1Interest: number | null;
@@ -103,7 +106,6 @@ export interface SimulatedPhq9AssessmentRecord {
   item7Concentration: number | null;
   item8Psychomotor: number | null;
   item9SelfHarm: number | null;
-  crisisPathShown: boolean;
   baselineDelta: number | null;
   isSimulated: true;
   source: "synthetic";
@@ -196,8 +198,6 @@ export interface SimulatedPatientSuggestionRecord {
   status: "shown" | "accepted" | "completed" | "skipped";
   respondedAt: Date | null;
   armType: "intervention" | "control";
-  preMoodScore: number | null;
-  postMoodScore: number | null;
   nextCheckInDelta: number | null;
   isSimulated: true;
 }
@@ -206,7 +206,8 @@ export interface SimulatedClinicFlagRecord {
   createdAt: Date;
   sinceDate: string;
   dayIndex: number;
-  triggerKind: "sustained_dip" | "silence" | "crisis_self_harm";
+  triggerKind: "low_answers" | "silence" | "mixed" | "phq9" | "sustained_dip";
+  ruleVersion: number;
   primaryArea: "check_in" | "sleep" | "daily_routine" | "activity_outside_home" | "financial_routine";
   broadAreasJson: string;
   status: "open" | "nurse_call_requested" | "booster_offered" | "watching" | "resolved";

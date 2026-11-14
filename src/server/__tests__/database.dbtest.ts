@@ -11,14 +11,20 @@ describe("PostgreSQL Database Integration Tests (*.dbtest.ts)", () => {
   });
 
   afterAll(async () => {
-    // Clean up test participants created during transaction tests
+    // Clean up test participants and Step 2 clinic/log rows created during tests
     try {
       await prisma.participant.deleteMany({
         where: {
           externalId: {
-            in: ["tx-commit-1", "tx-commit-2", "tx-rollback-1"],
+            in: ["tx-commit-1", "tx-commit-2", "tx-rollback-1", "step2-delete-check"],
           },
         },
+      });
+      await prisma.clinic.deleteMany({
+        where: { code: "test-clinic-step2" },
+      });
+      await prisma.accessLog.deleteMany({
+        where: { patientCode: "P-STEP2-DEL" },
       });
     } catch {
       // Ignore cleanup error if already removed
@@ -26,17 +32,21 @@ describe("PostgreSQL Database Integration Tests (*.dbtest.ts)", () => {
     await prisma.$disconnect();
   });
 
-  it("writes and reads back the seed simulated participant with its isSimulated mark", async () => {
+  it("writes and reads back the seed simulated participant with its isSimulated mark and clinic link", async () => {
     const seedResult = await seedDatabase(prisma);
     expect(seedResult.participantId).toBeDefined();
 
     const participant = await prisma.participant.findUnique({
       where: { id: seedResult.participantId },
+      include: { clinic: true, consentEvents: true },
     });
 
     expect(participant).not.toBeNull();
     expect(participant?.id).toBe(seedResult.participantId);
     expect(participant?.externalId).toBe(seedResult.externalId);
+    expect(participant?.participantCode).toBe("P-SIM-001");
+    expect(participant?.clinic?.code).toBe("sim-clinic-01");
+    expect(participant?.consentEvents.length).toBeGreaterThan(0);
     expect(participant?.isSimulated).toBe(true);
     expect(participant?.label).toBe("Simulated post-TMS participant");
   });
@@ -150,5 +160,106 @@ describe("PostgreSQL Database Integration Tests (*.dbtest.ts)", () => {
       );
       expect(Number(result[0].count)).toBe(0);
     }
+  });
+
+  it("stores Step 2 tables (Clinic, StaffUser, EnrolmentCode, ConsentEvent, CrisisEvent) and keeps AccessLog after participant deletion", async () => {
+    const clinic = await prisma.clinic.upsert({
+      where: { code: "test-clinic-step2" },
+      update: {},
+      create: {
+        code: "test-clinic-step2",
+        name: "Step 2 Test Clinic",
+      },
+    });
+
+    const staff = await prisma.staffUser.upsert({
+      where: { email: "nurse-step2@test.local" },
+      update: {},
+      create: {
+        clinicId: clinic.id,
+        email: "nurse-step2@test.local",
+        name: "Test Nurse",
+        role: "nurse",
+      },
+    });
+
+    const participant = await prisma.participant.create({
+      data: {
+        clinicId: clinic.id,
+        externalId: "step2-delete-check",
+        participantCode: "P-STEP2-DEL",
+        label: "Step 2 Delete Check Participant",
+        source: "synthetic",
+        isSimulated: true,
+        enrolmentDate: "2026-11-14",
+        scheduleDaysJson: "[1,4]",
+        scheduleTime: "18:00",
+        timeZone: "Europe/Helsinki",
+        takingPart: true,
+        ruleCheckConsent: false,
+      },
+    });
+
+    await prisma.enrolmentCode.create({
+      data: {
+        clinicId: clinic.id,
+        participantId: participant.id,
+        codeHash: `hash-${participant.id}`,
+        expiresAt: new Date("2026-11-15T18:00:00Z"),
+      },
+    });
+
+    await prisma.consentEvent.create({
+      data: {
+        clinicId: clinic.id,
+        participantId: participant.id,
+        layer: "taking_part",
+        enabled: true,
+        noticeVersion: "v1",
+      },
+    });
+
+    await prisma.crisisEvent.create({
+      data: {
+        clinicId: clinic.id,
+        participantId: participant.id,
+        roundNumber: 1,
+        itemId: "item9SelfHarm",
+        value: 1,
+        acknowledgedByStaffId: staff.id,
+        acknowledgedAt: new Date("2026-11-14T19:00:00Z"),
+        isSimulated: true,
+      },
+    });
+
+    await prisma.accessLog.create({
+      data: {
+        clinicId: clinic.id,
+        actorKind: "staff",
+        actorId: staff.id,
+        patientCode: "P-STEP2-DEL",
+        action: "read",
+        targetKind: "crisis_messages",
+        purpose: "care",
+        allowed: true,
+        reason: "allowed",
+      },
+    });
+
+    // Delete participant -> ConsentEvent, CrisisEvent, EnrolmentCode cascade away
+    await prisma.participant.delete({
+      where: { id: participant.id },
+    });
+
+    expect(await prisma.consentEvent.count({ where: { participantId: participant.id } })).toBe(0);
+    expect(await prisma.crisisEvent.count({ where: { participantId: participant.id } })).toBe(0);
+    expect(await prisma.enrolmentCode.count({ where: { participantId: participant.id } })).toBe(0);
+
+    // AccessLog holds no answers and survives participant deletion
+    const logs = await prisma.accessLog.findMany({
+      where: { patientCode: "P-STEP2-DEL" },
+    });
+    expect(logs).toHaveLength(1);
+    expect(logs[0].targetKind).toBe("crisis_messages");
   });
 });

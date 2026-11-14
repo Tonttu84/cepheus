@@ -267,7 +267,7 @@ export default async function HomePage() {
                 Low-effort wellbeing check-in
               </h3>
               <p className="mt-1.5 text-sm text-stone-600">
-                Four 1–5 tap questions twice a week, explicit &ldquo;Not
+                Two 0–4 tap questions twice a week, explicit &ldquo;Not
                 today&rdquo; skip, missed answers recorded as missed (never
                 punished), and an immediate human crisis path.
               </p>
