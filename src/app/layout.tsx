@@ -4,9 +4,9 @@ import { CrisisHelpBar } from "@/components/crisis-help-bar";
 import { SiteNav } from "@/components/site-nav";
 
 export const metadata: Metadata = {
-  title: "Cepheus — Beyond the Clinic",
+  title: "Cepheus · Beyond the Clinic",
   description:
-    "Post-TMS home wellbeing check-in companion supporting patient self-care and clinic follow-up.",
+    "Home wellbeing check-ins and clinic follow-up for the months after TMS treatment.",
 };
 
 export default function RootLayout({
@@ -16,21 +16,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className=" flex min-h-screen flex-col bg-stone-50 text-stone-900 antialiased">
+      <body className="flex min-h-screen flex-col text-ink-primary antialiased selection:bg-accent-sage/15 selection:text-ink-primary">
         <CrisisHelpBar />
         <SiteNav />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
           {children}
         </main>
-        <footer className="border-t border-stone-200 bg-white py-4 text-xs text-stone-600">
-          <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <footer className="border-t border-border-hairline bg-surface-card/80 py-8 text-xs text-ink-secondary backdrop-blur-xs">
+          <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p>
               Wellbeing check-in prototype for post-TMS follow-up. The product
               supports follow-up by the clinic and makes no diagnosis and no
               treatment claim.
             </p>
-            <p className="text-stone-500">
-              Camera &amp; microphone inputs stay on-device; only derived
+            <p className="text-ink-muted">
+              Camera and microphone inputs stay on your device. Only summary
               numbers are stored.
             </p>
           </div>

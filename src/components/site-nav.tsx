@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", testId: "nav-overview" },
@@ -10,35 +13,73 @@ const NAV_ITEMS = [
 ] as const;
 
 export function SiteNav() {
+  const pathname = usePathname();
+
   return (
-    <header className="border-b border-stone-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <header className="sticky top-0 z-30 border-b border-border-hairline bg-surface-card/90 backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="text-lg font-semibold tracking-tight text-stone-900 hover:text-stone-700"
+            className="group inline-flex min-h-11 items-center gap-2.5 rounded-lg text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
           >
-            Cepheus
+            <span
+              aria-hidden="true"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-sage text-white shadow-2xs transition group-hover:bg-accent-sage-hover"
+            >
+              {/* Minimal Cepheus constellation house-pentagon mark */}
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 4L5.5 10.5L7.5 19H16.5L18.5 10.5L12 4Z" />
+                <circle cx="12" cy="4" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="5.5" cy="10.5" r="1.1" fill="currentColor" stroke="none" />
+                <circle cx="18.5" cy="10.5" r="1.1" fill="currentColor" stroke="none" />
+                <circle cx="7.5" cy="19" r="1.1" fill="currentColor" stroke="none" />
+                <circle cx="16.5" cy="19" r="1.1" fill="currentColor" stroke="none" />
+              </svg>
+            </span>
+            <span className="font-display text-xl font-semibold tracking-tight">
+              Cepheus
+            </span>
           </Link>
-          <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
-            Beyond the Clinic · Post-TMS Home Follow-Up
+          <span className="hidden rounded-full border border-border-hairline bg-surface-subtle px-2.5 py-0.5 text-[11px] font-medium text-ink-secondary md:inline-block">
+            Beyond the Clinic · Post-TMS Follow-Up
           </span>
         </div>
 
         <nav
           aria-label="Primary navigation"
-          className="flex flex-wrap items-center gap-1.5 sm:gap-2"
+          className="flex flex-wrap items-center gap-1 rounded-xl border border-border-hairline bg-surface-subtle p-1"
         >
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              data-testid={item.testId}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-stone-700 transition hover:bg-stone-100 hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive =
+              item.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-testid={item.testId}
+                aria-current={isActive ? "page" : undefined}
+                className={`inline-flex min-h-11 items-center rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
+                  isActive
+                    ? "bg-accent-sage text-white shadow-2xs"
+                    : "text-ink-secondary hover:bg-surface-card hover:text-ink-primary"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </header>

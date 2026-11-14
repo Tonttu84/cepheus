@@ -183,4 +183,61 @@ describe("Server Security Utilities (src/server/security)", () => {
       _resetEnv();
     }
   });
+
+  it("enforces device replay protection: clock skew boundaries (+/-5m), 1ms beyond skew, missing nonce, and duplicate nonce", () => {
+    _resetDeviceReplays();
+    const now = 1_794_650_000_000;
+    const deviceId = "unoq-desk-01";
+    const CLOCK_SKEW_MS = 5 * 60_000; // 300,000 ms
+
+    // Exactly at allowed clock skew: past boundary (now - 300_000)
+    const exactPast = checkAndRecordDeviceReplay(deviceId, now - CLOCK_SKEW_MS, "nonce-exact-past-1", now);
+    expect(exactPast.ok).toBe(true);
+
+    // Exactly at allowed clock skew: future boundary (now + 300_000)
+    const exactFuture = checkAndRecordDeviceReplay(deviceId, now + CLOCK_SKEW_MS, "nonce-exact-fut-1", now);
+    expect(exactFuture.ok).toBe(true);
+
+    // One millisecond past allowed clock skew: past (now - 300_001) -> stale refusal
+    const pastSkew = checkAndRecordDeviceReplay(deviceId, now - CLOCK_SKEW_MS - 1, "nonce-past-skew-1", now);
+    expect(pastSkew.ok).toBe(false);
+    if (!pastSkew.ok) {
+      expect(pastSkew.status).toBe(401);
+      expect(pastSkew.reason).toMatch(/expired or outside allowed clock skew/i);
+    }
+
+    // One millisecond past allowed clock skew: future (now + 300_001) -> future refused like stale
+    const futureSkew = checkAndRecordDeviceReplay(deviceId, now + CLOCK_SKEW_MS + 1, "nonce-future-skew-1", now);
+    expect(futureSkew.ok).toBe(false);
+    if (!futureSkew.ok) {
+      expect(futureSkew.status).toBe(401);
+      expect(futureSkew.reason).toMatch(/expired or outside allowed clock skew/i);
+    }
+
+    // Missing nonce: undefined, empty, or too short
+    const missingNonce = checkAndRecordDeviceReplay(deviceId, now, undefined, now);
+    expect(missingNonce.ok).toBe(false);
+    if (!missingNonce.ok) {
+      expect(missingNonce.status).toBe(401);
+      expect(missingNonce.reason).toMatch(/unique nonce/i);
+    }
+
+    const shortNonce = checkAndRecordDeviceReplay(deviceId, now, "short", now);
+    expect(shortNonce.ok).toBe(false);
+    if (!shortNonce.ok) {
+      expect(shortNonce.status).toBe(401);
+    }
+
+    // Nonce used twice: first succeeds, second rejected with 409
+    const nonce = "nonce-replayed-12345";
+    const firstUse = checkAndRecordDeviceReplay(deviceId, now, nonce, now);
+    expect(firstUse.ok).toBe(true);
+
+    const secondUse = checkAndRecordDeviceReplay(deviceId, now + 10, nonce, now + 10);
+    expect(secondUse.ok).toBe(false);
+    if (!secondUse.ok) {
+      expect(secondUse.status).toBe(409);
+      expect(secondUse.reason).toMatch(/replayed hardware nonce/i);
+    }
+  });
 });

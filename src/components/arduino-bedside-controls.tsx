@@ -52,7 +52,7 @@ export function ArduinoBedsideControls({
       data-testid="arduino-simulate-voice"
       disabled={busy}
       onClick={handleSimulateVoiceCheckIn}
-      className="rounded-lg border border-stone-300 bg-white px-3.5 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-50 disabled:opacity-50 cursor-pointer"
+      className="min-h-11 cursor-pointer rounded-xl border border-border-tactile bg-surface-card px-4 py-2 text-xs font-semibold text-ink-primary transition hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage disabled:opacity-50"
     >
       {busy ? "Saving..." : "Simulate UNO Q voice check-in"}
     </button>

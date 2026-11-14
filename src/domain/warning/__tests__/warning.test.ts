@@ -32,34 +32,100 @@ describe('Warning Rule', () => {
 
     it('a property-style check with a simple seeded loop: a warning is never raised right after a normal round, and never more than once without a call in between', () => {
       let state = INITIAL_WARNING_STATE;
-      let warnings = 0;
+      let prevClosedKind: 'normal' | 'low' | 'no_answer' | null = null;
+      let warningRaisedSinceCall = false;
       
       // simple deterministic sequence
       const kinds = ['normal', 'low', 'no_answer', 'low', 'low', 'normal', 'no_answer', 'no_answer', 'low'];
       for (let i = 0; i < 200; i++) {
         const kind = kinds[i % kinds.length] as 'normal' | 'low' | 'no_answer';
         const res = processWarningEvent(state, { type: 'round_closed', kind, date: `day-${i}` }, DEFAULT_RULE_CONFIG);
+        expect(res.ok).toBe(true);
         if (res.ok) {
           const hasWarning = res.effects.some(e => e.type === 'warning');
           if (hasWarning) {
-            warnings++;
-            // verify no warning right after a normal round
-            expect(state.prevRound).not.toBeNull(); 
+            // When a round_closed event raises a warning, the round closed just before it was not normal
+            expect(prevClosedKind).not.toBeNull();
+            expect(prevClosedKind).not.toBe('normal');
+            expect(['low', 'no_answer']).toContain(prevClosedKind);
+            // No second warning is raised until a call has been recorded
+            expect(warningRaisedSinceCall).toBe(false);
+            warningRaisedSinceCall = true;
           }
           state = res.newState;
+          prevClosedKind = kind;
           
           if (i % 17 === 0) {
             const callRes = processWarningEvent(state, { type: 'call_recorded' }, DEFAULT_RULE_CONFIG);
+            expect(callRes.ok).toBe(true);
             if (callRes.ok) {
               state = callRes.newState;
-              warnings = 0; // reset
+              warningRaisedSinceCall = false; // reset
             }
-          } else {
-            // verify never more than once without a call
-            expect(warnings).toBeLessThanOrEqual(1);
           }
         }
       }
+    });
+
+    it('a round_closed event never raises a warning when the immediately preceding round was normal', () => {
+      const candidates: Array<'normal' | 'low' | 'no_answer'> = ['normal', 'low', 'no_answer'];
+      for (const nextKind of candidates) {
+        const state = INITIAL_WARNING_STATE;
+        const first = processWarningEvent(state, { type: 'round_closed', kind: 'normal', date: '2026-01-01' }, DEFAULT_RULE_CONFIG);
+        expect(first.ok).toBe(true);
+        if (first.ok) {
+          expect(first.effects.some((e) => e.type === 'warning')).toBe(false);
+          const second = processWarningEvent(first.newState, { type: 'round_closed', kind: nextKind, date: '2026-01-04' }, DEFAULT_RULE_CONFIG);
+          expect(second.ok).toBe(true);
+          if (second.ok) {
+            expect(second.effects.some((e) => e.type === 'warning')).toBe(false);
+          }
+        }
+      }
+    });
+
+    it('no second warning is raised across any sequence of low or missed rounds until a call has been recorded', () => {
+      const state = INITIAL_WARNING_STATE;
+      // First round low: small dip
+      const r1 = processWarningEvent(state, { type: 'round_closed', kind: 'low', date: '2026-01-01' }, DEFAULT_RULE_CONFIG);
+      expect(r1.ok).toBe(true);
+      if (!r1.ok) throw new Error();
+      expect(r1.effects.some((e) => e.type === 'warning')).toBe(false);
+
+      // Second round low: warning raised
+      const r2 = processWarningEvent(r1.newState, { type: 'round_closed', kind: 'low', date: '2026-01-04' }, DEFAULT_RULE_CONFIG);
+      expect(r2.ok).toBe(true);
+      if (!r2.ok) throw new Error();
+      expect(r2.effects.some((e) => e.type === 'warning')).toBe(true);
+
+      // Subsequent low and no_answer rounds: NO second warning
+      const sequence: Array<'low' | 'no_answer'> = ['low', 'no_answer', 'low', 'no_answer', 'no_answer'];
+      let curState = r2.newState;
+      for (let i = 0; i < sequence.length; i++) {
+        const next = processWarningEvent(curState, { type: 'round_closed', kind: sequence[i], date: `2026-01-0${7 + i}` }, DEFAULT_RULE_CONFIG);
+        expect(next.ok).toBe(true);
+        if (next.ok) {
+          expect(next.effects.some((e) => e.type === 'warning')).toBe(false);
+          curState = next.newState;
+        }
+      }
+
+      // Record a call: resets activeWarning
+      const call = processWarningEvent(curState, { type: 'call_recorded' }, DEFAULT_RULE_CONFIG);
+      expect(call.ok).toBe(true);
+      if (!call.ok) throw new Error();
+
+      // Next round after call (low): small dip, no warning yet
+      const postCall1 = processWarningEvent(call.newState, { type: 'round_closed', kind: 'low', date: '2026-01-20' }, DEFAULT_RULE_CONFIG);
+      expect(postCall1.ok).toBe(true);
+      if (!postCall1.ok) throw new Error();
+      expect(postCall1.effects.some((e) => e.type === 'warning')).toBe(false);
+
+      // Second round after call (low): now second warning CAN be raised
+      const postCall2 = processWarningEvent(postCall1.newState, { type: 'round_closed', kind: 'low', date: '2026-01-24' }, DEFAULT_RULE_CONFIG);
+      expect(postCall2.ok).toBe(true);
+      if (!postCall2.ok) throw new Error();
+      expect(postCall2.effects.some((e) => e.type === 'warning')).toBe(true);
     });
   });
 

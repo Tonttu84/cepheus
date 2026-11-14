@@ -185,7 +185,7 @@ def send_mcu_command(cmd: str) -> None:
     try:
         import serial
 
-        with serial.Serial(port, 115200, timeout=1) as ser:
+        with serial.Serial(port, 115200, timeout=1, write_timeout=1) as ser:
             ser.write(f"{cmd}\n".encode("ascii"))
     except Exception:
         pass
@@ -199,7 +199,7 @@ def poll_mcu_button_event() -> str | None:
     try:
         import serial
 
-        with serial.Serial(port, 115200, timeout=0.05) as ser:
+        with serial.Serial(port, 115200, timeout=0.05, write_timeout=1) as ser:
             while ser.in_waiting > 0:
                 line = ser.readline().decode("ascii", errors="ignore").strip()
                 if line in ("BTN_CRISIS", "BTN_NOT_TODAY"):

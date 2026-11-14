@@ -6,37 +6,44 @@ export function CrisisHelpBar() {
       role="region"
       aria-label="Immediate support and emergency help"
       data-testid="crisis-help-bar"
-      className="border-b border-stone-200 bg-stone-100/95 text-stone-900"
+      className="border-b border-border-hairline bg-surface-muted/95 text-ink-primary"
     >
-      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm">
-          <span className="inline-flex items-center gap-1.5 font-semibold text-stone-900">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-1.5 text-xs sm:px-6">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-ink-primary">
             <span
               aria-hidden="true"
-              className="inline-block h-2 w-2 rounded-full bg-amber-600"
-            />
+              className="relative flex h-2 w-2 shrink-0 items-center justify-center"
+            >
+              <span className="absolute inline-flex h-full w-full rounded-full bg-amber-500/40" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-700" />
+            </span>
             Need someone right now?
           </span>
-          <span className="text-stone-700">
+          <span className="text-ink-secondary">
             Direct connection to a person — nothing automated in between.
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+        <div className="flex shrink-0 items-center gap-1.5">
           <a
             href="tel:112"
             data-testid="crisis-link-112"
-            className="inline-flex items-center gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1 font-semibold text-rose-900 transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-500"
+            className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/90 bg-rose-50 px-2.5 py-1 font-semibold text-rose-950 shadow-2xs transition hover:border-rose-400 hover:bg-rose-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
           >
-            <span>Emergency 112</span>
+            <span
+              aria-hidden="true"
+              className="h-1.5 w-1.5 rounded-full bg-rose-700"
+            />
+            <span className="tabular-nums">Emergency 112</span>
           </a>
 
           <a
             href="tel:+358925250111"
             data-testid="crisis-link-mieli"
-            className="inline-flex items-center gap-1.5 rounded-md border border-stone-300 bg-white px-2.5 py-1 font-medium text-stone-900 transition hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-stone-500"
+            className="tabular-nums inline-flex items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-2.5 py-1 font-medium text-ink-primary shadow-2xs transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
           >
-            <span>MIELI Crisis Helpline 09 2525 0111 — 24/7 person</span>
+            <span>MIELI 09 2525 0111</span>
           </a>
 
           {CRISIS_RESOURCES.filter((r) => r.kind === "clinic").map((clinic) => (
@@ -44,11 +51,9 @@ export function CrisisHelpBar() {
               key={clinic.id}
               href={clinic.href}
               data-testid="crisis-link-clinic"
-              className="inline-flex items-center gap-1.5 rounded-md border border-stone-300 bg-white px-2.5 py-1 font-medium text-stone-800 transition hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-stone-500"
+              className="tabular-nums inline-flex items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-2.5 py-1 font-medium text-ink-primary shadow-2xs transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
             >
-              <span>
-                {clinic.label}: {clinic.phone}
-              </span>
+              <span>Nurse {clinic.phone}</span>
             </a>
           ))}
         </div>
