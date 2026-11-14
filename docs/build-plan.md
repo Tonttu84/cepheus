@@ -117,6 +117,8 @@ New tables:
 | `ConsentEvent` | See above | Never changed after it is stored |
 | `CrisisEvent` | That the ninth question was answered with anything but "not at all", when, and when a person at the clinic acknowledged it | Separate from flags |
 | `AccessLog` | Who read or changed which patient's data, for which purpose, and when | Holds no answers |
+| `SmallDip`, `BaselineNotice` | What the rule found besides a warning: a small dip, and a first PHQ-9 at or above the cut-off | Added in step 5 (D46). The cause is a round or a date, never a score |
+| `ExtraAnswer` | The answer to the experimental extra question (D25), at most one per round | Added in step 5. Never used by the rule |
 
 No free text is stored anywhere in this build.
 

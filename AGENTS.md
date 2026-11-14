@@ -161,7 +161,7 @@ These hold whatever is built.
 | `docs/decisions.md` | Decisions, one row each |
 | `src/domain/` | Pure domain logic: instruments, rounds, baselines, classify, warning rule, crisis, flags, consent, camera metrics, wearables |
 | `src/usecases/` | Application use cases enforcing access rules and storage ports for patient and clinic actions |
-| `src/server/` | Server storage, security (cookies, rate limits, HMAC), Fitbit sync, and monitoring endpoints |
+| `src/server/` | Server storage, security (cookies, rate limits, HMAC), Fitbit sync, and monitoring endpoints. `src/server/db/` is the PostgreSQL implementation of the storage ports in `src/usecases/ports.ts`; `createPrismaPorts()` builds it |
 | `src/app/` | Next.js App Router pages (check-in, camera, patient, clinic, monitoring) and API routes |
 | `src/components/` | Reusable React UI components (camera session, crisis bar, monitoring dashboard, site nav) |
 | `src/lib/` | Database client (`db.ts`), Zod schemas, constants, i18n translation dictionary, simulation |
