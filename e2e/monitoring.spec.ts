@@ -49,6 +49,11 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
       "Suggested"
     );
     await expect(page.getByText("home_immobility_bouts").first()).toBeVisible();
+
+    await page.getByTestId("arduino-simulate-voice").click();
+    await expect(page.getByTestId("monitoring-feedback")).toContainText(
+      "0 bytes audio stored"
+    );
   });
 
   test("3. Security API boundaries reject raw media payloads and cross-origin POSTs", async ({

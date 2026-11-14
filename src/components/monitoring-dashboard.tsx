@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { MonitoringSummaryPayload } from "@/server/monitoring/store";
+import { ArduinoBedsideControls } from "./arduino-bedside-controls";
 
 interface FitbitStatus {
   configured: boolean;
@@ -510,15 +511,18 @@ export function MonitoringDashboard() {
             </p>
           </div>
 
-          <button
-            type="button"
-            data-testid="arduino-simulate-push"
-            disabled={busyAction !== null}
-            onClick={handleSimulateArduinoPush}
-            className="rounded-lg border border-stone-300 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50 cursor-pointer"
-          >
-            Simulate Arduino UNO Q push
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <ArduinoBedsideControls onFeedback={setFeedback} />
+            <button
+              type="button"
+              data-testid="arduino-simulate-push"
+              disabled={busyAction !== null}
+              onClick={handleSimulateArduinoPush}
+              className="rounded-lg border border-stone-300 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50 cursor-pointer"
+            >
+              Simulate Arduino UNO Q push
+            </button>
+          </div>
         </div>
 
         {lightCueReason ? (

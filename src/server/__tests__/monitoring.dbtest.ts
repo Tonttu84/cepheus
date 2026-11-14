@@ -8,6 +8,7 @@ import {
   buildSimulatedHealthConnectPayload,
   getMonitoringSummary,
   HOME_DEMO_EXTERNAL_ID,
+  saveArduinoBedsideCheckIn,
   saveArduinoEdgeIngest,
   saveWearableDaysAndComputeRhythm,
   updateMethodConsent,
@@ -145,5 +146,54 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     });
     expect(latestDay).not.toBeNull();
     expect(latestDay?.avgHrvRmssdMs).toBeGreaterThan(0);
+  });
+
+  it("persists UNO Q bedside voice taps, not_today without zeroing, and crisis_button flags", async () => {
+    const tapRes = await saveArduinoBedsideCheckIn(
+      {
+        deviceId: "unoq-dbtest",
+        date: "2026-11-14",
+        isSimulated: true,
+        kind: "taps",
+        mood: 3,
+        interest: 4,
+      },
+      prisma
+    );
+    expect(tapRes.ok).toBe(true);
+    if (tapRes.ok) expect(tapRes.showCrisisPath).toBe(false);
+
+    const notTodayRes = await saveArduinoBedsideCheckIn(
+      {
+        deviceId: "unoq-dbtest",
+        date: "2026-11-15",
+        isSimulated: true,
+        kind: "not_today",
+      },
+      prisma
+    );
+    expect(notTodayRes.ok).toBe(true);
+    const skippedRound = await prisma.checkInRound.findFirst({
+      where: {
+        participant: { externalId: HOME_DEMO_EXTERNAL_ID },
+        date: "2026-11-15",
+      },
+    });
+    expect(skippedRound?.status).toBe("not_today");
+    expect(skippedRound?.moodScore).toBeNull();
+
+    const crisisRes = await saveArduinoBedsideCheckIn(
+      {
+        deviceId: "unoq-dbtest",
+        date: "2026-11-15",
+        isSimulated: true,
+        kind: "crisis_button",
+      },
+      prisma
+    );
+    expect(crisisRes.ok).toBe(true);
+    if (crisisRes.ok) {
+      expect(crisisRes.showCrisisPath).toBe(true);
+    }
   });
 });
