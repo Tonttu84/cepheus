@@ -62,6 +62,63 @@ function columnsOf(record: PatientRecord) {
   };
 }
 
+/**
+ * One immutable ConsentEvent per layer or method whose switch differs from
+ * the stored one (all of them for a new patient), with the seed's values.
+ */
+function consentEventsFor(stored: ConsentState | null, record: PatientRecord) {
+  const { consent } = record;
+  const switches = [
+    { layer: "taking_part", method: null, before: stored?.taking_part, enabled: consent.taking_part },
+    { layer: "rule_check", method: null, before: stored?.rule_check, enabled: consent.rule_check },
+    { layer: "method", method: RING_METHOD, before: stored?.methods.ring, enabled: consent.methods.ring },
+    { layer: "method", method: CAMERA_METHOD, before: stored?.methods.camera, enabled: consent.methods.camera },
+  ];
+  return switches
+    .filter((change) => change.before !== change.enabled)
+    .map(({ layer, method, enabled }) => ({
+      participantId: record.patientId,
+      clinicId: record.clinicId,
+      layer,
+      method,
+      enabled,
+      noticeVersion: "v1",
+    }));
+}
+
+/** Reads the stored switches, writes the patient and its consent events, in one transaction. */
+async function savePatientRecord(ctx: DbContext, record: PatientRecord): Promise<void> {
+  const stored = await readParticipant(ctx, record.patientId);
+  const events = consentEventsFor(stored ? consentOf(stored) : null, record);
+  const columns = columnsOf(record);
+  const rows = [
+    consentRow(RING_METHOD, record.clinicId, record.consent.methods.ring),
+    consentRow(CAMERA_METHOD, record.clinicId, record.consent.methods.camera),
+  ];
+  await ctx.client().participant.upsert({
+    where: { id: record.patientId },
+    create: {
+      id: record.patientId,
+      label: "Pseudonymous patient",
+      source: "live",
+      isSimulated: false,
+      ...columns,
+      consents: { create: rows },
+    },
+    update: {
+      ...columns,
+      consents: {
+        upsert: rows.map((row) => ({
+          where: { participantId_method: { participantId: record.patientId, method: row.method } },
+          create: row,
+          update: { enabled: row.enabled, clinicId: row.clinicId },
+        })),
+      },
+    },
+  });
+  if (events.length > 0) await ctx.client().consentEvent.createMany({ data: events });
+}
+
 export function createPatientRepository(ctx: DbContext): PatientRepository {
   return {
     async getPatientAccessSwitches(patientId): Promise<PatientAccessSwitches | null> {
@@ -90,32 +147,8 @@ export function createPatientRepository(ctx: DbContext): PatientRepository {
     },
 
     async savePatient(record) {
-      const columns = columnsOf(record);
-      const rows = [
-        consentRow(RING_METHOD, record.clinicId, record.consent.methods.ring),
-        consentRow(CAMERA_METHOD, record.clinicId, record.consent.methods.camera),
-      ];
-      await ctx.client().participant.upsert({
-        where: { id: record.patientId },
-        create: {
-          id: record.patientId,
-          label: "Pseudonymous patient",
-          source: "live",
-          isSimulated: false,
-          ...columns,
-          consents: { create: rows },
-        },
-        update: {
-          ...columns,
-          consents: {
-            upsert: rows.map((row) => ({
-              where: { participantId_method: { participantId: record.patientId, method: row.method } },
-              create: row,
-              update: { enabled: row.enabled, clinicId: row.clinicId },
-            })),
-          },
-        },
-      });
+      if (ctx.isInUnitOfWork()) await savePatientRecord(ctx, record);
+      else await ctx.unitOfWork.execute(() => savePatientRecord(ctx, record));
     },
   };
 }
