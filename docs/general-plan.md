@@ -123,9 +123,9 @@ Build order for the sensing (`research/6-sensing-feasibility.md`; hours are esti
 
 | Step | Route | Hours |
 |---|---|---|
-| 1. Daily check-in and fortnightly PHQ-9 | Web form; the PHQ-9 question on thoughts of self-harm must show the crisis path | 3-4 |
-| 2. Rhythm and sleep-regularity numbers | Own formulas, first on a simulated person, then on open activity data | 3-4 |
-| 3. Facial expressivity and head movement | MediaPipe Face Landmarker in the browser; frames processed in memory, only numbers stored | 3-5 |
+| 1. Daily check-in and fortnightly PHQ-9 (done) | Web form (twice-weekly in plan); the PHQ-9 question on thoughts of self-harm must show the crisis path | 3-4 |
+| 2. Rhythm and sleep-regularity numbers (done) | Own formulas, first on a simulated person, then on open activity data | 3-4 |
+| 3. Facial expressivity and head movement (done) | MediaPipe Face Landmarker in the browser; frames processed in memory, only numbers stored | 3-5 |
 | 4. Speech rate and pauses, if time | Fixed passage with a known syllable count | 3-4 |
 | 5. Live Oura data, if time | Browser sign-in, sleep and activity endpoints | 2-4 more |
 | Skip | Gaze task (6-8 h, weak accuracy), phone mobility and steps (native app only) | |
@@ -175,7 +175,7 @@ and submitted well before Sunday 10:00.
 | Which sensors go in the demo | Team | With the core |
 | Tech challenges to stack (Gemini API, Gemma, Modal, Verda) | Team | Sat morning |
 | Who builds what, and the doctor's role | Team | Fri night |
-| Stack | Team | Proposed in `plan.md` |
+| Stack | Settled | PostgreSQL through Prisma; see D15 and D19 in `decisions.md` |
 | Repository flow | Settled | See D5 and D6 in `decisions.md` |
 
 ## 9. Not yet checked

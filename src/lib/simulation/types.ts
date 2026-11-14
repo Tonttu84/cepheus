@@ -1,9 +1,13 @@
+import type { PatientHistory } from "../../domain/history";
+
 export type DemoMomentKey = "well" | "small_dip" | "sustained_drift";
 
 export interface GenerateSimulationOptions {
   seed?: number;
   baseDate?: string;
   throughDay?: number;
+  condition?: "depression_only" | "depression_and_anxiety";
+  profile?: "depression_only" | "depression_and_anxiety";
 }
 
 export interface SimulatedParticipantRecord {
@@ -26,6 +30,8 @@ export interface SimulatedParticipantRecord {
   gender: string | null;
   madrsBaseline: number | null;
   madrsEnd: number | null;
+  questionnaires?: readonly ("phq9" | "gad7")[];
+  condition?: "depression_only" | "depression_and_anxiety";
 }
 
 export interface SimulatedConsentRecord {
@@ -107,6 +113,25 @@ export interface SimulatedPhq9AssessmentRecord {
   item8Psychomotor: number | null;
   item9SelfHarm: number | null;
   baselineDelta: number | null;
+  isSimulated: true;
+  source: "synthetic";
+}
+
+export interface SimulatedGad7AssessmentRecord {
+  scheduledAt: Date;
+  completedAt: Date | null;
+  date: string;
+  dayIndex: number;
+  weekNumber: number;
+  status: "completed" | "missed";
+  totalScore: number | null;
+  item1Nervous: number | null;
+  item2ControlWorry: number | null;
+  item3ExcessiveWorry: number | null;
+  item4Relaxing: number | null;
+  item5Restless: number | null;
+  item6Irritable: number | null;
+  item7Afraid: number | null;
   isSimulated: true;
   source: "synthetic";
 }
@@ -223,10 +248,13 @@ export interface SimulatedPersonDataset {
   ringDays: SimulatedRingDayRecord[];
   checkInRounds: SimulatedCheckInRoundRecord[];
   phq9Assessments: SimulatedPhq9AssessmentRecord[];
+  gad7Assessments?: SimulatedGad7AssessmentRecord[];
+  calls?: Array<{ date: string; position?: "before" | "after" }>;
   rhythmWindows: SimulatedRhythmWindowRecord[];
   cameraReadings: SimulatedCameraReadingRecord[];
   routineReadings: SimulatedRoutineReadingRecord[];
   personalBaselines: SimulatedPersonalBaselineRecord[];
   patientSuggestions: SimulatedPatientSuggestionRecord[];
   clinicFlags: SimulatedClinicFlagRecord[];
+  history?: PatientHistory;
 }

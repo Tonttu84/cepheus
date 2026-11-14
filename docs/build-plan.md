@@ -3,8 +3,8 @@
 Status 14 Nov 2026. How the software in `plan.md` is built: the modules, the order, the
 tests, how the collected data is stored, and how it is protected. It covers the question
 flow first (ask, warn, call); the ring and the camera keep the tables they already have.
-The question set and the warning rule are in `questions.md`, which is on another open
-trail. The owner's words, 14 Nov 2026: "Our main loop is quite simple so we need to have
+The question set and the warning rule are in `questions.md` (merged from trail 10).
+The owner's words, 14 Nov 2026: "Our main loop is quite simple so we need to have
 good quality in the details, take care of compliance, medical data protections etc".
 
 ## What already exists
@@ -32,10 +32,8 @@ and one moderate, in three places:
 
 ## Decisions behind this plan
 
-`decisions.md` is being changed on another open trail, so these rows are not added
-there yet. They go in once that trail is merged. B1 to B6 are the owner's decisions of
-14 Nov 2026, open to the team like D7 to D15. B7 to B11 are choices made while
-planning, and are open in the same way.
+B1 to B5 were merged into `decisions.md` as rows D17 to D21 (B6 was not adopted; npm was
+kept). B7 to B11 are choices made while planning, and are open in the same way.
 
 | ID | Decision | Reason | Chosen against |
 |---|---|---|---|
@@ -175,10 +173,10 @@ different folders and can be built at the same time.
 
 | Step | What | Delivers | Needs | Can run beside |
 |---|---|---|---|---|
-| 1 | PostgreSQL and tooling | The schema on PostgreSQL with the local database from the package install (B2, B10); pnpm (B6); Zod 4 and Prisma's fix (B11); the audit in the gate; the layer rule; the environment check; `test:db` | | 3, 4 |
+| 1 | PostgreSQL and tooling (done) | The schema on PostgreSQL with the local database from the package install (B2, B10; npm kept instead of B6); Zod 4 and Prisma's fix (B11); the audit in the gate; the layer rule; the environment check; `test:db` | | 3, 4 |
 | 2 | The schema onto the decisions | The changes under "What is stored" and the new tables, with everything that reads the changed fields adjusted in the same step so the gate stays green: the Zod schemas, the simulator and seed, the shell pages, the demo route and their tests. Closes the open finding on the foundation's review | 1 | 3, 4 |
-| 3 | The rule | Modules 1 and 3 to 8 | | 1, 2, 4 |
-| 4 | Rounds | Module 2 | | 1, 2, 3 |
+| 3 | The rule (done) | Modules 1 and 3 to 8 | | 1, 2, 4 |
+| 4 | Rounds (done) | Module 2 | | 1, 2, 3 |
 | 5 | Storage, access, use cases and messages | Modules 9, 10, 12 and 13. They go together because a use case stores an answer and its message to the clinic in one database step | 2, 3, 4 | |
 | 6 | Sign-in | Module 11 | 5 | 7, 8 |
 | 7 | Patient screens | Module 14 | 5 | 6, 8 |
@@ -193,8 +191,8 @@ Two workstreams of `plan.md` run beside this plan and are not broken into module
 
 | Workstream | What | Needs | Meets this plan at |
 |---|---|---|---|
-| 3, signal maths | Rhythm, sleep regularity and personal-baseline functions for the ring, as pure functions in `src/domain/` | Only the tables that exist | Step 9: the ring's history in the demo |
-| 4, camera check | The page measuring facial expressivity and head movement in the browser | Only the tables that exist; its content security policy needs are listed under "Not checked" | Step 9: the live reading in the demo |
+| 3, signal maths (done) | Rhythm, sleep regularity and personal-baseline functions for the ring, as pure functions in `src/domain/` | Only the tables that exist | Step 9: the ring's history in the demo |
+| 4, camera check (done) | The page measuring facial expressivity and head movement in the browser | Only the tables that exist; its content security policy needs are listed under "Not checked" | Step 9: the live reading in the demo |
 
 The final submission is on Sunday at 10:00. If time runs short, these are cut first, in
 this order, and the pitch says so: the second barrier in the database, the second factor
