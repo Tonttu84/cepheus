@@ -87,7 +87,9 @@ event; never score it as a zero or punish it.
 - New is the combination: learn while well, one tap at a dip, and a clinic action.
 - A clinician view is already done elsewhere; the TMS clinic context is what is left.
 - Real-world mental-health apps keep a median 3.3% of users at day 30.
-- Do not say "detects relapse": a predictive claim makes the software a medical device.
+- Flags possible relapse risk for a clinician's review; makes no diagnosis,
+  no treatment claim, gives no final judgement, and says nothing about relapse
+  to the patient.
 
 ## 4. Candidate cores (none chosen)
 
