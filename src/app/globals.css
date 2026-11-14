@@ -1,1 +1,41 @@
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    --surface-canvas: #f7f4ef;
+    --surface-card: #ffffff;
+    --surface-muted: #f1ece4;
+    --border-hairline: #e4ddd2;
+    --ink-primary: #1a2421;
+    --ink-secondary: #515d58;
+    --accent-sage: #255748;
+    --accent-sage-hover: #1c4438;
+    --accent-sage-soft: #eaf2ef;
+  }
+
+  html {
+    background-color: var(--surface-canvas);
+    color: var(--ink-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+      sans-serif;
+  }
+
+  body {
+    background-color: var(--surface-canvas);
+    background-image: radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      rgba(37, 87, 72, 0.06),
+      transparent
+    );
+    color: var(--ink-primary);
+  }
+}
+
+.font-display {
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia,
+    serif;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

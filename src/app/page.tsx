@@ -187,7 +187,7 @@ export default async function HomePage() {
       ).length;
     }
   } catch {
-    // Seamless fallback to deterministic generator if SQLite table isn't seeded yet
+    // Seamless fallback to deterministic generator if DB isn't seeded yet
     dbSeeded = false;
   }
 
@@ -198,21 +198,28 @@ export default async function HomePage() {
   return (
     <div className="space-y-8">
       {/* Top Hero Banner */}
-      <section className="rounded-xl border border-stone-200 bg-white p-6 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section className="relative overflow-hidden rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs sm:p-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#255748]/6 blur-2xl"
+        />
+
+        <div className="relative flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="8-week post-TMS synthetic trajectory (Days 1–56)" />
-          <span className="rounded-md bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-700">
+          <span className="rounded-full border border-[#e4ddd2] bg-[#faf8f5] px-3 py-1 text-xs font-medium text-[#515d58]">
             Data source:{" "}
-            {dbSeeded
-              ? "PostgreSQL seeded participant (sim-post-tms-01)"
-              : "In-memory deterministic simulation"}
+            <strong className="font-semibold text-[#1a2421]">
+              {dbSeeded
+                ? "PostgreSQL seeded participant (sim-post-tms-01)"
+                : "In-memory deterministic simulation"}
+            </strong>
           </span>
         </div>
 
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+        <h1 className="font-display relative mt-5 text-3xl font-semibold tracking-tight text-[#1a2421] sm:text-4xl">
           Cepheus — Staying Well After TMS Treatment
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700 sm:text-base">
+        <p className="relative mt-3 max-w-3xl text-sm leading-relaxed text-[#515d58] sm:text-base">
           A calm home wellbeing check-in companion for the months after
           Transcranial Magnetic Stimulation (TMS). Cepheus pairs a low-effort
           twice-weekly check-in and passive smart-ring sleep rhythm with two
@@ -221,19 +228,32 @@ export default async function HomePage() {
           when to check in after sustained drift.
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-3 text-xs text-stone-600">
-          <span className="rounded-md border border-stone-200 bg-stone-50 px-2.5 py-1">
-            Participant: <strong className="text-stone-900">{participantLabel}</strong>
-          </span>
-          <span className="rounded-md border border-stone-200 bg-stone-50 px-2.5 py-1">
-            TMS course completed:{" "}
-            <strong className="text-stone-900">{tmsCompletedDate}</strong>
-          </span>
-          <span className="rounded-md border border-stone-200 bg-stone-50 px-2.5 py-1">
-            Active consented channels:{" "}
-            <strong className="text-stone-900">{activeConsentCount}</strong>
-          </span>
-        </div>
+        <dl className="relative mt-6 grid grid-cols-1 gap-3 border-t border-[#f1ece4] pt-5 sm:grid-cols-3">
+          <div className="rounded-xl border border-[#e4ddd2] bg-[#faf8f5]/80 px-4 py-3">
+            <dt className="text-[11px] font-semibold uppercase tracking-wider text-[#697570]">
+              Participant
+            </dt>
+            <dd className="mt-1 text-sm font-semibold text-[#1a2421]">
+              {participantLabel}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-[#e4ddd2] bg-[#faf8f5]/80 px-4 py-3">
+            <dt className="text-[11px] font-semibold uppercase tracking-wider text-[#697570]">
+              TMS Course Completed
+            </dt>
+            <dd className="tabular-nums mt-1 text-sm font-semibold text-[#1a2421]">
+              {tmsCompletedDate}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-[#e4ddd2] bg-[#faf8f5]/80 px-4 py-3">
+            <dt className="text-[11px] font-semibold uppercase tracking-wider text-[#697570]">
+              Active Consented Channels
+            </dt>
+            <dd className="tabular-nums mt-1 text-sm font-semibold text-[#1a2421]">
+              {activeConsentCount} channels
+            </dd>
+          </div>
+        </dl>
       </section>
 
       {/* Interactive 3-Moment Switcher */}
@@ -243,12 +263,12 @@ export default async function HomePage() {
       />
 
       {/* Workstream Entrypoint Cards (Workstreams 2–5) */}
-      <section aria-label="Workstream modules" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-stone-900">
+      <section aria-label="Workstream modules" className="space-y-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-display text-xl font-semibold text-[#1a2421]">
             Explore Workstreams
           </h2>
-          <span className="text-xs text-stone-600">
+          <span className="text-xs text-[#697570]">
             All views use simulated data only
           </span>
         </div>
@@ -257,92 +277,92 @@ export default async function HomePage() {
           <Link
             href="/check-in"
             data-testid="card-check-in"
-            className="group flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-400"
+            className="group flex flex-col justify-between rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs transition hover:-translate-y-0.5 hover:border-[#255748]/50 hover:shadow-sm"
           >
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#255748]">
                 Twice-Weekly Check-In &amp; Fortnightly PHQ-9
               </span>
-              <h3 className="mt-1 text-base font-semibold text-stone-900 group-hover:underline">
+              <h3 className="font-display mt-1.5 text-lg font-semibold text-[#1a2421] group-hover:text-[#255748]">
                 Low-effort wellbeing check-in
               </h3>
-              <p className="mt-1.5 text-sm text-stone-600">
+              <p className="mt-2 text-sm leading-relaxed text-[#515d58]">
                 Four 1–5 tap questions twice a week, explicit &ldquo;Not
                 today&rdquo; skip, missed answers recorded as missed (never
                 punished), and an immediate human crisis path.
               </p>
             </div>
-            <span className="mt-4 text-xs font-semibold text-stone-800">
-              Open check-in flow &rarr;
+            <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-[#255748]">
+              Open check-in flow <span aria-hidden="true">&rarr;</span>
             </span>
           </Link>
 
           <Link
             href="/camera"
             data-testid="card-camera"
-            className="group flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-400"
+            className="group flex flex-col justify-between rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs transition hover:-translate-y-0.5 hover:border-[#255748]/50 hover:shadow-sm"
           >
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#255748]">
                 On-Device Sensing
               </span>
-              <h3 className="mt-1 text-base font-semibold text-stone-900 group-hover:underline">
+              <h3 className="font-display mt-1.5 text-lg font-semibold text-[#1a2421] group-hover:text-[#255748]">
                 On-device camera wellbeing check
               </h3>
-              <p className="mt-1.5 text-sm text-stone-600">
+              <p className="mt-2 text-sm leading-relaxed text-[#515d58]">
                 MediaPipe Face Landmarker runs locally in your browser to
                 compute derived facial expressivity and head movement numbers
                 only — never storing video or images.
               </p>
             </div>
-            <span className="mt-4 text-xs font-semibold text-stone-800">
-              Open camera check &rarr;
+            <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-[#255748]">
+              Open camera check <span aria-hidden="true">&rarr;</span>
             </span>
           </Link>
 
           <Link
             href="/patient"
             data-testid="card-patient"
-            className="group flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-400"
+            className="group flex flex-col justify-between rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs transition hover:-translate-y-0.5 hover:border-[#255748]/50 hover:shadow-sm"
           >
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#255748]">
                 Inner Loop · Day 29 Small Dip
               </span>
-              <h3 className="mt-1 text-base font-semibold text-stone-900 group-hover:underline">
+              <h3 className="font-display mt-1.5 text-lg font-semibold text-[#1a2421] group-hover:text-[#255748]">
                 Patient view: One small step for today
               </h3>
-              <p className="mt-1.5 text-sm text-stone-600">
+              <p className="mt-2 text-sm leading-relaxed text-[#515d58]">
                 Surfaces one low-effort suggestion (&ldquo;Take a 10-minute walk
                 outside&rdquo;) during a mild dip, with zero scores, zero
                 graphs, and zero risk labels.
               </p>
             </div>
-            <span className="mt-4 text-xs font-semibold text-stone-800">
-              Open patient view &rarr;
+            <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-[#255748]">
+              Open patient view <span aria-hidden="true">&rarr;</span>
             </span>
           </Link>
 
           <Link
             href="/clinic"
             data-testid="card-clinic"
-            className="group flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-400"
+            className="group flex flex-col justify-between rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs transition hover:-translate-y-0.5 hover:border-[#255748]/50 hover:shadow-sm"
           >
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#255748]">
                 Outer Loop · Day 56 Sustained Drift
               </span>
-              <h3 className="mt-1 text-base font-semibold text-stone-900 group-hover:underline">
+              <h3 className="font-display mt-1.5 text-lg font-semibold text-[#1a2421] group-hover:text-[#255748]">
                 Clinic view: Broad-area flag &amp; nurse outreach
               </h3>
-              <p className="mt-1.5 text-sm text-stone-600">
+              <p className="mt-2 text-sm leading-relaxed text-[#515d58]">
                 Supports the clinic&apos;s judgment on when to check in by
                 showing broad life areas and since when, plus actions to request
                 a nurse call or offer a 5-session booster cluster.
               </p>
             </div>
-            <span className="mt-4 text-xs font-semibold text-stone-800">
-              Open clinic overview &rarr;
+            <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-[#255748]">
+              Open clinic overview <span aria-hidden="true">&rarr;</span>
             </span>
           </Link>
         </div>
