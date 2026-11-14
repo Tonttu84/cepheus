@@ -1,12 +1,16 @@
 import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 import {
   findUtcInstantForLocalWallClock,
   parseIsoDate,
   validateSchedule,
   type Schedule,
 } from "@/domain/rounds";
+import { StoredDataError } from "./errors";
+import { parseStoredJson } from "./stored-data";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const WEEKDAYS_JSON = z.array(z.number());
 
 export interface ScheduleColumns {
   readonly enrolmentDate: string | null;
@@ -32,13 +36,13 @@ export function toSchedule(row: ScheduleColumns): Schedule | null {
   if (!row.enrolmentDate || !row.scheduleDaysJson || !row.scheduleTime) return null;
 
   const result = validateSchedule({
-    weekdays: JSON.parse(row.scheduleDaysJson),
+    weekdays: parseStoredJson(row.scheduleDaysJson, WEEKDAYS_JSON, "schedule weekdays"),
     timeOfDay: row.scheduleTime,
     timeZone: row.timeZone,
     enrolmentDate: row.enrolmentDate,
   });
   if (!result.ok) {
-    throw new Error(`Stored schedule is not valid: ${result.error}`);
+    throw new StoredDataError(`Stored schedule is not valid: ${result.error}`);
   }
   return result.value;
 }

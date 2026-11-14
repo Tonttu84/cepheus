@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { getPrisma } from "@/lib/db";
 import type { StoredBaselineNotWellNotice, StoredSmallDip, StoredWarning } from "@/usecases/ports";
+import { StoredDataError } from "../errors";
 import { createDbContext, type DbContext } from "../context";
 import {
   createBaselineNotWellRepository,
@@ -216,5 +217,24 @@ describe("Effect repositories (*.dbtest.ts)", () => {
     await expect(
       createBaselineNotWellRepository(ctx).saveNotice(notice("effects-dbtest-unknown"))
     ).rejects.toThrow("Patient not found");
+  });
+  it("refuses a stored cause that is not a valid cause with a named error", async () => {
+    const base = {
+      participantId: patientA,
+      clinicId,
+      roundNumber: 1,
+      date: "2026-11-02",
+      ruleVersion: 1,
+      shownAt: new Date("2026-11-02T09:00:00.000Z"),
+    };
+    for (const cause of [
+      { causeType: "round", causeRoundNumber: null, causeDate: "2026-11-02" },
+      { causeType: "strange", causeRoundNumber: null, causeDate: "2026-11-02" },
+      { causeType: "phq9", causeRoundNumber: null, causeDate: "" },
+    ]) {
+      await prisma.smallDip.create({ data: { ...base, ...cause } });
+      await expect(createSmallDipRepository(ctx).getSmallDips(patientA)).rejects.toBeInstanceOf(StoredDataError);
+      await prisma.smallDip.deleteMany({ where: { participantId: patientA } });
+    }
   });
 });

@@ -35,6 +35,7 @@ export function createCrisisRepository(ctx: DbContext): CrisisRepository {
 
     async saveCrisisEvent(event) {
       const { clinicId, isSimulated } = await loadParticipantScope(ctx.client(), event.patientId);
+      // Insert if absent: the first event's item, value and time never change.
       await ctx.client().crisisEvent.upsert({
         where: {
           participantId_roundNumber: { participantId: event.patientId, roundNumber: event.roundNumber },
@@ -50,6 +51,12 @@ export function createCrisisRepository(ctx: DbContext): CrisisRepository {
           occurredAt: new Date(event.occurredAt),
           acknowledgedAt: event.acknowledgedAt ? new Date(event.acknowledgedAt) : null,
         },
+      });
+      if (!event.acknowledgedAt) return;
+      // A later acknowledgement only fills an empty one; it is never moved or cleared.
+      await ctx.client().crisisEvent.updateMany({
+        where: { participantId: event.patientId, roundNumber: event.roundNumber, acknowledgedAt: null },
+        data: { acknowledgedAt: new Date(event.acknowledgedAt) },
       });
     },
   };

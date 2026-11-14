@@ -1,5 +1,8 @@
+import { z } from "zod";
 import type { DbContext } from "./context";
+import { UnknownClinicError } from "./errors";
 import { toSchedule } from "./participant-scope";
+import { parseStoredJson } from "./stored-data";
 import { MEASUREMENT_METHODS } from "@/lib/constants";
 import type { ConsentState } from "@/domain/consent";
 import type { QuestionnaireType } from "@/domain/history";
@@ -11,6 +14,7 @@ import type {
 
 const RING_METHOD = "ring_rhythm";
 const CAMERA_METHOD = "camera_expressivity";
+const QUESTIONNAIRES_JSON = z.array(z.enum(["phq9", "gad7"]));
 
 function descriptorFor(method: string) {
   const descriptor = MEASUREMENT_METHODS.find((item) => item.method === method);
@@ -46,7 +50,8 @@ function consentOf(row: ParticipantRow): ConsentState {
 }
 
 function questionnairesOf(row: ParticipantRow): { questionnaires?: QuestionnaireType[] } {
-  return row.questionnairesJson ? { questionnaires: JSON.parse(row.questionnairesJson) } : {};
+  if (!row.questionnairesJson) return {};
+  return { questionnaires: parseStoredJson(row.questionnairesJson, QUESTIONNAIRES_JSON, "questionnaires") };
 }
 
 function columnsOf(record: PatientRecord) {
@@ -88,6 +93,8 @@ function consentEventsFor(stored: ConsentState | null, record: PatientRecord) {
 
 /** Reads the stored switches, writes the patient and its consent events, in one transaction. */
 async function savePatientRecord(ctx: DbContext, record: PatientRecord): Promise<void> {
+  const clinic = await ctx.client().clinic.findUnique({ where: { id: record.clinicId }, select: { id: true } });
+  if (!clinic) throw new UnknownClinicError();
   const stored = await readParticipant(ctx, record.patientId);
   const events = consentEventsFor(stored ? consentOf(stored) : null, record);
   const columns = columnsOf(record);

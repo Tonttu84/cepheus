@@ -3,6 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 import { getPrisma } from "@/lib/db";
 import type { PatientRecord } from "@/usecases/ports";
 import { createDbContext } from "../context";
+import { StoredDataError, UnknownClinicError } from "../errors";
 import { createPatientRepository } from "../patients";
 
 describe("Patient repository (*.dbtest.ts)", () => {
@@ -238,5 +239,38 @@ describe("Patient repository (*.dbtest.ts)", () => {
     ).rejects.toThrow("fail after the save");
     expect(await eventsOf(id)).toEqual(before);
     expect((await repo.getPatient(id))?.consent.taking_part).toBe(true);
+  });
+  it("refuses a patient whose clinic is not known with a named error, and creates neither the patient nor a clinic", async () => {
+    const repo = createPatientRepository(createDbContext(prisma));
+    const id = newId("unknown-clinic");
+    const saving = repo.savePatient(recordFor(id, { clinicId: "patients-dbtest-no-such-clinic" }));
+    await expect(saving).rejects.toBeInstanceOf(UnknownClinicError);
+    await expect(saving).rejects.toThrow("Clinic not found");
+    expect(await prisma.participant.count({ where: { id } })).toBe(0);
+    expect(await prisma.consentEvent.count({ where: { participantId: id } })).toBe(0);
+    expect(await prisma.clinic.count({ where: { id: "patients-dbtest-no-such-clinic" } })).toBe(0);
+  });
+
+  it("refuses stored questionnaires that are not a list of known questionnaires with a named error", async () => {
+    const repo = createPatientRepository(createDbContext(prisma));
+    for (const [name, json] of [
+      ["q-broken", "[\"phq9\""],
+      ["q-unknown", "[\"phq9\",\"bdi\"]"],
+      ["q-object", "{\"phq9\":true}"],
+    ]) {
+      const id = newId(name);
+      await repo.savePatient(recordFor(id));
+      await prisma.participant.update({ where: { id }, data: { questionnairesJson: json } });
+      await expect(repo.getPatient(id)).rejects.toBeInstanceOf(StoredDataError);
+      await expect(repo.getPatientAccessSwitches(id)).rejects.toBeInstanceOf(StoredDataError);
+    }
+  });
+
+  it("refuses a stored schedule whose weekdays are not a list of numbers with a named error", async () => {
+    const repo = createPatientRepository(createDbContext(prisma));
+    const id = newId("broken-days");
+    await repo.savePatient(recordFor(id));
+    await prisma.participant.update({ where: { id }, data: { scheduleDaysJson: "[1," } });
+    await expect(repo.getPatient(id)).rejects.toBeInstanceOf(StoredDataError);
   });
 });
