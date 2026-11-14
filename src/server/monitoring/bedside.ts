@@ -3,6 +3,7 @@ import { decideAccess } from "@/domain/access";
 import { isCrisis } from "@/domain/crisis";
 import { CRISIS_RESOURCES } from "@/lib/constants";
 import { getPrisma } from "@/lib/db";
+import { PHQ9_COLUMN_BY_ID, PHQ9_COLUMNS, type Phq9ItemColumn } from "@/server/db/phq9-columns";
 import {
   DEMO_CLINIC_ID,
   ensureHomeDemoParticipant,
@@ -96,22 +97,6 @@ export function isCrisisBedsideInput(input: BedsideCheckInInput): boolean {
   const res = isCrisis({ id: input.itemId, value: input.value });
   return res.ok && res.value === true;
 }
-
-const PHQ9_COLUMN_BY_ID = {
-  "1": "item1Interest",
-  "2": "item2Mood",
-  "3": "item3Sleep",
-  "4": "item4Energy",
-  "5": "item5Appetite",
-  "6": "item6SelfWorth",
-  "7": "item7Concentration",
-  "8": "item8Psychomotor",
-  "9": "item9SelfHarm",
-} as const;
-
-type Phq9ItemColumn = (typeof PHQ9_COLUMN_BY_ID)[keyof typeof PHQ9_COLUMN_BY_ID];
-
-const PHQ9_COLUMNS: readonly Phq9ItemColumn[] = Object.values(PHQ9_COLUMN_BY_ID);
 
 async function upsertBedsideRound(
   participant: { id: string; clinicId: string | null },
