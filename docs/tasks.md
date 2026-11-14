@@ -36,6 +36,9 @@ check-in API. The check-in, patient and clinic pages still show generated data.
 | 55 | Health Connect phone pairing | Reviewed, changes needed (findings on the trail): the pairing routes need a session now that sign-in is on main, and the webhook must store to the paired patient, not the fixed demo participant |
 | 56 | Bedside unit: Bluetooth audio, spoken answers, live face check | Reviewed, changes needed (findings on the trail); still being tested on hardware |
 | 53 | Sign-in | Contained in main through trail 57; can be closed |
+| 58 | Patient state over time: a four-state trajectory, suggestions and clinic alarms across the forms, the bedside unit and the health data | Not reviewed yet. Touches suggestions and clinic alarms, so packages C and D1 below must build on it or wait for it |
+| 59 | Adds task P1.4 to this file (passive consent switches default to off; device status shown apart from consent) | Not reviewed yet; P1.4 is listed below as package M |
+| 60 | Monitoring, Fitbit and the Health Connect pairing bound to the signed-in patient | Not reviewed yet. Contains trail 55 and answers its findings; it also covers the Fitbit part of package H, which H therefore leaves out |
 
 ## Work packages
 
@@ -45,7 +48,7 @@ branches and goes up as trails as each passes the full gate and a cold review.
 | # | Package | Covers | Needs | State |
 | --- | --- | --- | --- | --- |
 | A | **Core loop, one combined trail**: check-in and clinic API routes on the use cases; the seed with a clinic, a nurse and three simulated patients; `/check-in` and `/clinic` on the API; clinic routes for crisis alerts and nurse calls; the bedside unit's route on the shared use cases (D43) | P1.1 (check-in), P1.2 (storage and routes), P1.3 | main | Taken: `feat/wire-routes-v3`, `feat/functional-flow`, `feat/clinic-alerts-api`, `feat/kiosk-shared-routes`; rebased onto main, fixes in progress |
-| H | **Sign-in follow-up**: staff code as a setting (default 123456, real time-based codes when a secret is set), input length limits, generic errors, one-click simulated sign-in, landing on the right page after sign-in, a test that fails when a route is added without a guard, the Fitbit link tied to the signed-in patient, 44 px touch targets | Review findings on trail 57 | main | Taken: `feat/sign-in-follow-up` |
+| H | **Sign-in follow-up**: staff code as a setting (default 123456, real time-based codes when a secret is set), input length limits, generic errors, one-click simulated sign-in, landing on the right page after sign-in, a test that fails when a route is added without a guard, 44 px touch targets (the Fitbit link is left to trail 60) | Review findings on trail 57 | main | Taken: `feat/sign-in-follow-up` |
 | B | **Rounds close and the warning rule runs without an answer**: when staff read their flags, the server first closes elapsed rounds and runs the rule for that clinic's patients. Today the rule runs only when a patient answers, so a silent patient never raises a warning | Not in the earlier list | A (routes) | Taken: `feat/rule-on-clinic-read` |
 | C | **Clinic screen wiring**: the card's buttons record a nurse call through the API; unacknowledged crisis alerts are shown and can be acknowledged; the nurse brief panel gets the flag's real numbers and accepts every warning kind (it accepts two of six today) | Rest of P1.2 | A | Free once A is published |
 | D1 | **Patient page on storage**: the suggestion comes from storage, the card's two buttons save the choice, the consent switches write consent events | Rest of P1.1 | A | Free once A is published |
@@ -57,6 +60,7 @@ branches and goes up as trails as each passes the full gate and a cold review.
 | I | **Text and spoken answers on `/check-in`**, speech recognised in the browser on the device only | Owner's request | D3 (same screen) | Free |
 | J | **Demo page**: move forward in time (never back), reset, switches for rewards and for counters; moving time forward closes rounds and runs the rule | Owner's request | A, B | Free |
 | K | **Clean the generated data out of the screens** once every screen reads storage | Owner's request | C, D1, D3, F | Last |
+| M | **Passive consent defaults and device status** (P1.4 of trail 59): the ring, camera and home-routine switches start off until the patient opts in (D13); `/monitoring` shows whether a device is connected apart from whether it is permitted | P1.4 | Trail 60 (same files) | Free; proposed by the author of trail 59 |
 | L | **Full gate and rehearsal**: `npm run check && npm run test:db && npm run build && npm run test:e2e`, then the whole demo path on the device and in the browser | P2.4, P3.2 | everything | Last |
 
 Choices made for these packages (say so on the trail if you disagree):
