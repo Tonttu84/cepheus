@@ -33,7 +33,7 @@ While clinical brain-stimulation research optimizes *how* to stimulate, Cepheus 
 
 ## Brand Commitments
 - Name: **Cepheus** (subtitle: *Beyond the Clinic · Post-TMS Follow-Up*).
-- Mark: Minimal 5-star Cepheus constellation house-pentagon emblem.
+- Mark: a small photo-style icon of the Cepheus Desk Buddy enclosure (`public/cepheus-icon.png`), also used as the favicon (`src/app/icon.png`).
 - Voice: Calm, plainspoken, non-judgmental, clinically honest, and reassuring without false cheerfulness.
 
 ## Evidence on Hand
