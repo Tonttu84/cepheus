@@ -126,8 +126,8 @@ export function ClinicFlagCard({
           className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3 text-xs font-medium text-accent-sage-hover"
         >
           <span>
-            Nurse outreach call queued for {participantLabel} (simulated clinic
-            action).
+            Nurse outreach call for {participantLabel}. This is a preview of a
+            simulated round and nothing is sent yet.
           </span>
           <button
             type="button"
@@ -145,8 +145,8 @@ export function ClinicFlagCard({
           className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3 text-xs font-medium text-accent-sage-hover"
         >
           <span>
-            5-session TMS booster cluster offer prepared for clinician review
-            (simulated clinic action).
+            5-session TMS booster cluster offer for clinician review. This is a
+            preview of a simulated round and nothing is sent yet.
           </span>
           <button
             type="button"

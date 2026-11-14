@@ -25,9 +25,9 @@ export default function RootLayout({
         <footer className="border-t border-border-hairline bg-surface-card/80 py-8 text-xs text-ink-secondary backdrop-blur-xs">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p>
-              Home wellbeing check-in prototype for post-TMS follow-up. Not a
-              medical or diagnostic device. Does not diagnose, treat, or predict
-              relapse.
+              Wellbeing check-in prototype for post-TMS follow-up. The product
+              supports follow-up by the clinic and makes no diagnosis and no
+              treatment claim.
             </p>
             <p className="text-ink-muted">
               Camera and microphone inputs stay on your device. Only summary

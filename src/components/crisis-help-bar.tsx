@@ -8,7 +8,7 @@ export function CrisisHelpBar() {
       data-testid="crisis-help-bar"
       className="border-b border-border-hairline bg-surface-muted/95 text-ink-primary"
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 overflow-x-auto whitespace-nowrap px-4 py-1.5 text-xs sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-1.5 text-xs sm:px-6">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 font-semibold text-ink-primary">
             <span

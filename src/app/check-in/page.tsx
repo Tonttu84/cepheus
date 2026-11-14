@@ -33,8 +33,8 @@ export default function CheckInPage() {
           <strong className="font-semibold text-ink-primary">
             &ldquo;Not today&rdquo;
           </strong>{" "}
-          whenever you want to rest. A skipped or unanswered check-in is simply
-          recorded as missed. It is never scored as zero and never held against
+          whenever you want to rest. This is a preview of a simulated round and
+          nothing is sent yet. It is never scored as zero and never held against
           you.
         </p>
         <ForestCanopyArtwork className="mt-6 w-full text-accent-sage" />
@@ -53,10 +53,10 @@ export default function CheckInPage() {
         className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
       >
         <h2 className="font-display text-lg font-semibold text-ink-primary">
-          What gets saved and your consent choices
+          Data handling and your consent choices
         </h2>
         <p className="mt-1 text-sm text-ink-secondary">
-          Each channel below explains in plain words what it saves and which
+          Each channel below explains in plain words what it collects and which
           broad area of daily life it belongs to.
         </p>
 

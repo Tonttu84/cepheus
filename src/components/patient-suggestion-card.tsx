@@ -66,8 +66,9 @@ export function PatientSuggestionCard({
           className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3 text-xs font-medium text-accent-sage-hover"
         >
           <span>
-            Good to hear. Take it at your own pace. Even stepping outside for a
-            couple of minutes is enough.
+            This is a preview of a simulated round and nothing is sent yet. Take
+            it at your own pace. Even stepping outside for a couple of minutes
+            is enough.
           </span>
           <button
             type="button"
@@ -85,7 +86,8 @@ export function PatientSuggestionCard({
           className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-hairline bg-surface-subtle px-4 py-3 text-xs font-medium text-ink-secondary"
         >
           <span>
-            No problem at all. Rest up, and nothing is counted against you.
+            This is a preview of a simulated round and nothing is sent yet. Rest
+            up, and nothing is counted against you.
           </span>
           <button
             type="button"

@@ -14,18 +14,9 @@ interface CheckInInteractiveProps {
   items: readonly CheckInPromptItem[];
 }
 
-type CheckInMode = "four_prompts" | "single_overall";
-
-const SINGLE_OVERALL_PROMPT: CheckInPromptItem = {
-  key: "single-overall",
-  label: "Overall check-in",
-  prompt: "Overall, how has your wellbeing felt over the past few days?",
-  lowAnchor: "Much heavier than usual",
-  highAnchor: "Steady & well",
-};
-
 interface ScaleButtonsProps {
   promptId: string;
+  itemLabel: string;
   selected: number | undefined;
   skippedToday: boolean;
   lowAnchor: string;
@@ -35,6 +26,7 @@ interface ScaleButtonsProps {
 
 function ScaleButtons({
   promptId,
+  itemLabel,
   selected,
   skippedToday,
   lowAnchor,
@@ -54,6 +46,7 @@ function ScaleButtons({
             <button
               key={choice}
               type="button"
+              aria-label={`${itemLabel}: ${choice} of 5`}
               aria-pressed={isChosen}
               onClick={() => onSelect(choice)}
               className={`tabular-nums inline-flex h-11 w-11 items-center justify-center rounded-xl border text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
@@ -106,6 +99,7 @@ function PromptCard({
       </p>
       <ScaleButtons
         promptId={promptId}
+        itemLabel={item.label}
         selected={selected}
         skippedToday={skippedToday}
         lowAnchor={item.lowAnchor}
@@ -117,37 +111,19 @@ function PromptCard({
 }
 
 export function CheckInInteractive({ items }: CheckInInteractiveProps) {
-  const [mode, setMode] = useState<CheckInMode>("four_prompts");
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [singleAnswer, setSingleAnswer] = useState<number | undefined>(
-    undefined
-  );
   const [skippedToday, setSkippedToday] = useState(false);
 
   const answeredCount = Object.keys(answers).length;
-  const isComplete =
-    mode === "single_overall"
-      ? singleAnswer !== undefined
-      : answeredCount === items.length;
+  const isComplete = answeredCount === items.length;
 
   function handleSelectFour(key: string, choice: number) {
     setSkippedToday(false);
     setAnswers((prev) => ({ ...prev, [key]: choice }));
   }
 
-  function handleSelectSingle(choice: number) {
-    setSkippedToday(false);
-    setSingleAnswer(choice);
-  }
-
   function handleSkip() {
     setSkippedToday(true);
-  }
-
-  function handleToggleMode() {
-    setMode((prev) =>
-      prev === "four_prompts" ? "single_overall" : "four_prompts"
-    );
   }
 
   return (
@@ -159,33 +135,19 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h2 className="font-display text-xl font-semibold text-ink-primary">
-              {mode === "single_overall"
-                ? "Single overall check-in (1 quick tap)"
-                : "Twice-weekly check-in prompts (4 quick taps)"}
+              Twice-weekly check-in prompts (4 quick taps)
             </h2>
-            {mode === "four_prompts" ? (
-              <span className="tabular-nums rounded-full border border-accent-sage-border bg-accent-sage-soft px-2.5 py-0.5 text-xs font-medium text-accent-sage-hover">
-                {answeredCount} of {items.length} answered
-              </span>
-            ) : null}
+            <span className="tabular-nums rounded-full border border-accent-sage-border bg-accent-sage-soft px-2.5 py-0.5 text-xs font-medium text-accent-sage-hover">
+              {answeredCount} of {items.length} answered
+            </span>
           </div>
           <p className="mt-1 max-w-2xl text-sm text-ink-secondary">
-            If four questions feel like too much today, switch to a single
-            overall question or tap &ldquo;Not today&rdquo;.
+            If four questions feel like too much today, tap &ldquo;Not
+            today&rdquo;.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            data-testid="single-question-mode-button"
-            onClick={handleToggleMode}
-            className="min-h-11 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
-          >
-            {mode === "four_prompts"
-              ? "Just 1 overall question today"
-              : "Show all 4 prompts"}
-          </button>
           <button
             type="button"
             data-testid="not-today-button"
@@ -207,7 +169,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
           className="mt-5 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
           <p className="font-semibold">
-            Recorded as missed. No score and no penalty.
+            This is a preview of a simulated round and nothing is sent yet.
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
             Taking a day off from check-ins is completely fine. If you change
@@ -221,36 +183,27 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
           role="status"
           className="mt-5 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
-          <p className="font-semibold">Check-in saved. Thank you.</p>
+          <p className="font-semibold">
+            This is a preview of a simulated round and nothing is sent yet.
+          </p>
           <p className="mt-1 text-xs text-ink-secondary">
-            {mode === "single_overall"
-              ? "Your single answer is saved for this simulated round."
-              : `All ${items.length} answers are saved for this simulated round.`}
+            All {items.length} answers selected. Thank you for completing the
+            preview.
           </p>
         </div>
       ) : null}
 
       <div className="mt-8 space-y-6">
-        {mode === "single_overall" ? (
+        {items.map((item, idx) => (
           <PromptCard
-            item={SINGLE_OVERALL_PROMPT}
-            indexLabel="1 question"
-            selected={singleAnswer}
+            key={item.key}
+            item={item}
+            indexLabel={`Prompt ${idx + 1}`}
+            selected={answers[item.key]}
             skippedToday={skippedToday}
-            onSelect={handleSelectSingle}
+            onSelect={(choice) => handleSelectFour(item.key, choice)}
           />
-        ) : (
-          items.map((item, idx) => (
-            <PromptCard
-              key={item.key}
-              item={item}
-              indexLabel={`Prompt ${idx + 1}`}
-              selected={answers[item.key]}
-              skippedToday={skippedToday}
-              onSelect={(choice) => handleSelectFour(item.key, choice)}
-            />
-          ))
-        )}
+        ))}
       </div>
     </section>
   );
