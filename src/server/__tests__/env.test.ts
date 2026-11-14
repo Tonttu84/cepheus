@@ -217,6 +217,13 @@ describe("Environment Check (src/server/env.ts)", () => {
       })
     ).toThrowError(/FITBIT_REDIRECT_URI/);
 
+    expect(() =>
+      parseEnv({
+        ...baseProd,
+        HEALTH_CONNECT_WEBHOOK_SECRET: "short-hc-secret",
+      })
+    ).toThrowError(/HEALTH_CONNECT_WEBHOOK_SECRET/);
+
     const ok = parseEnv({
       ...baseProd,
       FITBIT_CLIENT_ID: "fitbit-id-123",
@@ -224,8 +231,10 @@ describe("Environment Check (src/server/env.ts)", () => {
       FITBIT_REDIRECT_URI: "https://cepheus.example.fi/api/fitbit/callback",
       APP_SESSION_SECRET: "0123456789abcdef0123456789abcdef",
       ARDUINO_INGEST_TOKEN: "unoq-prod-token-123456",
+      HEALTH_CONNECT_WEBHOOK_SECRET: "hc-webhook-prod-secret-999",
     });
     expect(ok.FITBIT_CLIENT_ID).toBe("fitbit-id-123");
     expect(ok.ARDUINO_INGEST_TOKEN).toBe("unoq-prod-token-123456");
+    expect(ok.HEALTH_CONNECT_WEBHOOK_SECRET).toBe("hc-webhook-prod-secret-999");
   });
 });

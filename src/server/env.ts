@@ -15,6 +15,7 @@ export interface AppEnv {
   FITBIT_CLIENT_SECRET: string;
   FITBIT_REDIRECT_URI: string;
   ARDUINO_INGEST_TOKEN: string;
+  HEALTH_CONNECT_WEBHOOK_SECRET: string;
 }
 
 const optionalTrimmedString = z
@@ -42,6 +43,7 @@ export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
       FITBIT_CLIENT_SECRET: optionalTrimmedString,
       FITBIT_REDIRECT_URI: optionalTrimmedString,
       ARDUINO_INGEST_TOKEN: optionalTrimmedString,
+      HEALTH_CONNECT_WEBHOOK_SECRET: optionalTrimmedString,
     })
     .superRefine((val, ctx) => {
       let parsedUrl: URL;
@@ -141,6 +143,18 @@ export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
               "Invalid environment variable: ARDUINO_INGEST_TOKEN (must be at least 16 characters in production)",
           });
         }
+
+        if (
+          val.HEALTH_CONNECT_WEBHOOK_SECRET.length > 0 &&
+          val.HEALTH_CONNECT_WEBHOOK_SECRET.length < 16
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["HEALTH_CONNECT_WEBHOOK_SECRET"],
+            message:
+              "Invalid environment variable: HEALTH_CONNECT_WEBHOOK_SECRET (must be at least 16 characters in production)",
+          });
+        }
       }
     });
 
@@ -166,6 +180,7 @@ export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
     FITBIT_CLIENT_SECRET: result.data.FITBIT_CLIENT_SECRET,
     FITBIT_REDIRECT_URI: result.data.FITBIT_REDIRECT_URI,
     ARDUINO_INGEST_TOKEN: result.data.ARDUINO_INGEST_TOKEN,
+    HEALTH_CONNECT_WEBHOOK_SECRET: result.data.HEALTH_CONNECT_WEBHOOK_SECRET,
   };
 }
 

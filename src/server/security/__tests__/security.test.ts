@@ -6,6 +6,7 @@ import {
   sealJson,
   timingSafeEqualString,
   unsealJson,
+  verifyHmacSha256Signature,
 } from "../crypto";
 import { extractBearerToken, verifySameOrigin } from "../http";
 import { _resetRateLimits, checkRateLimit } from "../rate-limit";
@@ -90,5 +91,21 @@ describe("Server Security Utilities (src/server/security)", () => {
     expect(blocked.allowed).toBe(false);
     expect(blocked.retryAfterSec).toBeGreaterThanOrEqual(1);
     expect(checkRateLimit(key, 2, 1000, 1200).allowed).toBe(true);
+  });
+
+  it("verifies HMAC-SHA256 webhook signatures in constant time and rejects tampering", () => {
+    const body = JSON.stringify({ test: false, steps: [{ count: 120 }] });
+    const sigHex = crypto
+      .createHmac("sha256", TEST_SECRET)
+      .update(body, "utf8")
+      .digest("hex");
+
+    expect(verifyHmacSha256Signature(body, `sha256=${sigHex}`, TEST_SECRET)).toBe(true);
+    expect(verifyHmacSha256Signature(body, sigHex, TEST_SECRET)).toBe(true);
+    expect(verifyHmacSha256Signature(`${body} `, `sha256=${sigHex}`, TEST_SECRET)).toBe(
+      false
+    );
+    expect(verifyHmacSha256Signature(body, "sha256=deadbeef", TEST_SECRET)).toBe(false);
+    expect(verifyHmacSha256Signature(body, null, TEST_SECRET)).toBe(false);
   });
 });

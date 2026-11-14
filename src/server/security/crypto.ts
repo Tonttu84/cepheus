@@ -127,3 +127,34 @@ export function timingSafeEqualString(a: string, b: string): boolean {
   const hashB = crypto.createHash("sha256").update(b, "utf8").digest();
   return crypto.timingSafeEqual(hashA, hashB) && a.length === b.length;
 }
+
+/**
+ * Verifies an HMAC-SHA256 webhook signature header (`sha256=<hex>` or `<hex>`)
+ * against the raw UTF-8 request body in constant time.
+ */
+export function verifyHmacSha256Signature(
+  rawBody: string,
+  signatureHeader: string | null | undefined,
+  secret: string
+): boolean {
+  if (!signatureHeader || !secret) return false;
+  const trimmed = signatureHeader.trim();
+  const hexPart = trimmed.toLowerCase().startsWith("sha256=")
+    ? trimmed.slice(7).trim()
+    : trimmed;
+
+  if (!/^[a-f0-9]{64}$/i.test(hexPart)) {
+    return false;
+  }
+
+  const expectedDigest = crypto
+    .createHmac("sha256", secret)
+    .update(rawBody, "utf8")
+    .digest();
+  const providedDigest = Buffer.from(hexPart, "hex");
+
+  if (expectedDigest.length !== providedDigest.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(expectedDigest, providedDigest);
+}
