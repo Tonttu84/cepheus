@@ -1,0 +1,15 @@
+export {
+  FakeClock,
+  FakeStorageContext,
+  FakePatientRepository,
+  FakeRoundRepository,
+  FakePhq9Repository,
+  FakeCallRepository,
+  FakeWarningRepository,
+  FakeSmallDipRepository,
+  FakeCrisisRepository,
+  FakeBaselineNotWellRepository,
+  FakeAccessLogRepository,
+  FakeUnitOfWork,
+  createFakePorts,
+} from './fake-ports';
