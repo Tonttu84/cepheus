@@ -314,9 +314,16 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
       expect(partial[0]?.[col]).toBeNull();
     }
 
-    for (const id of ["2", "3", "4", "5", "6", "7", "8", "9"]) {
-      expect((await say(id, id === "9" ? 0 : 1)).ok).toBe(true);
+    for (const id of ["2", "3", "4", "5", "6", "7", "8"]) {
+      expect((await say(id, 1)).ok).toBe(true);
     }
+    const eightAnswered = await prisma.phq9Assessment.findMany({ where: participantFilter });
+    expect(eightAnswered).toHaveLength(1);
+    expect(eightAnswered[0]?.status).toBe("in_progress");
+    expect(eightAnswered[0]?.totalScore).toBeNull();
+    expect(eightAnswered[0]?.completedAt).toBeNull();
+
+    expect((await say("9", 0)).ok).toBe(true);
     const done = await prisma.phq9Assessment.findMany({ where: participantFilter });
     expect(done).toHaveLength(1);
     expect(done[0]?.status).toBe("completed");
