@@ -18,41 +18,36 @@ export function SiteNav() {
   return (
     <header className="sticky top-0 z-30 border-b border-border-hairline bg-surface-card/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="group inline-flex min-h-11 items-center gap-2.5 rounded-lg text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+        <Link
+          href="/"
+          className="group inline-flex min-h-11 items-center gap-2.5 rounded-lg text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+        >
+          <span
+            aria-hidden="true"
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-sage text-white transition group-hover:bg-accent-sage-hover"
           >
-            <span
-              aria-hidden="true"
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-sage text-white transition group-hover:bg-accent-sage-hover"
+            {/* Minimal Cepheus constellation house-pentagon mark */}
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {/* Minimal Cepheus constellation house-pentagon mark */}
-              <svg
-                viewBox="0 0 24 24"
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 4L5.5 10.5L7.5 19H16.5L18.5 10.5L12 4Z" />
-                <circle cx="12" cy="4" r="1.2" fill="currentColor" stroke="none" />
-                <circle cx="5.5" cy="10.5" r="1.1" fill="currentColor" stroke="none" />
-                <circle cx="18.5" cy="10.5" r="1.1" fill="currentColor" stroke="none" />
-                <circle cx="7.5" cy="19" r="1.1" fill="currentColor" stroke="none" />
-                <circle cx="16.5" cy="19" r="1.1" fill="currentColor" stroke="none" />
-              </svg>
-            </span>
-            <span className="font-display text-xl font-semibold tracking-tight">
-              Cepheus
-            </span>
-          </Link>
-          <span className="hidden rounded-full border border-border-hairline bg-surface-subtle px-2.5 py-0.5 text-xs font-medium text-ink-secondary lg:inline-block">
-            Beyond the Clinic · Post-TMS Follow-Up
+              <path d="M12 4L5.5 10.5L7.5 19H16.5L18.5 10.5L12 4Z" />
+              <circle cx="12" cy="4" r="1.2" fill="currentColor" stroke="none" />
+              <circle cx="5.5" cy="10.5" r="1.1" fill="currentColor" stroke="none" />
+              <circle cx="18.5" cy="10.5" r="1.1" fill="currentColor" stroke="none" />
+              <circle cx="7.5" cy="19" r="1.1" fill="currentColor" stroke="none" />
+              <circle cx="16.5" cy="19" r="1.1" fill="currentColor" stroke="none" />
+            </svg>
           </span>
-        </div>
+          <span className="font-display text-xl font-semibold tracking-tight">
+            Cepheus
+          </span>
+        </Link>
 
         <nav
           aria-label="Primary navigation"
