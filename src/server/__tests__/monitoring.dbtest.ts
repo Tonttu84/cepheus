@@ -274,6 +274,10 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
   });
 
   it("keeps a completed bedside round when Not today follows taps on the same date", async () => {
+    await prisma.checkInRound.deleteMany({
+      where: { participant: { externalId: HOME_DEMO_EXTERNAL_ID } },
+    });
+
     const tapRes = await arduinoCheckIn(
       makeBedsideRequest({
         kind: "taps",

@@ -5,6 +5,7 @@ import type { DbContext } from "./context";
 import { loadParticipantScope, roundColumnsFor } from "./participant-scope";
 
 const STATUS_FROM_COLUMN: Record<string, RoundStatus | null> = {
+  answered: "answered",
   completed: "answered",
   not_today: "not_today",
   missed: "missed",
@@ -18,7 +19,7 @@ function statusFromColumn(value: string): RoundStatus | null {
 
 function statusToColumn(status: RoundStatus | null | undefined): string {
   if (!status) return "open";
-  return status === "answered" ? "completed" : status;
+  return status;
 }
 
 function toStoredRound(row: CheckInRound): StoredRound {
