@@ -8,12 +8,12 @@ export function CameraStoppedView({ onReset }: CameraStoppedViewProps) {
   return (
     <section
       aria-label="Check-in stopped"
-      className="rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs sm:p-8"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-8"
     >
-      <h2 className="font-display text-lg font-semibold text-[#1a2421]">
+      <h2 className="font-display text-lg font-semibold text-ink-primary">
         Check-in stopped
       </h2>
-      <p className="mt-2 text-sm text-[#515d58]">
+      <p className="mt-2 text-sm text-ink-secondary">
         The camera check was stopped before completion. The camera was released
         immediately and no measurements were kept.
       </p>
@@ -21,7 +21,7 @@ export function CameraStoppedView({ onReset }: CameraStoppedViewProps) {
         <button
           type="button"
           onClick={onReset}
-          className="cursor-pointer rounded-xl bg-[#255748] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1c4438] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#255748] focus-visible:ring-offset-2"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent-sage px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-sage-hover focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-sage focus-visible:ring-offset-2"
         >
           Start over
         </button>

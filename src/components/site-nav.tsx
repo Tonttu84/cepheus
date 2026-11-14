@@ -15,16 +15,16 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#e4ddd2] bg-white/90 backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-border-hairline bg-surface-card/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="group inline-flex items-center gap-2.5 text-[#1a2421] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#255748] rounded-lg"
+            className="group inline-flex min-h-11 items-center gap-2.5 rounded-lg text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
           >
             <span
               aria-hidden="true"
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#255748] text-white shadow-2xs transition group-hover:bg-[#1c4438]"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-sage text-white shadow-2xs transition group-hover:bg-accent-sage-hover"
             >
               {/* Minimal Cepheus constellation house-pentagon mark */}
               <svg
@@ -48,14 +48,14 @@ export function SiteNav() {
               Cepheus
             </span>
           </Link>
-          <span className="hidden rounded-full border border-[#e4ddd2] bg-[#faf8f5] px-2.5 py-0.5 text-[11px] font-medium text-[#515d58] md:inline-block">
+          <span className="hidden rounded-full border border-border-hairline bg-surface-subtle px-2.5 py-0.5 text-[11px] font-medium text-ink-secondary md:inline-block">
             Beyond the Clinic · Post-TMS Follow-Up
           </span>
         </div>
 
         <nav
           aria-label="Primary navigation"
-          className="flex flex-wrap items-center gap-1 rounded-xl border border-[#e4ddd2] bg-[#faf8f5] p-1"
+          className="flex flex-wrap items-center gap-1 rounded-xl border border-border-hairline bg-surface-subtle p-1"
         >
           {NAV_ITEMS.map((item) => {
             const isActive =
@@ -69,10 +69,10 @@ export function SiteNav() {
                 href={item.href}
                 data-testid={item.testId}
                 aria-current={isActive ? "page" : undefined}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#255748] ${
+                className={`inline-flex min-h-11 items-center rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
                   isActive
-                    ? "bg-[#255748] text-white shadow-2xs"
-                    : "text-[#515d58] hover:bg-white hover:text-[#1a2421]"
+                    ? "bg-accent-sage text-white shadow-2xs"
+                    : "text-ink-secondary hover:bg-surface-card hover:text-ink-primary"
                 }`}
               >
                 {item.label}

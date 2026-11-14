@@ -12,18 +12,18 @@ export default function PatientPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Header */}
-      <section className="rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs sm:p-7">
+      <section className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Day 29 · Week 5 gentle check-in view" />
-          <span className="rounded-full border border-[#e4ddd2] bg-[#faf8f5] px-3 py-1 text-xs font-medium text-[#515d58]">
+          <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
             Patient View
           </span>
         </div>
 
-        <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-[#1a2421] sm:text-3xl">
+        <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-ink-primary sm:text-3xl">
           One small step for today
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-[#515d58]">
+        <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
           When a recent check-in feels a little heavier than usual, Cepheus
           offers one simple, low-effort option for today. You can try it now or
           leave it for later — whatever feels manageable.
@@ -37,7 +37,7 @@ export default function PatientPage() {
       />
 
       {/* Reassurance note */}
-      <section className="rounded-2xl border border-[#e4ddd2] bg-[#f1ece4]/70 p-4.5 text-xs leading-relaxed text-[#515d58]">
+      <section className="rounded-2xl border border-border-hairline bg-surface-muted/70 p-4.5 text-xs leading-relaxed text-ink-secondary">
         <p>
           You can always skip a suggestion or a check-in without penalty. If
           you ever want to talk with someone directly, the TMS clinic nurse line

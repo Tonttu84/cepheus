@@ -1,16 +1,36 @@
 @import "tailwindcss";
 
+@theme inline {
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-card: var(--surface-card);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-muted: var(--surface-muted);
+  --color-border-hairline: var(--border-hairline);
+  --color-border-tactile: var(--border-tactile);
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-accent-sage: var(--accent-sage);
+  --color-accent-sage-hover: var(--accent-sage-hover);
+  --color-accent-sage-soft: var(--accent-sage-soft);
+  --color-accent-sage-border: var(--accent-sage-border);
+}
+
 @layer base {
   :root {
     --surface-canvas: #f7f4ef;
     --surface-card: #ffffff;
+    --surface-subtle: #faf8f5;
     --surface-muted: #f1ece4;
     --border-hairline: #e4ddd2;
+    --border-tactile: #d6cfc4;
     --ink-primary: #1a2421;
     --ink-secondary: #515d58;
+    --ink-muted: #4e5a55;
     --accent-sage: #255748;
     --accent-sage-hover: #1c4438;
     --accent-sage-soft: #eaf2ef;
+    --accent-sage-border: #d6e4de;
   }
 
   html {
@@ -38,4 +58,17 @@
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 50ms !important;
+  }
+
+  .animate-spin,
+  .animate-pulse {
+    animation: none !important;
+  }
 }

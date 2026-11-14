@@ -8,19 +8,19 @@ export function CameraIdleView({ onStart }: CameraIdleViewProps) {
   return (
     <section
       aria-labelledby="camera-check-title"
-      className="rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs sm:p-8"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-8"
     >
       <div className="max-w-2xl">
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-[#255748]">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-accent-sage">
           On-Device Session
         </span>
         <h2
           id="camera-check-title"
-          className="font-display mt-1 text-xl font-semibold tracking-tight text-[#1a2421] sm:text-2xl"
+          className="font-display mt-1 text-xl font-semibold tracking-tight text-ink-primary sm:text-2xl"
         >
           Start camera check-in
         </h2>
-        <div className="mt-3 space-y-2 text-sm leading-relaxed text-[#515d58]">
+        <div className="mt-3 space-y-2 text-sm leading-relaxed text-ink-secondary">
           <p>
             The camera looks at movement of the face and head for about 20
             seconds.
@@ -40,11 +40,11 @@ export function CameraIdleView({ onStart }: CameraIdleViewProps) {
             type="button"
             data-testid="start-camera-button"
             onClick={onStart}
-            className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-[#255748] px-6 py-3.5 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-[#1c4438] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#255748] focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent-sage px-6 py-3.5 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-accent-sage-hover focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-sage focus-visible:ring-offset-2"
           >
             Start camera check
           </button>
-          <span className="text-xs text-[#697570]">
+          <span className="text-xs text-ink-muted">
             Camera is accessed only after clicking Start
           </span>
         </div>

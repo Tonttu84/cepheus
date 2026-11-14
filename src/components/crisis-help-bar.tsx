@@ -6,11 +6,11 @@ export function CrisisHelpBar() {
       role="region"
       aria-label="Immediate support and emergency help"
       data-testid="crisis-help-bar"
-      className="border-b border-[#e4ddd2] bg-[#f1ece4]/95 text-[#1a2421]"
+      className="border-b border-border-hairline bg-surface-muted/95 text-ink-primary"
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-2.5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs sm:text-[13px]">
-          <span className="inline-flex items-center gap-2 font-semibold text-[#1a2421]">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs sm:text-xs">
+          <span className="inline-flex items-center gap-2 font-semibold text-ink-primary">
             <span
               aria-hidden="true"
               className="relative flex h-2 w-2 items-center justify-center"
@@ -20,7 +20,7 @@ export function CrisisHelpBar() {
             </span>
             Need someone right now?
           </span>
-          <span className="text-[#515d58]">
+          <span className="text-ink-secondary">
             Direct connection to a person — nothing automated in between.
           </span>
         </div>
@@ -29,7 +29,7 @@ export function CrisisHelpBar() {
           <a
             href="tel:112"
             data-testid="crisis-link-112"
-            className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/90 bg-rose-50 px-3 py-1 font-semibold text-rose-950 shadow-2xs transition hover:border-rose-400 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-500"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rose-300/90 bg-rose-50 px-3.5 py-2 font-semibold text-rose-950 shadow-2xs transition hover:border-rose-400 hover:bg-rose-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
           >
             <span
               aria-hidden="true"
@@ -41,7 +41,7 @@ export function CrisisHelpBar() {
           <a
             href="tel:+358925250111"
             data-testid="crisis-link-mieli"
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#d6cfc4] bg-white px-3 py-1 font-medium text-[#1a2421] shadow-2xs transition hover:border-[#b9b0a2] hover:bg-[#faf8f5] focus:outline-none focus:ring-2 focus:ring-[#255748]"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border-tactile bg-surface-card px-3.5 py-2 font-medium text-ink-primary shadow-2xs transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
           >
             <span>MIELI Crisis Helpline 09 2525 0111 — 24/7 person</span>
           </a>
@@ -51,7 +51,7 @@ export function CrisisHelpBar() {
               key={clinic.id}
               href={clinic.href}
               data-testid="crisis-link-clinic"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#d6cfc4] bg-white px-3 py-1 font-medium text-[#2d3b36] shadow-2xs transition hover:border-[#b9b0a2] hover:bg-[#faf8f5] focus:outline-none focus:ring-2 focus:ring-[#255748]"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border-tactile bg-surface-card px-3.5 py-2 font-medium text-ink-primary shadow-2xs transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
             >
               <span>
                 {clinic.label}: {clinic.phone}

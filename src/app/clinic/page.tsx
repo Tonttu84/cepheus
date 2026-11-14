@@ -26,18 +26,18 @@ export default function ClinicPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <section className="rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs sm:p-7">
+      <section className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Day 56 · Week 8 clinic outer-loop view" />
-          <span className="rounded-full border border-[#e4ddd2] bg-[#faf8f5] px-3 py-1 text-xs font-medium text-[#515d58]">
+          <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
             TMS Care Team Overview
           </span>
         </div>
 
-        <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-[#1a2421] sm:text-3xl">
+        <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-ink-primary sm:text-3xl">
           TMS outer-loop clinic overview
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#515d58]">
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-ink-secondary">
           Supporting the clinic&apos;s judgment on when to check in with a
           post-TMS participant. Flags name only the broad life area(s) and since
           when — never raw sensor traces, transactions, or automated diagnostic
@@ -58,9 +58,9 @@ export default function ClinicPage() {
       ) : null}
 
       {/* Privacy & Clinical Boundary Footer Note */}
-      <section className="rounded-2xl border border-[#e4ddd2] bg-[#f1ece4]/70 p-4.5 text-xs leading-relaxed text-[#515d58]">
+      <section className="rounded-2xl border border-border-hairline bg-surface-muted/70 p-4.5 text-xs leading-relaxed text-ink-secondary">
         <p>
-          <strong className="font-semibold text-[#1a2421]">
+          <strong className="font-semibold text-ink-primary">
             Privacy &amp; clinical boundary:
           </strong>{" "}
           This view exposes only broad life areas (<code>check_in</code>,{" "}

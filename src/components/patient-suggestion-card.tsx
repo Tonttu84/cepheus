@@ -17,19 +17,19 @@ export function PatientSuggestionCard({
     <section
       aria-label="Today's low-effort step"
       data-testid="patient-suggestion-card"
-      className="rounded-2xl border border-[#d6e4de] bg-white p-6 shadow-xs sm:p-8"
+      className="rounded-2xl border border-accent-sage-border bg-surface-card p-6 shadow-xs sm:p-8"
     >
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d6e4de] bg-[#eaf2ef] px-3 py-1 text-xs font-semibold text-[#1c4438]">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-sage-border bg-accent-sage-soft px-3 py-1 text-xs font-semibold text-accent-sage-hover">
         Gentle option · ~10 minutes
       </span>
 
       <h2
         data-testid="patient-suggestion-title"
-        className="font-display mt-4 text-2xl font-semibold tracking-tight text-[#1a2421]"
+        className="font-display mt-4 text-2xl font-semibold tracking-tight text-ink-primary"
       >
         {actionTitle}
       </h2>
-      <p className="mt-2.5 text-sm leading-relaxed text-[#515d58]">
+      <p className="mt-2.5 text-sm leading-relaxed text-ink-secondary">
         {actionDetail}
       </p>
 
@@ -38,10 +38,10 @@ export function PatientSuggestionCard({
           type="button"
           data-testid="patient-suggestion-accept"
           onClick={() => setChoice("accepted")}
-          className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#255748] cursor-pointer ${
+          className={`min-h-11 rounded-xl px-5 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
             choice === "accepted"
-              ? "bg-[#1c4438] text-white ring-2 ring-[#255748]/30"
-              : "bg-[#255748] text-white hover:bg-[#1c4438]"
+              ? "bg-accent-sage-hover text-white ring-2 ring-accent-sage/30"
+              : "bg-accent-sage text-white hover:bg-accent-sage-hover"
           }`}
         >
           I&apos;ll try this today
@@ -50,10 +50,10 @@ export function PatientSuggestionCard({
           type="button"
           data-testid="patient-suggestion-skip"
           onClick={() => setChoice("skipped")}
-          className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#255748] cursor-pointer ${
+          className={`min-h-11 rounded-xl border px-5 py-2.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
             choice === "skipped"
-              ? "border-[#255748] bg-[#eaf2ef] text-[#1c4438]"
-              : "border-[#d6cfc4] bg-white text-[#515d58] hover:bg-[#faf8f5] hover:text-[#1a2421]"
+              ? "border-accent-sage bg-accent-sage-soft text-accent-sage-hover"
+              : "border-border-tactile bg-surface-card text-ink-secondary hover:bg-surface-subtle hover:text-ink-primary"
           }`}
         >
           Not today
@@ -61,22 +61,40 @@ export function PatientSuggestionCard({
       </div>
 
       {choice === "accepted" ? (
-        <p
+        <div
           role="status"
-          className="mt-4 rounded-xl border border-[#d6e4de] bg-[#eaf2ef]/70 px-4 py-3 text-xs font-medium text-[#1c4438]"
+          className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3 text-xs font-medium text-accent-sage-hover"
         >
-          Sounds good — take it at your own pace, even a few minutes outdoors
-          counts.
-        </p>
+          <span>
+            Sounds good — take it at your own pace, even a few minutes outdoors
+            counts.
+          </span>
+          <button
+            type="button"
+            onClick={() => setChoice(null)}
+            className="underline underline-offset-2 hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
+          >
+            Change response
+          </button>
+        </div>
       ) : null}
 
       {choice === "skipped" ? (
-        <p
+        <div
           role="status"
-          className="mt-4 rounded-xl border border-[#e4ddd2] bg-[#faf8f5] px-4 py-3 text-xs font-medium text-[#515d58]"
+          className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-hairline bg-surface-subtle px-4 py-3 text-xs font-medium text-ink-secondary"
         >
-          No problem at all. Nothing is tracked against you when you rest.
-        </p>
+          <span>
+            No problem at all. Nothing is tracked against you when you rest.
+          </span>
+          <button
+            type="button"
+            onClick={() => setChoice(null)}
+            className="underline underline-offset-2 hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
+          >
+            Change response
+          </button>
+        </div>
       ) : null}
     </section>
   );

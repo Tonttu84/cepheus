@@ -24,7 +24,7 @@ export function CameraPermissionDeniedView({ onRetry }: ProblemViewProps) {
         <button
           type="button"
           onClick={onRetry}
-          className="cursor-pointer rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2"
         >
           Try again
         </button>
@@ -51,7 +51,7 @@ export function CameraNotFoundView({ onRetry }: ProblemViewProps) {
         <button
           type="button"
           onClick={onRetry}
-          className="cursor-pointer rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2"
         >
           Try again
         </button>
@@ -84,7 +84,7 @@ export function CameraModelErrorView({
         <button
           type="button"
           onClick={onRetry}
-          className="cursor-pointer rounded-xl bg-rose-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-rose-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
         >
           Try again
         </button>
@@ -98,12 +98,12 @@ export function CameraNoFaceFoundView({ onRetry }: ProblemViewProps) {
     <section
       data-testid="no-face-found-state"
       aria-label="No face detected"
-      className="rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-xs sm:p-8"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-8"
     >
-      <h2 className="font-display text-lg font-semibold text-[#1a2421]">
+      <h2 className="font-display text-lg font-semibold text-ink-primary">
         No face detected for most of the check-in
       </h2>
-      <p className="mt-2 text-sm text-[#515d58]">
+      <p className="mt-2 text-sm text-ink-secondary">
         A face was not visible for enough of the 20-second session to produce
         reliable movement measurements. Please make sure your camera is pointed
         at your face with frontal lighting and try again.
@@ -113,7 +113,7 @@ export function CameraNoFaceFoundView({ onRetry }: ProblemViewProps) {
           type="button"
           data-testid="try-again-button"
           onClick={onRetry}
-          className="cursor-pointer rounded-xl bg-[#255748] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1c4438] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#255748] focus-visible:ring-offset-2"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent-sage px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-sage-hover focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-sage focus-visible:ring-offset-2"
         >
           Try again
         </button>
@@ -143,7 +143,7 @@ export function CameraGenericErrorView({
         <button
           type="button"
           onClick={onRetry}
-          className="cursor-pointer rounded-xl bg-rose-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-rose-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
         >
           Try again
         </button>
