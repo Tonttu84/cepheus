@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import { decideAccess } from "@/domain/access";
 import { isCrisis } from "@/domain/crisis";
 import { CRISIS_RESOURCES } from "@/lib/constants";
@@ -121,13 +121,6 @@ async function upsertBedsideRound(
 ): Promise<number> {
   const roundNumber = await resolveRoundNumber(participant.id, input.date, prisma);
   const isTaps = input.kind === "taps";
-  if (!isTaps) {
-    // A later "Not today" must not erase answers already given for this date.
-    const existing = await prisma.checkInRound.findUnique({
-      where: { participantId_roundNumber: { participantId: participant.id, roundNumber } },
-    });
-    if (existing?.status === "completed") return roundNumber;
-  }
   const now = new Date();
   const data = {
     clinicId: participant.clinicId,
@@ -143,12 +136,42 @@ async function upsertBedsideRound(
     source,
   };
 
+  if (!isTaps) {
+    await writeNotTodayUnlessCompleted(participant.id, roundNumber, data, prisma);
+    return roundNumber;
+  }
   await prisma.checkInRound.upsert({
     where: { participantId_roundNumber: { participantId: participant.id, roundNumber } },
     update: data,
     create: { participantId: participant.id, roundNumber, ...data },
   });
   return roundNumber;
+}
+
+/**
+ * A "Not today" must never erase answers already given for the round, even
+ * when a taps request for the same date races it. Each step is one statement
+ * the database decides: update only a row that is not completed; if none was
+ * updated, create the row, and a unique-key conflict means the row exists
+ * (completed, or just written by taps), so it is left as it is.
+ */
+async function writeNotTodayUnlessCompleted(
+  participantId: string,
+  roundNumber: number,
+  data: Omit<Prisma.CheckInRoundUncheckedCreateInput, "participantId" | "roundNumber">,
+  prisma: PrismaClient
+): Promise<void> {
+  const updated = await prisma.checkInRound.updateMany({
+    where: { participantId, roundNumber, status: { not: "completed" } },
+    data,
+  });
+  if (updated.count > 0) return;
+  try {
+    await prisma.checkInRound.create({ data: { participantId, roundNumber, ...data } });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") return;
+    throw err;
+  }
 }
 
 async function upsertBedsidePhq9Item(
