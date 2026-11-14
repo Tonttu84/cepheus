@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
 
+// NOTE (CSP): 'unsafe-inline' is temporarily retained for Next.js App Router
+// hydration/runtime inline scripts until per-request nonce middleware is added
+// (build-plan step 10). 'wasm-unsafe-eval' is required for local MediaPipe
+// Face Landmarker WebAssembly execution on /camera.
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`,

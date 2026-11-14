@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       {
         ok: false,
         error:
-          "Fitbit OAuth is not configured (set FITBIT_CLIENT_ID and FITBIT_CLIENT_SECRET in .env).",
+          "Fitbit OAuth is not configured (set FITBIT_CLIENT_ID, FITBIT_CLIENT_SECRET, and FITBIT_REDIRECT_URI in .env).",
       },
       { status: 503 }
     );
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
   const state = generateStateToken();
   const { codeVerifier, codeChallenge } = generatePkcePair();
-  const redirectUri = resolveFitbitRedirectUri(request.url);
+  const redirectUri = resolveFitbitRedirectUri();
 
   const sealedState = sealJson(
     { state, codeVerifier, redirectUri },

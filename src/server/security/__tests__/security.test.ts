@@ -1,15 +1,21 @@
 import crypto from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
+  _resetDeviceReplays,
+  checkAndRecordDeviceReplay,
   generatePkcePair,
   generateStateToken,
+  getClientKey,
   sealJson,
+  sha256Hex,
   timingSafeEqualString,
   unsealJson,
+  verifyArduinoDeviceCredential,
   verifyHmacSha256Signature,
-} from "../crypto";
+} from "../index";
 import { extractBearerToken, verifySameOrigin } from "../http";
 import { _resetRateLimits, checkRateLimit } from "../rate-limit";
+import { _resetEnv } from "@/server/env";
 
 const TEST_SECRET = "0123456789abcdef0123456789abcdef";
 
@@ -107,5 +113,74 @@ describe("Server Security Utilities (src/server/security)", () => {
     );
     expect(verifyHmacSha256Signature(body, "sha256=deadbeef", TEST_SECRET)).toBe(false);
     expect(verifyHmacSha256Signature(body, null, TEST_SECRET)).toBe(false);
+  });
+
+  it("ignores spoofed x-forwarded-for unless TRUST_PROXY_HEADERS is true, and hashes identity hints", () => {
+    const savedDb = process.env.DATABASE_URL;
+    const savedTrust = process.env.TRUST_PROXY_HEADERS;
+    process.env.DATABASE_URL = "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus";
+    delete process.env.TRUST_PROXY_HEADERS;
+    _resetEnv();
+
+    try {
+      const req1 = new Request("http://localhost:3000/api/fitbit/auth", {
+        headers: { "x-forwarded-for": "1.2.3.4" },
+      });
+      const req2 = new Request("http://localhost:3000/api/fitbit/auth", {
+        headers: { "x-forwarded-for": "5.6.7.8" },
+      });
+      expect(getClientKey(req1, "fitbit")).toBe("fitbit:direct");
+      expect(getClientKey(req2, "fitbit")).toBe("fitbit:direct");
+
+      const hinted = getClientKey(req1, "arduino", "unoq-desk-01");
+      expect(hinted).toMatch(/^arduino:id:[a-f0-9]{16}$/);
+      expect(hinted).not.toContain("unoq-desk-01");
+
+      process.env.TRUST_PROXY_HEADERS = "true";
+      _resetEnv();
+      expect(getClientKey(req1, "fitbit")).toBe("fitbit:ip:1.2.3.4");
+    } finally {
+      if (savedDb !== undefined) process.env.DATABASE_URL = savedDb;
+      if (savedTrust !== undefined) process.env.TRUST_PROXY_HEADERS = savedTrust;
+      else delete process.env.TRUST_PROXY_HEADERS;
+      _resetEnv();
+    }
+  });
+
+  it("verifies per-device SHA-256 hashed revocable credentials and rejects replay/stale timestamps", () => {
+    const savedDb = process.env.DATABASE_URL;
+    const savedKeys = process.env.ARDUINO_DEVICE_KEYS_JSON;
+    process.env.DATABASE_URL = "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus";
+    const secretA = "device-secret-alpha-1234";
+    const secretB = "device-secret-beta-5678";
+    process.env.ARDUINO_DEVICE_KEYS_JSON = JSON.stringify({
+      "unoq-active": { tokenHash: sha256Hex(secretA), revoked: false },
+      "unoq-revoked": { tokenHash: sha256Hex(secretB), revoked: true },
+    });
+    _resetEnv();
+    _resetDeviceReplays();
+
+    try {
+      expect(verifyArduinoDeviceCredential("unoq-active", secretA).ok).toBe(true);
+      expect(verifyArduinoDeviceCredential("unoq-active", "wrong-secret").ok).toBe(false);
+      const rev = verifyArduinoDeviceCredential("unoq-revoked", secretB);
+      expect(rev.ok).toBe(false);
+      if (!rev.ok) expect(rev.reason).toMatch(/revoked/i);
+
+      const now = 1_794_650_000_000;
+      expect(checkAndRecordDeviceReplay("unoq-active", now, "nonce-abcdef12", now).ok).toBe(true);
+      const replay = checkAndRecordDeviceReplay("unoq-active", now, "nonce-abcdef12", now + 1000);
+      expect(replay.ok).toBe(false);
+      if (!replay.ok) expect(replay.status).toBe(409);
+
+      const stale = checkAndRecordDeviceReplay("unoq-active", now - 400_000, "nonce-fresh-999", now);
+      expect(stale.ok).toBe(false);
+      if (!stale.ok) expect(stale.status).toBe(401);
+    } finally {
+      if (savedDb !== undefined) process.env.DATABASE_URL = savedDb;
+      if (savedKeys !== undefined) process.env.ARDUINO_DEVICE_KEYS_JSON = savedKeys;
+      else delete process.env.ARDUINO_DEVICE_KEYS_JSON;
+      _resetEnv();
+    }
   });
 });

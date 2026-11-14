@@ -113,16 +113,26 @@ const fitbitHeartRangeSchema = z.object({
 
 export function isFitbitConfigured(): boolean {
   const env = getEnv();
-  return env.FITBIT_CLIENT_ID.length > 0 && env.FITBIT_CLIENT_SECRET.length > 0;
+  return (
+    env.FITBIT_CLIENT_ID.length > 0 &&
+    env.FITBIT_CLIENT_SECRET.length > 0 &&
+    env.FITBIT_REDIRECT_URI.length > 0
+  );
 }
 
-export function resolveFitbitRedirectUri(requestUrl: string): string {
+/**
+ * Returns the configured FITBIT_REDIRECT_URI strictly from environment config.
+ * Never derives redirect URIs from request Host headers to prevent open-redirect
+ * or OAuth callback hijacking.
+ */
+export function resolveFitbitRedirectUri(): string {
   const env = getEnv();
-  if (env.FITBIT_REDIRECT_URI.length > 0) {
-    return env.FITBIT_REDIRECT_URI;
+  if (env.FITBIT_REDIRECT_URI.length === 0) {
+    throw new Error(
+      "FITBIT_REDIRECT_URI must be explicitly configured before starting Fitbit OAuth."
+    );
   }
-  const url = new URL(requestUrl);
-  return `${url.origin}/api/fitbit/callback`;
+  return env.FITBIT_REDIRECT_URI;
 }
 
 export function buildFitbitAuthorizeUrl(params: {

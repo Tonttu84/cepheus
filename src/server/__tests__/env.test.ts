@@ -213,6 +213,16 @@ describe("Environment Check (src/server/env.ts)", () => {
     expect(() =>
       parseEnv({
         ...baseProd,
+        FITBIT_CLIENT_ID: "fitbit-id-123",
+        FITBIT_CLIENT_SECRET: "fitbit-secret-456",
+        FITBIT_REDIRECT_URI: "",
+        APP_SESSION_SECRET: "0123456789abcdef0123456789abcdef",
+      })
+    ).toThrowError(/FITBIT_REDIRECT_URI/);
+
+    expect(() =>
+      parseEnv({
+        ...baseProd,
         FITBIT_REDIRECT_URI: "ftp://invalid.example.com/cb",
       })
     ).toThrowError(/FITBIT_REDIRECT_URI/);
