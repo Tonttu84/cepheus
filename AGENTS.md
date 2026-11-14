@@ -132,6 +132,7 @@ These hold whatever is built.
 | `docs/plan.md` | The team plan: what we build, how often we ask, scope, workstreams and the open questions |
 | `docs/doctor-notes.md` | A doctor's remarks, anonymous, with what a literature check found |
 | `docs/research/` | The evidence check and the numbered research reports, with sources |
+| `docs/questions.md` | The question set: which questionnaires, the two taps, the baseline, the warning rule and the crisis rule |
 | `docs/side-challenges.md` | The side challenge we entered (Entire), what it still needs from us, and a map of the others |
 | `docs/decisions.md` | Decisions, one row each |
 
