@@ -20,12 +20,12 @@ export function ArduinoSection({
   return (
     <section
       aria-label="Arduino UNO Q edge hub"
-      className="space-y-6 rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
+      className="space-y-6 rounded-2xl border border-border-hairline bg-surface-card p-6 sm:p-10"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-primary">
-            3. Arduino UNO Q + External USB Camera (24/7 Home Edge Node)
+          <h2 className="font-display text-xl font-semibold text-ink-primary sm:text-2xl">
+            Arduino UNO Q + External USB Camera (24/7 Home Edge Node)
           </h2>
           <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-ink-secondary">
             Processes camera frames strictly on the Arduino board in memory and
@@ -68,7 +68,7 @@ export function ArduinoSection({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <h3 className="font-display text-base font-semibold text-ink-primary">
             Latest derived camera movement (0 bytes video)
           </h3>
           {recentCameraReadings.length > 0 ? (
@@ -83,7 +83,7 @@ export function ArduinoSection({
                     {r.expressivityScore.toFixed(3)} · head{" "}
                     {r.angularPathDegPerMin.toFixed(1)}°/min
                   </span>
-                  <span className="rounded-full border border-border-hairline bg-surface-muted px-2.5 py-0.5 text-[11px] font-medium text-ink-secondary">
+                  <span className="rounded-full border border-border-hairline bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-ink-secondary">
                     {r.isSimulated ? "Simulated" : r.source}
                   </span>
                 </li>
@@ -97,7 +97,7 @@ export function ArduinoSection({
         </div>
 
         <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <h3 className="font-display text-base font-semibold text-ink-primary">
             Latest immobility &amp; daylight routine (daily_routine)
           </h3>
           {recentRoutineReadings.length > 0 ? (
@@ -110,7 +110,7 @@ export function ArduinoSection({
                   <span className="tabular-nums">
                     <strong>{r.channel}</strong>: {r.derivedValue} {r.unit}
                   </span>
-                  <span className="rounded-full border border-border-hairline bg-surface-muted px-2.5 py-0.5 text-[11px] font-medium text-ink-secondary">
+                  <span className="rounded-full border border-border-hairline bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-ink-secondary">
                     {r.isSimulated ? "Simulated" : r.source}
                   </span>
                 </li>

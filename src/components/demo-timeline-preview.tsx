@@ -48,19 +48,21 @@ function ActiveMomentPanel({ active }: { active: DemoMomentSummary }) {
       role="tabpanel"
       aria-labelledby={`moment-tab-${active.key}`}
       data-testid={`moment-panel-${active.key}`}
-      className="mt-8 rounded-xl border border-border-hairline bg-surface-subtle/80 p-6 sm:p-8"
+      className="mt-8 border-t border-border-hairline pt-7"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border-hairline pb-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <h3 className="font-display text-lg font-semibold text-ink-primary">
+          <h3 className="font-display text-xl font-semibold text-ink-primary sm:text-2xl">
             {active.title}{" "}
-            <span className="tabular-nums font-sans text-sm font-medium text-ink-muted">
+            <span className="tabular-nums text-sm font-medium text-ink-muted">
               (Day {active.dayIndex})
             </span>
           </h3>
-          <p className="mt-1 text-sm text-ink-secondary">{active.subtitle}</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">
+            {active.subtitle}
+          </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border-tactile bg-surface-card px-3 py-1 text-xs font-medium text-ink-secondary">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border-hairline bg-surface-subtle px-3.5 py-1 text-xs font-medium text-ink-secondary">
           What happens:{" "}
           <strong className="font-semibold text-ink-primary">
             {active.recipient === "none"
@@ -72,14 +74,14 @@ function ActiveMomentPanel({ active }: { active: DemoMomentSummary }) {
         </span>
       </div>
 
-      <div className="mt-7 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="mt-7 grid grid-cols-1 divide-y divide-border-hairline border-t border-border-hairline lg:grid-cols-3 lg:divide-x lg:divide-y-0">
         {/* Column 1: Twice-weekly Check-in & Ring Rhythm */}
-        <div className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-card p-5 shadow-2xs sm:p-6">
+        <div className="flex flex-col justify-between py-6 lg:pr-6">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                1 · Check-In &amp; Rhythm
-              </span>
+              <h4 className="font-display text-lg font-semibold text-ink-primary">
+                Check-in &amp; rhythm
+              </h4>
               <Link
                 href="/check-in"
                 className="inline-flex min-h-11 items-center text-xs font-semibold text-accent-sage hover:underline"
@@ -87,25 +89,25 @@ function ActiveMomentPanel({ active }: { active: DemoMomentSummary }) {
                 Open check-in &rarr;
               </Link>
             </div>
-            <p className="mt-3 text-sm font-semibold text-ink-primary">
+            <p className="mt-2 text-sm font-medium text-ink-primary">
               Latest status: {active.checkInSummary.latestRoundStatus}
             </p>
-            <p className="mt-1.5 text-xs font-medium text-ink-secondary">
+            <p className="mt-1.5 text-xs text-ink-secondary">
               {active.checkInSummary.ringWornStatus}
             </p>
           </div>
-          <p className="mt-3 border-t border-surface-muted pt-3 text-xs leading-relaxed text-ink-secondary">
+          <p className="mt-4 text-xs leading-relaxed text-ink-muted">
             {active.checkInSummary.note}
           </p>
         </div>
 
         {/* Column 2: Patient View (Low-effort step, zero scores/streaks) */}
-        <div className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-card p-5 shadow-2xs sm:p-6">
+        <div className="flex flex-col justify-between py-6 lg:px-6">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                2 · Patient View
-              </span>
+              <h4 className="font-display text-lg font-semibold text-ink-primary">
+                Patient view
+              </h4>
               <Link
                 href="/patient"
                 className="inline-flex min-h-11 items-center text-xs font-semibold text-accent-sage hover:underline"
@@ -113,12 +115,12 @@ function ActiveMomentPanel({ active }: { active: DemoMomentSummary }) {
                 Open patient view &rarr;
               </Link>
             </div>
-            <p className="mt-3 text-sm font-semibold text-ink-primary">
+            <p className="mt-2 text-sm font-medium text-ink-primary">
               {active.patientViewSummary.headline}
             </p>
             {active.patientViewSummary.actionTitle ? (
-              <div className="mt-3 rounded-lg border border-accent-sage-border bg-accent-sage-soft/70 p-3">
-                <p className="text-sm font-semibold text-accent-sage-hover">
+              <div className="mt-2.5 rounded-lg border border-accent-sage-border bg-accent-sage-soft/70 px-3.5 py-2.5">
+                <p className="text-xs font-semibold text-accent-sage-hover">
                   {active.patientViewSummary.actionTitle}
                 </p>
                 {active.patientViewSummary.actionDetail ? (
@@ -129,18 +131,18 @@ function ActiveMomentPanel({ active }: { active: DemoMomentSummary }) {
               </div>
             ) : null}
           </div>
-          <p className="mt-3 border-t border-surface-muted pt-3 text-xs leading-relaxed text-ink-secondary">
+          <p className="mt-4 text-xs leading-relaxed text-ink-muted">
             {active.patientViewSummary.note}
           </p>
         </div>
 
         {/* Column 3: Clinic View (Broad life areas only) */}
-        <div className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-card p-5 shadow-2xs sm:p-6">
+        <div className="flex flex-col justify-between py-6 lg:pl-6">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                3 · Clinic View
-              </span>
+              <h4 className="font-display text-lg font-semibold text-ink-primary">
+                Clinic view
+              </h4>
               <Link
                 href="/clinic"
                 className="inline-flex min-h-11 items-center text-xs font-semibold text-accent-sage hover:underline"
@@ -150,7 +152,7 @@ function ActiveMomentPanel({ active }: { active: DemoMomentSummary }) {
             </div>
             {active.clinicViewSummary.hasOpenFlag ? (
               <>
-                <p className="mt-3 text-sm font-semibold text-ink-primary">
+                <p className="mt-2 text-sm font-medium text-ink-primary">
                   Broad-area check-in flag since{" "}
                   <span className="tabular-nums">
                     {active.clinicViewSummary.sinceDate}
@@ -173,12 +175,12 @@ function ActiveMomentPanel({ active }: { active: DemoMomentSummary }) {
                 ) : null}
               </>
             ) : (
-              <p className="mt-3 text-sm font-semibold text-ink-primary">
+              <p className="mt-2 text-sm font-medium text-ink-primary">
                 No clinic outreach needed
               </p>
             )}
           </div>
-          <p className="mt-3 border-t border-surface-muted pt-3 text-xs leading-relaxed text-ink-secondary">
+          <p className="mt-4 text-xs leading-relaxed text-ink-muted">
             {active.clinicViewSummary.note}
           </p>
         </div>
@@ -221,14 +223,14 @@ export function DemoTimelinePreview({
     <section
       aria-label="Interactive post-TMS demo timeline"
       data-testid="demo-timeline-preview"
-      className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-6 sm:p-10"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-display text-xl font-semibold tracking-tight text-ink-primary sm:text-2xl">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-primary sm:text-3xl">
             Eight weeks after TMS: three moments
           </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-secondary">
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-ink-secondary">
             Pick a week below to see what the patient sees on their phone and
             what the clinic nurse sees on theirs.
           </p>
@@ -243,16 +245,16 @@ export function DemoTimelinePreview({
       <div
         role="tablist"
         aria-label="Select demo moment"
-        className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3"
+        className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3"
       >
         {moments.map((moment, idx) => {
           const isSelected = moment.key === active.key;
           const dotColor =
             moment.recipient === "none"
-              ? "bg-emerald-500"
+              ? "bg-emerald-600"
               : moment.recipient === "patient"
-                ? "bg-amber-500"
-                : "bg-rose-500";
+                ? "bg-amber-600"
+                : "bg-rose-600";
 
           return (
             <button
@@ -269,16 +271,16 @@ export function DemoTimelinePreview({
               data-testid={`moment-${moment.key}`}
               onClick={() => setSelectedKey(moment.key)}
               onKeyDown={(e) => handleTabKeyDown(e, idx)}
-              className={`group relative flex min-h-11 flex-col items-start rounded-xl border px-4 py-3.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
+              className={`group relative flex min-h-12 flex-col items-start rounded-xl border px-4 py-3.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
                 isSelected
-                  ? "border-accent-sage bg-accent-sage text-white shadow-sm"
+                  ? "border-accent-sage bg-accent-sage text-white"
                   : "border-border-hairline bg-surface-subtle text-ink-primary hover:border-border-tactile hover:bg-surface-card"
               }`}
             >
               <div className="flex w-full items-center justify-between gap-2">
                 <span
-                  className={`tabular-nums text-[11px] font-semibold uppercase tracking-wider ${
-                    isSelected ? "text-white/80" : "text-ink-muted"
+                  className={`tabular-nums text-xs font-medium ${
+                    isSelected ? "text-white/85" : "text-ink-muted"
                   }`}
                 >
                   {moment.buttonLabel}

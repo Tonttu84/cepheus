@@ -18,14 +18,14 @@ export function CameraRecordingView({
   return (
     <section
       aria-label="Active camera check-in"
-      className="space-y-4 rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7"
+      className="space-y-5 rounded-2xl border border-border-hairline bg-surface-card p-6 sm:p-8"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-primary">
+          <h2 className="font-display text-xl font-semibold text-ink-primary">
             Check-in in progress
           </h2>
-          <p className="text-xs text-ink-secondary">
+          <p className="mt-1 text-sm text-ink-secondary">
             Please look towards your screen naturally. No video is recorded.
           </p>
         </div>
@@ -33,23 +33,25 @@ export function CameraRecordingView({
           type="button"
           data-testid="stop-camera-button"
           onClick={onStop}
-          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-border-tactile bg-surface-card px-4 py-2 text-xs font-semibold text-ink-primary transition-colors hover:bg-surface-subtle focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-sage focus-visible:ring-offset-2"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition-colors hover:bg-surface-muted focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-sage focus-visible:ring-offset-2"
         >
           Stop check
         </button>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <div className="flex justify-between text-xs font-medium text-ink-secondary">
           <span>Analysing movement</span>
-          <span className="tabular-nums">{remainingSec}s remaining</span>
+          <span className="tabular-nums font-semibold text-ink-primary">
+            {remainingSec}s remaining
+          </span>
         </div>
         <div
           role="progressbar"
           aria-valuenow={progressPercent}
           aria-valuemin={0}
           aria-valuemax={100}
-          className="h-2 w-full overflow-hidden rounded-full bg-surface-muted"
+          className="h-2.5 w-full overflow-hidden rounded-full bg-surface-muted"
         >
           <div
             className="h-full bg-accent-sage transition-all duration-200 ease-linear"

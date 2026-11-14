@@ -6,18 +6,15 @@ export function CrisisHelpBar() {
       role="region"
       aria-label="Immediate support and emergency help"
       data-testid="crisis-help-bar"
-      className="border-b border-border-hairline bg-surface-muted/95 text-ink-primary"
+      className="border-b border-border-hairline bg-surface-subtle text-ink-primary"
     >
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-1.5 text-xs sm:px-6">
-        <div className="flex items-center gap-2">
+      <div className="mx-auto flex max-w-5xl flex-col gap-1.5 px-4 py-2 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:overflow-x-auto sm:whitespace-nowrap sm:px-6 sm:py-1.5 lg:overflow-x-visible">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 sm:flex-nowrap">
           <span className="inline-flex items-center gap-1.5 font-semibold text-ink-primary">
             <span
               aria-hidden="true"
-              className="relative flex h-2 w-2 shrink-0 items-center justify-center"
-            >
-              <span className="absolute inline-flex h-full w-full rounded-full bg-amber-500/40" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-700" />
-            </span>
+              className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-700"
+            />
             Need someone right now?
           </span>
           <span className="text-ink-secondary">
@@ -25,11 +22,11 @@ export function CrisisHelpBar() {
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:flex-nowrap">
           <a
             href="tel:112"
             data-testid="crisis-link-112"
-            className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/90 bg-rose-50 px-2.5 py-1 font-semibold text-rose-950 shadow-2xs transition hover:border-rose-400 hover:bg-rose-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+            className="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-2.5 py-1 font-semibold text-rose-950 transition hover:border-rose-400 hover:bg-rose-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
           >
             <span
               aria-hidden="true"
@@ -41,7 +38,7 @@ export function CrisisHelpBar() {
           <a
             href="tel:+358925250111"
             data-testid="crisis-link-mieli"
-            className="tabular-nums inline-flex items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-2.5 py-1 font-medium text-ink-primary shadow-2xs transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+            className="tabular-nums inline-flex items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-2.5 py-1 font-medium text-ink-primary transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
           >
             <span>MIELI 09 2525 0111</span>
           </a>
@@ -51,7 +48,7 @@ export function CrisisHelpBar() {
               key={clinic.id}
               href={clinic.href}
               data-testid="crisis-link-clinic"
-              className="tabular-nums inline-flex items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-2.5 py-1 font-medium text-ink-primary shadow-2xs transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+              className="tabular-nums inline-flex items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-2.5 py-1 font-medium text-ink-primary transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
             >
               <span>Nurse {clinic.phone}</span>
             </a>

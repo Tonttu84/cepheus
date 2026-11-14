@@ -14,10 +14,10 @@ export function ConsentSection({
   return (
     <section
       aria-label="Per-method consent controls"
-      className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-6 sm:p-10"
     >
-      <h2 className="font-display text-lg font-semibold text-ink-primary">
-        1. Separate consent switches (your control)
+      <h2 className="font-display text-xl font-semibold text-ink-primary sm:text-2xl">
+        Separate consent switches (your control)
       </h2>
       <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">
         Each passive channel can be switched on or paused independently. When a
@@ -25,12 +25,12 @@ export function ConsentSection({
         and stores nothing.
       </p>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         {consents.map((c) => (
           <div
             key={c.method}
             data-testid={`consent-card-${c.method}`}
-            className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-subtle/80 p-4"
+            className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-subtle/80 p-5"
           >
             <div>
               <div className="flex items-center justify-between gap-2">

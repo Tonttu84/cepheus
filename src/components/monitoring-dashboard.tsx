@@ -84,7 +84,7 @@ export function MonitoringDashboard() {
         </div>
       ) : null}
 
-      <ForestDivider variant="clearing" label="Consent controls" />
+      <ForestDivider variant="clearing" />
       <ConsentSection
         consents={summary?.consents ?? []}
         busyAction={busyAction}
@@ -97,7 +97,7 @@ export function MonitoringDashboard() {
         }
       />
 
-      <ForestDivider variant="grove" label="Wearable &amp; health sync" />
+      <ForestDivider variant="grove" />
       <WearableSection
         fitbitStatus={fitbitStatus}
         hcConfigured={hcConfigured}
@@ -131,7 +131,7 @@ export function MonitoringDashboard() {
         }
       />
 
-      <ForestDivider variant="treeline" label="Home edge node" />
+      <ForestDivider variant="treeline" />
       <ArduinoSection
         recentCameraReadings={summary?.recentCameraReadings ?? []}
         recentRoutineReadings={summary?.recentRoutineReadings ?? []}

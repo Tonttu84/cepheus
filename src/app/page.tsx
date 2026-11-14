@@ -174,94 +174,100 @@ function buildMomentSummary(
 
 function ExploreViewsGrid() {
   return (
-    <section aria-label="Workstream modules" className="space-y-4">
+    <section aria-label="Workstream modules" className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-display text-xl font-semibold text-ink-primary">
-          Explore each view
-        </h2>
+        <div className="space-y-1">
+          <h2 className="font-display text-2xl font-semibold text-ink-primary sm:text-3xl">
+            Explore each view
+          </h2>
+          <p className="text-sm text-ink-secondary">
+            Step through the patient&apos;s home check-in views or the
+            clinic&apos;s follow-up view.
+          </p>
+        </div>
         <span className="text-xs text-ink-muted">
           All views use simulated data only
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <div className="divide-y divide-border-hairline rounded-2xl border border-border-hairline bg-surface-card">
         <Link
           href="/check-in"
           data-testid="card-check-in"
-          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
+          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
         >
-          <div>
-            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+          <div className="max-w-xl space-y-1.5">
+            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
               Twice-weekly wellbeing check-in
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+            <p className="text-sm leading-relaxed text-ink-secondary">
               Two quick 0 to 4 tap questions twice a week, or a single tap on
               &ldquo;Not today&rdquo; when you want to rest. Missed rounds are
               simply noted as missed, and phone numbers for a real person stay
               at the top of the page.
             </p>
           </div>
-          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
+          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
             Open check-in <span aria-hidden="true">&rarr;</span>
-          </span>
-        </Link>
-
-        <Link
-          href="/camera"
-          data-testid="card-camera"
-          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
-        >
-          <div>
-            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
-              On-device camera check
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-              MediaPipe Face Landmarker runs in your browser for 20 seconds and
-              keeps only two summary numbers for face and head movement. No
-              video or images are ever saved.
-            </p>
-          </div>
-          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
-            Open camera check <span aria-hidden="true">&rarr;</span>
           </span>
         </Link>
 
         <Link
           href="/patient"
           data-testid="card-patient"
-          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
+          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
         >
-          <div>
-            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+          <div className="max-w-xl space-y-1.5">
+            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
               Patient view: One small step for today
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+            <p className="text-sm leading-relaxed text-ink-secondary">
               Offers one simple idea (&ldquo;Take a 10-minute walk
               outside&rdquo;) when a check-in dips below usual, without charts
               or scores.
             </p>
           </div>
-          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
+          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
             Open patient view <span aria-hidden="true">&rarr;</span>
+          </span>
+        </Link>
+
+        <Link
+          href="/camera"
+          data-testid="card-camera"
+          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
+        >
+          <div className="max-w-xl space-y-1.5">
+            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
+              On-device camera check
+            </h3>
+            <p className="text-sm leading-relaxed text-ink-secondary">
+              MediaPipe Face Landmarker runs in your browser for 20 seconds and
+              keeps only two summary numbers for face and head movement. No
+              video or images are ever saved.
+            </p>
+          </div>
+          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
+            Open camera check <span aria-hidden="true">&rarr;</span>
           </span>
         </Link>
 
         <Link
           href="/clinic"
           data-testid="card-clinic"
-          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
+          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
         >
-          <div>
-            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+          <div className="max-w-xl space-y-1.5">
+            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
               Clinic view: Follow-up flag for the nurse
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+            <p className="text-sm leading-relaxed text-ink-secondary">
               Shows the care team which broad life areas shifted and when the
               change started, with buttons to arrange a nurse call or a
               5-session booster cluster.
             </p>
           </div>
-          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
+          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
             Open clinic overview <span aria-hidden="true">&rarr;</span>
           </span>
         </Link>
@@ -269,18 +275,18 @@ function ExploreViewsGrid() {
         <Link
           href="/monitoring"
           data-testid="card-monitoring"
-          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:col-span-2 sm:p-8"
+          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
         >
-          <div>
-            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+          <div className="max-w-xl space-y-1.5">
+            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
               Monitoring &amp; consent settings
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+            <p className="text-sm leading-relaxed text-ink-secondary">
               Review which channels are active, adjust your sharing preferences,
               and see how your own first weeks form a personal baseline.
             </p>
           </div>
-          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
+          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
             Open monitoring &amp; consent <span aria-hidden="true">&rarr;</span>
           </span>
         </Link>
@@ -331,79 +337,40 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-12 sm:space-y-16">
-      {/* Top Hero Banner */}
-      <section className="relative overflow-hidden rounded-2xl border border-border-hairline bg-surface-card p-8 shadow-xs sm:p-11">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-accent-sage/6 blur-2xl"
-        />
-
-        <div className="relative flex flex-wrap items-center justify-between gap-3">
+      <header className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="8 weeks after TMS (Days 1–56)" />
-          <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
-            Data source:{" "}
-            <strong className="font-semibold text-ink-primary">
-              {dbSeeded
-                ? "PostgreSQL seeded participant (sim-post-tms-01)"
-                : "In-memory simulation"}
-            </strong>
+          <span className="tabular-nums text-xs text-ink-muted">
+            {participantLabel} · TMS finished {tmsCompletedDate} ·{" "}
+            {activeConsentCount} consented channels ·{" "}
+            {dbSeeded
+              ? "PostgreSQL (sim-post-tms-01)"
+              : "In-memory simulation"}
           </span>
         </div>
 
-        <h1 className="font-display relative mt-5 text-3xl font-semibold tracking-tight text-ink-primary sm:text-4xl">
-          Staying well at home after TMS
-        </h1>
-        <p className="relative mt-3 max-w-3xl text-sm leading-relaxed text-ink-secondary sm:text-base">
-          Finishing a course of Transcranial Magnetic Stimulation (TMS) often
-          leaves a gap between clinic visits. Cepheus uses a short twice-weekly
-          check-in and sleep timing from a smart ring to do two things: offer
-          one small step at home when a week feels heavier, and let the clinic
-          nurse know when a longer shift is worth a phone call.
-        </p>
+        <div className="max-w-3xl space-y-3">
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-primary sm:text-5xl">
+            Staying well at home after TMS
+          </h1>
+          <p className="text-base leading-relaxed text-ink-secondary sm:text-lg">
+            Finishing a course of Transcranial Magnetic Stimulation (TMS) often
+            leaves a gap between clinic visits. Cepheus uses a short
+            twice-weekly check-in and sleep timing from a smart ring to do two
+            things: offer one small step at home when a week feels heavier, and
+            let the clinic nurse know when a longer shift is worth a phone call.
+          </p>
+        </div>
 
-        <ForestCanopyArtwork className="mt-8 w-full text-accent-sage" />
-
-        <dl className="relative mt-8 grid grid-cols-1 gap-4 border-t border-surface-muted pt-7 sm:grid-cols-3">
-          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
-            <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-              Participant
-            </dt>
-            <dd className="mt-1 text-sm font-semibold text-ink-primary">
-              {participantLabel}
-            </dd>
-          </div>
-          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
-            <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-              TMS course finished
-            </dt>
-            <dd className="tabular-nums mt-1 text-sm font-semibold text-ink-primary">
-              {tmsCompletedDate}
-            </dd>
-          </div>
-          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
-            <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-              Consented channels
-            </dt>
-            <dd className="tabular-nums mt-1 text-sm font-semibold text-ink-primary">
-              {activeConsentCount} channels
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      {/* Interactive 3-Moment Switcher */}
-      <ForestDivider
-        variant="treeline"
-        label="Three moments across eight weeks"
-      />
+        <ForestCanopyArtwork className="w-full pt-2 text-accent-sage" />
+      </header>
 
       <DemoTimelinePreview
         moments={momentSummaries}
         initialMoment="small_dip"
       />
 
-      {/* Views */}
-      <ForestDivider variant="grove" label="Pages in this prototype" />
+      <ForestDivider variant="grove" />
 
       <ExploreViewsGrid />
     </div>

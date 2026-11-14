@@ -15,17 +15,17 @@ export function CameraCompletedView({
     <section
       data-testid="camera-completed-card"
       aria-label="Camera check-in complete"
-      className="space-y-8 rounded-2xl border border-border-hairline bg-surface-card p-8 shadow-xs sm:p-10"
+      className="space-y-8 rounded-2xl border border-border-hairline bg-surface-card p-7 sm:p-10"
     >
-      <div className="border-b border-surface-muted pb-4">
+      <div className="border-b border-border-hairline pb-5">
         <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-sage-border bg-accent-sage-soft px-3 py-1 text-xs font-medium text-accent-sage-hover">
           <span className="h-1.5 w-1.5 rounded-full bg-accent-sage" />
           Check-in finished
         </span>
-        <h2 className="font-display mt-3 text-xl font-semibold text-ink-primary sm:text-2xl">
+        <h2 className="font-display mt-3.5 text-2xl font-semibold text-ink-primary sm:text-3xl">
           Your camera check-in is complete
         </h2>
-        <p className="mt-2 text-sm text-ink-secondary">
+        <p className="mt-2 text-base leading-relaxed text-ink-secondary">
           Camera access has been closed and all tracks were stopped. The video
           frames were analysed in memory and discarded.
         </p>
@@ -57,7 +57,7 @@ export function CameraCompletedView({
               >
                 {sessionResult.expressivity.toFixed(3)}
               </dd>
-              <p className="mt-0.5 text-[11px] text-ink-muted">
+              <p className="mt-0.5 text-xs text-ink-muted">
                 Mean variation in facial movement across frames
               </p>
             </div>
@@ -70,13 +70,13 @@ export function CameraCompletedView({
               >
                 {sessionResult.headMovement.toFixed(1)} deg/s
               </dd>
-              <p className="mt-0.5 text-[11px] text-ink-muted">
+              <p className="mt-0.5 text-xs text-ink-muted">
                 Average frame-to-frame change of head rotation angles
               </p>
             </div>
           </dl>
 
-          <div className="tabular-nums pt-1 text-[11px] text-ink-muted">
+          <div className="tabular-nums pt-1 text-xs text-ink-muted">
             Quality: {sessionResult.quality.analysedFrames} frames evaluated (
             {Math.round(sessionResult.quality.faceShare * 100)}% face
             presence) over{" "}
@@ -89,7 +89,7 @@ export function CameraCompletedView({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-border-tactile bg-surface-card px-5 py-2.5 text-sm font-semibold text-ink-primary transition-colors hover:bg-surface-subtle focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-sage focus-visible:ring-offset-2"
+          className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-border-tactile bg-surface-subtle px-5 py-2.5 text-sm font-semibold text-ink-primary transition-colors hover:bg-surface-muted focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-sage focus-visible:ring-offset-2"
         >
           Start another check-in
         </button>

@@ -34,12 +34,12 @@ export function WearableSection({
   return (
     <section
       aria-label="Fitbit sleep and activity sync"
-      className="space-y-6 rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
+      className="space-y-6 rounded-2xl border border-border-hairline bg-surface-card p-6 sm:p-10"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-primary">
-            2. Fitbit passive sleep &amp; rest-activity rhythm (OAuth2 PKCE)
+          <h2 className="font-display text-xl font-semibold text-ink-primary sm:text-2xl">
+            Fitbit passive sleep &amp; rest-activity rhythm (OAuth2 PKCE)
           </h2>
           <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-ink-secondary">
             One-time Fitbit sign-in removes the need for native Apple Health or
@@ -67,10 +67,10 @@ export function WearableSection({
         </div>
       </div>
 
-      <div className="space-y-3 rounded-xl border border-border-hairline bg-surface-subtle/80 p-4">
+      <div className="space-y-3 rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+            <h3 className="font-display text-base font-semibold text-ink-primary">
               Android Health Connect &amp; Apple Health Webhook
             </h3>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-ink-secondary">
@@ -216,7 +216,7 @@ function RhythmWindowPanel({
             key={m.label}
             className="rounded-xl border border-border-hairline bg-surface-card p-3"
           >
-            <dt className="text-[11px] text-ink-muted">{m.label}</dt>
+            <dt className="text-xs text-ink-muted">{m.label}</dt>
             <dd className="mt-0.5 text-sm font-semibold text-ink-primary tabular-nums">
               {m.value}
             </dd>

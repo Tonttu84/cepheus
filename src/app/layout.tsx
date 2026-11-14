@@ -19,12 +19,12 @@ export default function RootLayout({
       <body className="flex min-h-screen flex-col text-ink-primary antialiased selection:bg-accent-sage/15 selection:text-ink-primary">
         <CrisisHelpBar />
         <SiteNav />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
           {children}
         </main>
-        <footer className="border-t border-border-hairline bg-surface-card/80 py-8 text-xs text-ink-secondary backdrop-blur-xs">
-          <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <p>
+        <footer className="border-t border-border-hairline bg-surface-subtle/60 py-10 text-xs text-ink-secondary">
+          <div className="mx-auto flex max-w-5xl flex-col gap-2.5 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p className="leading-relaxed">
               Wellbeing check-in prototype for post-TMS follow-up. The product
               supports follow-up by the clinic and makes no diagnosis and no
               treatment claim.

@@ -15,9 +15,8 @@ export default function CheckInPage() {
   const coreMethods = MEASUREMENT_METHODS.filter((m) => m.core);
 
   return (
-    <div className="space-y-12 sm:space-y-14">
-      {/* Header */}
-      <section className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10">
+    <div className="space-y-12 sm:space-y-16">
+      <header className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Twice-weekly check-in & fortnightly PHQ-9" />
           <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
@@ -25,115 +24,117 @@ export default function CheckInPage() {
           </span>
         </div>
 
-        <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-ink-primary sm:text-3xl">
-          Twice-weekly wellbeing check-in
-        </h1>
-        <p className="mt-2.5 max-w-3xl text-sm leading-relaxed text-ink-secondary">
-          You can answer two quick 0 to 4 tap questions twice a week, or tap{" "}
-          <strong className="font-semibold text-ink-primary">
-            &ldquo;Not today&rdquo;
-          </strong>{" "}
-          whenever you want to rest. This is a preview of a simulated round and
-          nothing is sent yet. It is never scored as zero and never held against
-          you.
-        </p>
-        <ForestCanopyArtwork className="mt-6 w-full text-accent-sage" />
-      </section>
+        <div className="max-w-3xl space-y-2.5">
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-primary sm:text-4xl">
+            Twice-weekly wellbeing check-in
+          </h1>
+          <p className="text-base leading-relaxed text-ink-secondary">
+            You can answer two quick 0 to 4 tap questions twice a week, or tap{" "}
+            <strong className="font-semibold text-ink-primary">
+              &ldquo;Not today&rdquo;
+            </strong>{" "}
+            whenever you want to rest. This is a preview of a simulated round
+            and nothing is sent yet. It is never scored as zero and never held
+            against you.
+          </p>
+        </div>
 
-      <ForestDivider variant="clearing" label="Your check-in space" />
+        <ForestCanopyArtwork className="w-full pt-2 text-accent-sage" />
+      </header>
 
-      {/* 4 Low-Effort Check-In Prompts (Interactive) */}
       <CheckInInteractive items={CHECK_IN_ITEMS} />
 
-      <ForestDivider variant="grove" label="Consent & privacy controls" />
+      <ForestDivider variant="grove" />
 
-      {/* Active Consent Transparency Note */}
-      <section
-        aria-label="Active consent transparency"
-        className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
-      >
-        <h2 className="font-display text-lg font-semibold text-ink-primary">
-          Data handling and your consent choices
-        </h2>
-        <p className="mt-1 text-sm text-ink-secondary">
-          Each channel below explains in plain words what it collects and which
-          broad area of daily life it belongs to.
-        </p>
+      <details className="group border-t border-border-hairline pt-6">
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-lg text-sm font-medium text-ink-secondary transition hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage">
+          <span>
+            Data handling, your consent choices &amp; fortnightly PHQ-9
+          </span>
+          <span className="text-xs text-ink-muted group-open:hidden">
+            Show details
+          </span>
+          <span className="hidden text-xs text-ink-muted group-open:inline">
+            Hide details
+          </span>
+        </summary>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {coreMethods.map((method) => (
-            <div
-              key={method.method}
-              className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-4"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-ink-primary">
-                  {method.label}
-                </span>
-                <span className="rounded-full border border-accent-sage-border bg-accent-sage-soft px-2.5 py-0.5 text-xs font-medium text-accent-sage-hover">
-                  Consented
-                </span>
-              </div>
-              <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
-                {method.recordedDescription}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <ForestDivider
-        variant="treeline"
-        label="Fortnightly PHQ-9 & human support"
-      />
-
-      {/* Fortnightly PHQ-9 & Prominent Crisis Support Reminder */}
-      <section
-        aria-label="Fortnightly PHQ-9 and immediate human support"
-        className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
-      >
-        <h2 className="font-display text-lg font-semibold text-ink-primary">
-          Fortnightly PHQ-9 and direct human support
-        </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">
-          Every two weeks, the standard {PHQ9_ITEMS.length}-question PHQ-9 asks
-          about sleep, energy, appetite, concentration, and safety. Any answer
-          above zero on question 9 (thoughts of hurting yourself) brings up
-          direct phone links to a real person and emergency help right away,
-          with nothing automated in between.
-        </p>
-
-        <div className="mt-5 rounded-xl border border-amber-300/80 bg-amber-50/70 p-5">
-          <p className="text-sm font-semibold text-ink-primary">
-            Talk with a person right now
-          </p>
-          <p className="mt-1 text-xs text-ink-secondary">
-            You do not need to finish or start a check-in to call any of these
-            numbers:
-          </p>
-          <div className="mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-            {CRISIS_RESOURCES.map((resource) => (
-              <a
-                key={resource.id}
-                href={resource.href}
-                className="flex min-h-11 flex-col justify-between rounded-xl border border-border-tactile bg-surface-card p-3.5 shadow-2xs transition hover:border-accent-sage/50 hover:bg-surface-subtle"
-              >
-                <div>
-                  <p className="text-xs font-semibold text-ink-secondary">
-                    {resource.label}
-                  </p>
-                  <p className="tabular-nums mt-1 text-sm font-bold text-ink-primary">
-                    {resource.phone}
+        <div className="mt-5 space-y-6 rounded-2xl border border-border-hairline bg-surface-subtle/70 p-6 text-xs leading-relaxed text-ink-secondary">
+          <div>
+            <h2 className="font-display text-base font-semibold text-ink-primary">
+              Data handling and your consent choices
+            </h2>
+            <p className="mt-1 text-ink-secondary">
+              Each channel below explains in plain words what it collects and
+              which broad area of daily life it belongs to.
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {coreMethods.map((method) => (
+                <div
+                  key={method.method}
+                  className="rounded-xl border border-border-hairline bg-surface-card p-4"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-ink-primary">
+                      {method.label}
+                    </span>
+                    <span className="rounded-full border border-accent-sage-border bg-accent-sage-soft px-2.5 py-0.5 text-xs font-medium text-accent-sage-hover">
+                      Consented
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
+                    {method.recordedDescription}
                   </p>
                 </div>
-                <p className="mt-1.5 text-xs text-ink-muted">
-                  {resource.availability}
-                </p>
-              </a>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-border-hairline pt-5">
+            <h2 className="font-display text-base font-semibold text-ink-primary">
+              Fortnightly PHQ-9 and direct human support
+            </h2>
+            <p className="mt-1.5">
+              Every two weeks, the standard {PHQ9_ITEMS.length}-question PHQ-9
+              asks about sleep, energy, appetite, concentration, and safety. Any
+              answer above zero on question 9 (thoughts of hurting yourself)
+              brings up direct phone links to a real person and emergency help
+              right away, with nothing automated in between.
+            </p>
+
+            <div className="mt-4 rounded-xl border border-amber-300/80 bg-amber-50/70 p-4">
+              <p className="text-sm font-semibold text-ink-primary">
+                Talk with a person right now
+              </p>
+              <p className="mt-1 text-xs text-ink-secondary">
+                You do not need to finish or start a check-in to call any of
+                these numbers:
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                {CRISIS_RESOURCES.map((resource) => (
+                  <a
+                    key={resource.id}
+                    href={resource.href}
+                    className="flex min-h-11 flex-col justify-between rounded-xl border border-border-tactile bg-surface-card p-3 transition hover:border-accent-sage/50 hover:bg-surface-subtle"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-ink-secondary">
+                        {resource.label}
+                      </p>
+                      <p className="tabular-nums mt-1 text-sm font-bold text-ink-primary">
+                        {resource.phone}
+                      </p>
+                    </div>
+                    <p className="mt-1.5 text-xs text-ink-muted">
+                      {resource.availability}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </details>
     </div>
   );
 }

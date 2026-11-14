@@ -34,11 +34,11 @@ function ScaleButtons({
   onSelect,
 }: ScaleButtonsProps) {
   return (
-    <div>
+    <div className="mt-4">
       <div
         role="group"
         aria-labelledby={promptId}
-        className="mt-3.5 flex flex-wrap items-center gap-2.5"
+        className="grid grid-cols-5 gap-2.5 sm:max-w-md sm:gap-3"
       >
         {[0, 1, 2, 3, 4].map((choice) => {
           const isChosen = !skippedToday && selected === choice;
@@ -49,10 +49,10 @@ function ScaleButtons({
               aria-label={`${itemLabel}: ${choice} of 4`}
               aria-pressed={isChosen}
               onClick={() => onSelect(choice)}
-              className={`tabular-nums inline-flex h-11 w-11 items-center justify-center rounded-xl border text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
+              className={`tabular-nums inline-flex h-12 w-full items-center justify-center rounded-xl border text-base font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
                 isChosen
-                  ? "border-accent-sage bg-accent-sage text-white shadow-2xs"
-                  : "border-border-tactile bg-surface-card text-ink-primary hover:border-accent-sage/50 hover:bg-accent-sage-soft/50"
+                  ? "border-accent-sage bg-accent-sage text-white"
+                  : "border-border-tactile bg-surface-card text-ink-primary hover:border-accent-sage hover:bg-accent-sage-soft/60"
               }`}
             >
               {choice}
@@ -60,41 +60,40 @@ function ScaleButtons({
           );
         })}
       </div>
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted">
-        <span>0 = {lowAnchor}</span>
-        <span>4 = {highAnchor}</span>
+      <div className="mt-2.5 flex items-center justify-between gap-4 text-xs text-ink-secondary sm:max-w-md">
+        <span>
+          <span className="tabular-nums font-semibold text-ink-primary">0</span>{" "}
+          — {lowAnchor}
+        </span>
+        <span className="text-right">
+          <span className="tabular-nums font-semibold text-ink-primary">4</span>{" "}
+          — {highAnchor}
+        </span>
       </div>
     </div>
   );
 }
 
-interface PromptCardProps {
+interface PromptRowProps {
   item: CheckInPromptItem;
-  indexLabel: string;
   selected: number | undefined;
   skippedToday: boolean;
   onSelect: (choice: number) => void;
 }
 
-function PromptCard({
+function PromptRow({
   item,
-  indexLabel,
   selected,
   skippedToday,
   onSelect,
-}: PromptCardProps) {
+}: PromptRowProps) {
   const promptId = `checkin-prompt-${item.key}`;
   return (
-    <div className="rounded-xl border border-border-hairline bg-surface-subtle/75 p-6 sm:p-7">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-          {indexLabel} · {item.label}
-        </span>
-        <span className="text-xs text-ink-muted">
-          {item.lowAnchor} &rarr; {item.highAnchor}
-        </span>
-      </div>
-      <p id={promptId} className="mt-2 text-sm font-semibold text-ink-primary">
+    <div className="py-7 first:pt-0 last:pb-0">
+      <p
+        id={promptId}
+        className="font-display text-lg font-medium leading-snug text-ink-primary sm:text-xl"
+      >
         {item.prompt}
       </p>
       <ScaleButtons
@@ -129,19 +128,19 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
   return (
     <section
       aria-label="Twice-weekly check-in prompts"
-      className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-6 sm:p-10"
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h2 className="font-display text-xl font-semibold text-ink-primary">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-hairline pb-6">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-display text-xl font-semibold text-ink-primary sm:text-2xl">
               Twice-weekly check-in prompts (2 quick taps)
             </h2>
-            <span className="tabular-nums rounded-full border border-accent-sage-border bg-accent-sage-soft px-2.5 py-0.5 text-xs font-medium text-accent-sage-hover">
+            <span className="tabular-nums rounded-full border border-accent-sage-border bg-accent-sage-soft px-3 py-0.5 text-xs font-medium text-accent-sage-hover">
               {answeredCount} of {items.length} answered
             </span>
           </div>
-          <p className="mt-1 max-w-2xl text-sm text-ink-secondary">
+          <p className="max-w-xl text-sm text-ink-secondary">
             If two questions feel like too much today, tap &ldquo;Not
             today&rdquo;.
           </p>
@@ -166,7 +165,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
       {skippedToday ? (
         <div
           role="status"
-          className="mt-5 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
+          className="mt-6 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
           <p className="font-semibold">
             This is a preview of a simulated round and nothing is sent yet.
@@ -181,7 +180,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
       {!skippedToday && isComplete ? (
         <div
           role="status"
-          className="mt-5 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
+          className="mt-6 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
           <p className="font-semibold">
             This is a preview of a simulated round and nothing is sent yet.
@@ -193,12 +192,11 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
         </div>
       ) : null}
 
-      <div className="mt-8 space-y-6">
-        {items.map((item, idx) => (
-          <PromptCard
+      <div className="mt-7 divide-y divide-border-hairline">
+        {items.map((item) => (
+          <PromptRow
             key={item.key}
             item={item}
-            indexLabel={`Prompt ${idx + 1}`}
             selected={answers[item.key]}
             skippedToday={skippedToday}
             onSelect={(choice) => handleSelectFour(item.key, choice)}

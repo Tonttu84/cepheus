@@ -25,35 +25,35 @@ colors:
   ink-muted: "#3f594d"
 typography:
   display:
-    fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
-    fontSize: "1.875rem"
+    fontFamily: '"Newsreader", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+    fontSize: "2.25rem"
     fontWeight: 600
-    lineHeight: 1.2
+    lineHeight: 1.15
     letterSpacing: "-0.025em"
   headline:
-    fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+    fontFamily: '"Newsreader", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
     fontSize: "1.5rem"
     fontWeight: 600
     lineHeight: 1.25
     letterSpacing: "-0.02em"
   title:
-    fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
-    fontSize: "1.125rem"
+    fontFamily: '"Newsreader", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+    fontSize: "1.25rem"
     fontWeight: 600
     lineHeight: 1.35
   body:
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
-    fontSize: "0.875rem"
+    fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+    fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.625
   label:
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
-    fontSize: "0.6875rem"
+    fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+    fontSize: "0.75rem"
     fontWeight: 600
     lineHeight: 1.4
-    letterSpacing: "0.08em"
+    letterSpacing: "0.04em"
   mono:
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+    fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
     fontSize: "0.75rem"
     fontWeight: 500
     lineHeight: 1.5
@@ -169,11 +169,11 @@ A grounded, low-glare Nordic palette built around warm paper neutrals, forest sa
 
 ## Typography
 
-**Display Font:** `"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif`
-**Body Font:** `-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`
-**Label/Mono Font:** `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`
+**Display Font:** `"Newsreader", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif` (self-hosted offline in `public/fonts/newsreader-*.woff2`)
+**Body Font:** `"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif` (self-hosted offline in `public/fonts/plus-jakarta-sans-*.woff2`)
+**Label/Mono Font:** `"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace` (self-hosted offline in `public/fonts/jetbrains-mono-*.woff2`)
 
-**Character:** Literary old-style serif headings establish domestic calm and human warmth, while clean system sans-serif keeps interactive controls, pills, and clinical figures crisp and effortless to scan.
+**Character:** Literary serif headings (`Newsreader`) establish domestic calm and human warmth, while `Plus Jakarta Sans` and `JetBrains Mono` keep interactive controls, pills, and clinical figures crisp, high-contrast, and 100% offline.
 
 ### Hierarchy
 - **Display** (`600`, `1.875rem` / `30px`, `line-height: 1.2`, `letter-spacing: -0.025em`): Page titles and primary hero greetings.

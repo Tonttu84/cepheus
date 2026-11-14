@@ -16,8 +16,8 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border-hairline bg-surface-card/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <header className="sticky top-0 z-30 border-b border-border-hairline bg-surface-card/95 backdrop-blur-md">
+      <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-3">
           <Link
             href="/"
@@ -25,7 +25,7 @@ export function SiteNav() {
           >
             <span
               aria-hidden="true"
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-sage text-white shadow-2xs transition group-hover:bg-accent-sage-hover"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-sage text-white transition group-hover:bg-accent-sage-hover"
             >
               {/* Minimal Cepheus constellation house-pentagon mark */}
               <svg
@@ -49,7 +49,7 @@ export function SiteNav() {
               Cepheus
             </span>
           </Link>
-          <span className="hidden rounded-full border border-border-hairline bg-surface-subtle px-2.5 py-0.5 text-[11px] font-medium text-ink-secondary md:inline-block">
+          <span className="hidden rounded-full border border-border-hairline bg-surface-subtle px-2.5 py-0.5 text-xs font-medium text-ink-secondary lg:inline-block">
             Beyond the Clinic · Post-TMS Follow-Up
           </span>
         </div>
@@ -72,7 +72,7 @@ export function SiteNav() {
                 aria-current={isActive ? "page" : undefined}
                 className={`inline-flex min-h-11 items-center rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
                   isActive
-                    ? "bg-accent-sage text-white shadow-2xs"
+                    ? "bg-accent-sage text-white"
                     : "text-ink-secondary hover:bg-surface-card hover:text-ink-primary"
                 }`}
               >
