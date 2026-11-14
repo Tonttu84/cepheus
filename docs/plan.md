@@ -85,6 +85,39 @@ https://www.ovid.com/journals/pspsbf/pdf/10.1159/000517953~prodromal-symptoms-in
 https://pmc.ncbi.nlm.nih.gov/articles/PMC2916193 , https://www.pubmed.gov/24183486/ ,
 https://pmc.ncbi.nlm.nih.gov/articles/PMC9729416 .
 
+## After a warning
+
+The nurse's call decides what happens next. The system never recommends a treatment; it
+brings the right person to the phone.
+
+| What the nurse finds | Response |
+|---|---|
+| A rough patch, mood only slightly down | Simple things (activity, a sleep routine), a check that medication is still being taken, and a closer look at the next two rounds of answers |
+| A decline that has held for a couple of weeks | A booster: a cluster of about 5 TMS sessions over two or three days |
+| A full relapse | A new course, through a referral |
+| Any sign of crisis during the call | Urgent care, at once. This is in addition to the crisis path on the patient's own screen, which is always there and does not wait for a warning or a call |
+
+Why both simple things and re-treatment, in steps:
+
+- TMS is safe. Common side effects are mild, such as headache or discomfort at the
+  scalp (https://pubmed.ncbi.nlm.nih.gov/29338288/ ; search summary). The serious risk
+  is a seizure, which an older guideline put at about one per 30,000 sessions
+  (https://pmc.ncbi.nlm.nih.gov/articles/PMC7732158 ; search summary).
+- Its real cost is clinic capacity and the patient's time: 20 to 30 sessions for a
+  course, about 5 for a booster. Fewer than 800 people received TMS in Finland in 2022,
+  and a repeat course needs a new referral (`research/4-relapse-after-tms.md`).
+- Re-treatment works for people who responded before. In one open study, 38 of 99
+  patients worsened and 84% of those regained the benefit when TMS was restarted.
+  Monthly booster clusters cut relapse in the one sizeable trial: 16% with boosters and
+  medication, 44% with medication alone. Re-treating when symptoms return did about as
+  well as a fixed schedule, in an observational comparison (same report).
+- The simple things have modest evidence (`research/evidence-check.md`, section 7;
+  `research/3-state-shifters.md`), and we found none of it in people who needed TMS
+  because medication had failed. So they are a first step for a small dip, not a
+  substitute for a booster when the decline holds.
+- The point of catching a decline early is the second row: a booster is a few days of
+  sessions, a full relapse means a new course and weeks of illness.
+
 ## Principles
 
 1. The goal is a system that works: notice a relapse coming and help someone act on it.
@@ -218,10 +251,22 @@ Everything above is a proposal. These are the points where an answer is needed m
    who is getting worse may hide it.
 7. Which single response does the patient's screen offer? Proposal: a short walk, a
    well-supported low-effort response.
-8. Should an AI ask the questions in conversation, by voice for example? Proposal: not
-   in the build. People answer machines honestly but stick with a programme better
-   when a person is involved, and a tap-through form is cheaper. Worth testing later
-   only if it gets more people to answer.
+8. To do, open for discussion: how are the questions asked? Written and tapped, or
+   spoken; plain fixed questions, or an AI in the loop. One view: an AI could reduce
+   misuse of the questionnaire, such as careless or random answers. Points on the other
+   side: the standard questionnaires are validated with fixed wording; careless
+   answering can also be caught by simple rules (answers given too fast, the same
+   answer to everything); and an AI must never stand between a person in crisis and a
+   human. Two further points were written here as fact before they were checked. That
+   people answer a machine more honestly is only partly supported: people are sometimes
+   more willing to report sensitive things to a computer than to an interviewer, mainly
+   when they are alone, and meta-analyses differ on whether the effect is more than
+   small (Gnambs and Kaspar 2015, abstract read; Richman and others 1999, Dodou and de
+   Winter 2014, search summaries only). That people stick with a programme better when
+   a person is involved is not checked. Two limits hold whatever is chosen: an AI neither triggers nor
+   holds back a warning, and a spoken answer is never used to read mood from the
+   voice. Starting point: fixed questions answered by tapping, with reading aloud as an
+   option, and an AI only where it is shown to help.
 9. Does anyone have a week or more of their own ring data? An Oura export can take
    days, so it would have to be requested now.
 10. May we publish a public copy of this repository on GitHub for the final submission?
@@ -230,10 +275,12 @@ Everything above is a proposal. These are the points where an answer is needed m
     notes. One view so far: not yet. Proposal: decide by Saturday evening, and if yes,
     push once the demo path is frozen and again just before submitting. Whose GitHub
     account hosts it?
-11. Does anything here not fit what the Aalto mentors (5th floor, booth 11) say they
+11. Can a clinic give a five-session booster at short notice, and who decides that a
+    patient gets one? The steps after a warning depend on it.
+12. Does anything here not fit what the Aalto mentors (5th floor, booth 11) say they
     want? Questions for them are in `docs/general-plan.md`, section 7, and at the end of
     `docs/research/7-behaviour-flags.md` (on another open trail).
 
-The owner's decisions behind this plan are rows D7 to D15 in `docs/decisions.md`. Each
+The owner's decisions behind this plan are rows D7 to D16 in `docs/decisions.md`. Each
 is marked there as open to the team, with the question above that covers it. When the
 team answers, a row is added that confirms the decision or names the one it replaces.

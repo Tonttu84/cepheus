@@ -19,7 +19,8 @@
     "db:start": "node scripts/dev-db.mjs start",
     "db:stop": "node scripts/dev-db.mjs stop",
     "db:status": "node scripts/dev-db.mjs status",
-    "audit": "node scripts/audit.mjs"
+    "audit": "node scripts/audit.mjs",
+    "requests": "node scripts/check-requests.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

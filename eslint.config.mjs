@@ -151,6 +151,37 @@ const eslintConfig = [
       ],
     },
   },
+  // Function shape (AGENTS.md, "Code"): guidance, so these are warnings and the gate
+  // stays green. Raise one to an error only after the flagged code has been dealt with.
+  {
+    files: ["src/**/*.{ts,tsx}", "prisma/**/*.ts", "scripts/**/*.mjs", "e2e/**/*.ts"],
+    rules: {
+      complexity: ["warn", 15],
+      "max-depth": ["warn", 3],
+      "max-params": ["warn", 5],
+    },
+  },
+  {
+    files: ["src/**/*.ts", "prisma/**/*.ts", "scripts/**/*.mjs"],
+    ignores: ["**/__tests__/**", "**/*.test.ts", "**/*.dbtest.ts"],
+    rules: {
+      "max-lines-per-function": [
+        "warn",
+        { max: 60, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
+  {
+    // Screen components carry markup, so they get more room.
+    files: ["src/**/*.tsx"],
+    ignores: ["**/__tests__/**", "**/*.test.tsx"],
+    rules: {
+      "max-lines-per-function": [
+        "warn",
+        { max: 150, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;

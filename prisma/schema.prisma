@@ -133,7 +133,7 @@ model Phq9Assessment {
   date               String      // "YYYY-MM-DD"
   dayIndex           Int
   weekNumber         Int
-  status             String      // "completed" | "missed"
+  status             String      // "completed" | "in_progress" | "missed"
   totalScore         Int?        // 0..27
   item1Interest      Int?
   item2Mood          Int?

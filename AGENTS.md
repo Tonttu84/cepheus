@@ -30,8 +30,22 @@ This file is for coding agents and for people. It holds the rules of this reposi
   3. Report one line per trail: its title, whether it is your user's or a teammate's,
      and the web address that `entire trail show <number>` prints. If nothing is open,
      say nothing.
+  4. Run `npm run requests` (or `node scripts/check-requests.mjs`). It fetches, reads
+     `docs/requests.md` on `main` and every published branch, so a request on a
+     branch that was never published is not seen, and prints each open request that
+     this machine has not shown before. Pass on whatever it prints at once.
   Only read: do not comment, approve, add findings or merge unless your user asks. If
   `entire` is missing or not signed in, say so in one line and carry on (see Quirks).
+- Requests pop up without being asked for. Repeat steps 1 and 4 every time you fetch
+  from the remote during a session: before starting a new piece of work and after
+  finishing one. Tell your user at once, in a line each and before carrying on with
+  your own work, about every request addressed to them or to the team that you have
+  not told them about in this session. A request is urgent by default: do not hold it
+  back until the end of a task. When your user answers one, mark it in
+  `docs/requests.md` through a trail, or do what it asks and say so; some things, such
+  as approving a trail in the web client, only a person can do.
+- To ask something of a teammate, add a row to `docs/requests.md` through a trail and
+  put the request in the trail's title, so that other agents pass it on.
 - The author fixes what the review finds. A fix that goes beyond a finding is reviewed
   again.
 - Commit messages follow Conventional Commits: `type(scope): imperative summary`, at
@@ -57,6 +71,25 @@ Vitest, and Playwright. See D15 in `docs/decisions.md`.
 | Run the app (starts the local database) | `npm run dev` |
 | Stop the local database | `npm run db:stop` |
 | Before a branch is published | `npm run check && npm run test:db && npm run build && npm run test:e2e` |
+
+## Code
+
+Guidance, not hard limits. The linter reports the numbers below as warnings, so the gate
+stays green. A reviewer asks for a reason when one is exceeded.
+
+- A function does one thing, at one level of detail. Aim for under about 60 lines; a
+  screen component may run to about 150.
+- Return early. Deal with the error, the empty case and the refusal first, then write
+  the main path at the top level of the function.
+- Keep nesting to three levels. Deeper than that, move the inner part into a function
+  with a name.
+- At most five parameters. Beyond that, pass one object.
+- Keep the number of branches in one function to about 15.
+- Split where a piece earns a name that hides real detail. Do not split into helpers
+  that are used once and only pass their arguments on.
+- A function that is mostly control flow, one branch for each case with each branch
+  calling something, may be longer. Say so in a comment above it.
+- Tests are exempt from the length limit, not from the others.
 
 ## Rules of the problem
 
@@ -99,6 +132,7 @@ These hold whatever is built.
 | `docs/plan.md` | The team plan: what we build, how often we ask, scope, workstreams and the open questions |
 | `docs/doctor-notes.md` | A doctor's remarks, anonymous, with what a literature check found |
 | `docs/research/` | The evidence check and the numbered research reports, with sources |
+| `docs/questions.md` | The question set: which questionnaires, the two taps, the baseline, the warning rule and the crisis rule |
 | `docs/side-challenges.md` | The side challenge we entered (Entire), what it still needs from us, and a map of the others |
 | `docs/decisions.md` | Decisions, one row each |
 
@@ -108,6 +142,13 @@ These hold whatever is built.
   provides the `git-remote-entire` helper, on the PATH, and a completed `entire login`.
 - Most figures in `docs/research/` come from abstracts. Each report lists what it could
   not check; read that list before relying on a number.
+- The local database in `npm run db:setup` uses PostgreSQL binaries from the
+  embedded-postgres package; on Linux they need the PostgreSQL client library
+  (libpq.so.5) installed on the system first, for example the `libpq5` package on
+  Debian or Ubuntu (not checked on every distribution); without it,
+  `npm run db:setup`, `npm run test:db` and the browser tests fail, while
+  `npm run check` and the build still run. It was seen on a teammate's Linux
+  machine on 14 Nov 2026.
 
 ## Entire Brain
 

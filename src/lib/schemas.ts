@@ -6,6 +6,7 @@ const isoDateString = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
 
 const checkInItemScoreSchema = z.number().min(1).max(5);
+const checkInTwoTapItemScoreSchema = z.number().min(0).max(5);
 const phq9ItemScoreSchema = z.number().int().min(0).max(3);
 
 export const BroadAreaKeySchema = z.enum(BROAD_AREA_KEYS);
@@ -16,7 +17,8 @@ export const BroadAreaKeySchema = z.enum(BROAD_AREA_KEYS);
  * Rules enforced:
  * - Missed ("missed") or skipped ("not_today") rounds are recorded as missed events,
  *   NEVER scored as 0. All item/composite scores must be null or undefined when not completed.
- * - Completed rounds require either the 4 short items (1..5) or the low-effort singleItemScore (1..5).
+ * - Completed rounds require either the 2-tap items (moodScore, interestScore as integers 0..4),
+ *   the legacy 4 short items (1..5), or the low-effort singleItemScore (1..5).
  */
 export const CheckInSubmissionSchema = z
   .object({
@@ -26,8 +28,8 @@ export const CheckInSubmissionSchema = z
     weekNumber: z.number().int().positive().optional(),
     roundNumber: z.number().int().positive().optional(),
     status: z.enum(["completed", "not_today", "missed"]),
-    moodScore: checkInItemScoreSchema.nullable().optional(),
-    interestScore: checkInItemScoreSchema.nullable().optional(),
+    moodScore: checkInTwoTapItemScoreSchema.nullable().optional(),
+    interestScore: checkInTwoTapItemScoreSchema.nullable().optional(),
     energyScore: checkInItemScoreSchema.nullable().optional(),
     ruminationScore: checkInItemScoreSchema.nullable().optional(),
     compositeScore: checkInItemScoreSchema.nullable().optional(),
@@ -70,15 +72,59 @@ export const CheckInSubmissionSchema = z
       typeof val.interestScore === "number" &&
       typeof val.energyScore === "number" &&
       typeof val.ruminationScore === "number";
+    const hasTwoTapItems =
+      typeof val.moodScore === "number" &&
+      typeof val.interestScore === "number" &&
+      (val.energyScore === null || val.energyScore === undefined) &&
+      (val.ruminationScore === null || val.ruminationScore === undefined) &&
+      (val.compositeScore === null || val.compositeScore === undefined);
     const hasSingleItem = typeof val.singleItemScore === "number";
 
-    if (!hasAllFourItems && !hasSingleItem) {
+    if (!hasAllFourItems && !hasTwoTapItems && !hasSingleItem) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["moodScore"],
         message:
-          "Completed check-in requires either all 4 item scores (1..5) or singleItemScore (1..5).",
+          "Completed check-in requires either 2-tap (moodScore, interestScore in 0..4), all 4 item scores (1..5), or singleItemScore.",
       });
+      return;
+    }
+
+    if (hasTwoTapItems && !hasAllFourItems) {
+      for (const field of ["moodScore", "interestScore"] as const) {
+        const score = val[field];
+        if (
+          typeof score !== "number" ||
+          !Number.isInteger(score) ||
+          score < 0 ||
+          score > 4
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: `Two-tap ${field} must be an integer 0..4.`,
+          });
+        }
+      }
+      return;
+    }
+
+    if (hasAllFourItems) {
+      for (const field of [
+        "moodScore",
+        "interestScore",
+        "energyScore",
+        "ruminationScore",
+      ] as const) {
+        const score = val[field];
+        if (typeof score === "number" && score < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: `4-item ${field} must be between 1 and 5.`,
+          });
+        }
+      }
     }
   });
 
@@ -89,6 +135,8 @@ export type CheckInSubmissionInput = z.infer<typeof CheckInSubmissionSchema>;
  *
  * Rules enforced:
  * - When status === "missed", all 9 item scores and totalScore must be null or undefined.
+ * - When status === "in_progress", partial items are allowed (not scored until complete),
+ *   totalScore must be null or undefined, and item9SelfHarm > 0 still triggers the immediate crisis path.
  * - When status === "completed", all 9 items must be integers 0..3.
  * - Any item9SelfHarm > 0 requires the immediate crisis path.
  */
@@ -98,7 +146,7 @@ export const Phq9SubmissionSchema = z
     date: isoDateString,
     dayIndex: z.number().int().nonnegative().optional(),
     weekNumber: z.number().int().positive().optional(),
-    status: z.enum(["completed", "missed"]),
+    status: z.enum(["completed", "in_progress", "missed"]),
     totalScore: z.number().int().min(0).max(27).nullable().optional(),
     item1Interest: phq9ItemScoreSchema.nullable().optional(),
     item2Mood: phq9ItemScoreSchema.nullable().optional(),
@@ -148,6 +196,18 @@ export const Phq9SubmissionSchema = z
       return;
     }
 
+    if (val.status === "in_progress") {
+      if (val.totalScore !== null && val.totalScore !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["totalScore"],
+          message:
+            'When PHQ-9 status is "in_progress", totalScore must be null or undefined (unfinished PHQ-9 is not scored).',
+        });
+      }
+      return;
+    }
+
     // status === "completed"
     for (const field of itemFields) {
       if (typeof val[field] !== "number") {
@@ -174,6 +234,14 @@ export function evaluatePhq9Submission(input: Phq9SubmissionInput): {
     };
   }
 
+  const crisisPathRequired = (parsed.item9SelfHarm ?? 0) > 0;
+  if (parsed.status === "in_progress") {
+    return {
+      totalScore: null,
+      crisisPathRequired,
+    };
+  }
+
   const items = [
     parsed.item1Interest ?? 0,
     parsed.item2Mood ?? 0,
@@ -186,7 +254,6 @@ export function evaluatePhq9Submission(input: Phq9SubmissionInput): {
     parsed.item9SelfHarm ?? 0,
   ];
   const totalScore = items.reduce((acc, v) => acc + v, 0);
-  const crisisPathRequired = (parsed.item9SelfHarm ?? 0) > 0;
 
   return {
     totalScore,
