@@ -266,4 +266,28 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
 
     await updateMethodConsent("check_in", true, prisma);
   });
+  it("keeps a completed bedside round when Not today follows taps on the same date", async () => {
+    const date = "2026-11-20";
+    const tapRes = await saveArduinoBedsideCheckIn(
+      { deviceId: "unoq-dbtest", date, isSimulated: true, kind: "taps", mood: 1, interest: 2 },
+      prisma
+    );
+    expect(tapRes.ok).toBe(true);
+
+    const notTodayRes = await saveArduinoBedsideCheckIn(
+      { deviceId: "unoq-dbtest", date, isSimulated: true, kind: "not_today" },
+      prisma
+    );
+    expect(notTodayRes.ok).toBe(true);
+
+    const rounds = await prisma.checkInRound.findMany({
+      where: { participant: { externalId: HOME_DEMO_EXTERNAL_ID }, date },
+    });
+    expect(rounds).toHaveLength(1);
+    expect(rounds[0]?.status).toBe("completed");
+    expect(rounds[0]?.moodScore).toBe(1);
+    expect(rounds[0]?.interestScore).toBe(2);
+    expect(rounds[0]?.respondedAt).not.toBeNull();
+  });
+
 });

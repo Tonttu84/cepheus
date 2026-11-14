@@ -120,8 +120,15 @@ async function upsertBedsideRound(
   prisma: PrismaClient
 ): Promise<number> {
   const roundNumber = await resolveRoundNumber(participant.id, input.date, prisma);
-  const now = new Date();
   const isTaps = input.kind === "taps";
+  if (!isTaps) {
+    // A later "Not today" must not erase answers already given for this date.
+    const existing = await prisma.checkInRound.findUnique({
+      where: { participantId_roundNumber: { participantId: participant.id, roundNumber } },
+    });
+    if (existing?.status === "completed") return roundNumber;
+  }
+  const now = new Date();
   const data = {
     clinicId: participant.clinicId,
     scheduledAt: now,
