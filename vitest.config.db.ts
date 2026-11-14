@@ -6,6 +6,7 @@ export default defineConfig({
     include: ["src/**/*.dbtest.ts"],
     exclude: ["e2e/**", "node_modules/**", ".next/**"],
     globalSetup: ["./src/server/__tests__/db-test-setup.ts"],
+    fileParallelism: false,
   },
   resolve: {
     alias: {
