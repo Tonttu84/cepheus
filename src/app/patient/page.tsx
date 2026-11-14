@@ -1,5 +1,6 @@
 import { PATIENT_SUGGESTIONS } from "@/lib/constants";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
+import { requirePatientPageSession } from "@/server/auth";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { SessionContextPill } from "@/components/session-context-banner";
 import { PatientSuggestionCard } from "@/components/patient-suggestion-card";
@@ -8,7 +9,8 @@ import {
   ForestDivider,
 } from "@/components/forest-divider";
 
-export default function PatientPage() {
+export default async function PatientPage() {
+  await requirePatientPageSession();
   const dataset = generateSimulatedPersonWeeks({ throughDay: 29 });
   const activeSuggestion =
     dataset.patientSuggestions[dataset.patientSuggestions.length - 1] ??

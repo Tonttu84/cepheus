@@ -4,6 +4,7 @@ import {
   generateSimulatedPersonWeeks,
   sliceDatasetThroughDay,
 } from "@/lib/simulation";
+import { requireApiSession } from "@/server/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,11 @@ function resolveMomentKey(raw: string | null): DemoMomentKey {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = requireApiSession(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { searchParams } = new URL(request.url);
   const momentKey = resolveMomentKey(searchParams.get("moment"));
   const meta = DEMO_MOMENTS[momentKey];

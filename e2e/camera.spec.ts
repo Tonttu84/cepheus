@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { signInAsPatient } from "./helpers";
 
 const prepareScriptPath = path.resolve(
   process.cwd(),
@@ -98,6 +99,10 @@ test.describe("Camera Wellbeing Check-in Flow & Safety Invariants", () => {
         `Failed to prepare MediaPipe assets:\n${failureDetails}`
       );
     }
+  });
+
+  test.beforeEach(async ({ page, context }) => {
+    await signInAsPatient(page, context);
   });
 
   test("1. Camera is NOT opened before Start, explanation and crisis bar are visible, zero external requests", async ({

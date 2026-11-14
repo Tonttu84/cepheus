@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/server/auth";
 import {
   FITBIT_TOKEN_COOKIE,
   isFitbitConfigured,
@@ -9,7 +10,12 @@ import { unsealJson } from "@/server/security";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const configured = isFitbitConfigured();
   const cookieStore = await cookies();
   const rawToken = cookieStore.get(FITBIT_TOKEN_COOKIE)?.value;

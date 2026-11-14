@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -38,10 +39,17 @@ interface SignInApiResponse {
   message?: string;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AuthSession | null>(null);
+export function AuthProvider({
+  children,
+  initialSession = null,
+}: {
+  children: ReactNode;
+  initialSession?: AuthSession | null;
+}) {
+  const router = useRouter();
+  const [session, setSession] = useState<AuthSession | null>(initialSession);
   const [demoMode, setDemoMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(initialSession === null);
 
   const refreshSession = useCallback(async () => {
     try {
@@ -83,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
       setSession(data.session);
+      router.refresh();
       return { ok: true, session: data.session };
     } catch {
       return {
@@ -90,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         message: "Unable to reach the sign-in service. Please try again.",
       };
     }
-  }, []);
+  }, [router]);
 
   const signOut = useCallback(async () => {
     try {

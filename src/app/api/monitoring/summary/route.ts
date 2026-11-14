@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/server/auth";
 import { getEnv } from "@/server/env";
 import {
   buildSimulatedHealthConnectPayload,
@@ -11,14 +12,18 @@ export const dynamic = "force-dynamic";
 /**
  * DEMO-ONLY ENDPOINT:
  * Reads and simulates home-monitoring data for the single pseudonymous demo
- * participant (`demo-home-node-01`) prior to Step 6 session authentication.
- * Must not hold real patient data; checks `decideAccess` (patient vs staff D8).
+ * participant (`demo-home-node-01`). Requires session authentication and
+ * enforces role-based D8 redaction for clinic staff.
  */
 export async function GET(request: Request) {
+  const auth = requireApiSession(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   try {
     const env = getEnv();
-    const url = new URL(request.url);
-    const viewer = url.searchParams.get("viewer") === "staff" ? "staff" : "patient";
+    const viewer = auth.session.kind === "staff" ? "staff" : "patient";
     const summary = await getMonitoringSummary(viewer);
     return NextResponse.json({
       ok: true,
@@ -40,6 +45,10 @@ export async function POST(request: Request) {
       { ok: false, error: "Cross-origin POST rejected." },
       { status: 403 }
     );
+  }
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
   }
   return NextResponse.json({
     ok: true,

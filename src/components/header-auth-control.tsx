@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   PatientEidSignInPanel,
@@ -215,8 +215,19 @@ function SignedInMenu({
 export function HeaderAuthControl() {
   const { session, signOut } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  async function handleSignOut() {
+    await signOut();
+    setOpen(false);
+    if (pathname !== "/" && pathname !== "/sign-in") {
+      window.location.assign("/");
+      return;
+    }
+    router.refresh();
+  }
 
   useEffect(() => {
     setOpen(false);
@@ -287,7 +298,7 @@ export function HeaderAuthControl() {
       {open && session ? (
         <SignedInMenu
           session={session}
-          onSignOut={signOut}
+          onSignOut={handleSignOut}
           onClose={() => setOpen(false)}
         />
       ) : null}

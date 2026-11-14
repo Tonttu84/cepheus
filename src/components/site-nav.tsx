@@ -2,19 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/auth-provider";
 import { HeaderAuthControl } from "@/components/header-auth-control";
+import type { AuthSession } from "@/lib/auth-types";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Overview", testId: "nav-overview" },
+interface NavItem {
+  href: string;
+  label: string;
+  testId: string;
+}
+
+const OVERVIEW_NAV: NavItem = {
+  href: "/",
+  label: "Overview",
+  testId: "nav-overview",
+};
+
+const PATIENT_NAV_ITEMS: readonly NavItem[] = [
+  OVERVIEW_NAV,
   { href: "/check-in", label: "Check-in", testId: "nav-check-in" },
   { href: "/camera", label: "Camera check", testId: "nav-camera" },
   { href: "/monitoring", label: "Home sensors", testId: "nav-monitoring" },
   { href: "/patient", label: "Patient view", testId: "nav-patient" },
+];
+
+const STAFF_NAV_ITEMS: readonly NavItem[] = [
+  OVERVIEW_NAV,
   { href: "/clinic", label: "Clinic view", testId: "nav-clinic" },
-] as const;
+];
+
+function visibleNavItems(session: AuthSession | null): readonly NavItem[] {
+  if (!session) {
+    return [OVERVIEW_NAV];
+  }
+  return session.kind === "staff" ? STAFF_NAV_ITEMS : PATIENT_NAV_ITEMS;
+}
 
 export function SiteNav() {
   const pathname = usePathname();
+  const { session } = useAuth();
+  const navItems = visibleNavItems(session);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border-hairline bg-surface-card/95 backdrop-blur-md">
@@ -43,7 +70,7 @@ export function SiteNav() {
           aria-label="Primary navigation"
           className="flex flex-wrap items-center gap-1 rounded-xl border border-border-hairline bg-surface-subtle p-1"
         >
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive =
               item.href === "/"
                 ? pathname === "/"

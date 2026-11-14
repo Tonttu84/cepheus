@@ -1,13 +1,15 @@
 import { type BroadAreaKey } from "@/lib/constants";
 import { toSafeClinicFlagView } from "@/lib/schemas";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
+import { requireStaffPageSession } from "@/server/auth";
 import { ClinicNurseBriefPanel } from "@/components/clinic-nurse-brief-panel";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { SessionContextPill } from "@/components/session-context-banner";
 import { ClinicFlagCard } from "@/components/clinic-flag-card";
 import { ForestDivider } from "@/components/forest-divider";
 
-export default function ClinicPage() {
+export default async function ClinicPage() {
+  await requireStaffPageSession();
   const dataset = generateSimulatedPersonWeeks({ throughDay: 56 });
   const rawFlag = dataset.clinicFlags[dataset.clinicFlags.length - 1];
 

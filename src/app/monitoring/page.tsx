@@ -1,8 +1,10 @@
 import { MonitoringDashboard } from "@/components/monitoring-dashboard";
 import { ForestCanopyArtwork } from "@/components/forest-divider";
 import { SimulatedBadge } from "@/components/simulated-badge";
+import { requirePatientPageSession } from "@/server/auth";
 
-export default function MonitoringPage() {
+export default async function MonitoringPage() {
+  await requirePatientPageSession();
   return (
     <div className="space-y-12 sm:space-y-16">
       <header className="space-y-4">

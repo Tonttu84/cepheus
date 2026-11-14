@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/server/auth";
 import { getEnv } from "@/server/env";
 import {
   exchangeFitbitCode,
@@ -24,6 +25,11 @@ interface SealedOAuthState {
 }
 
 export async function GET(request: Request) {
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const limit = checkRateLimit(getClientKey(request, "fitbit-cb"), 20, 60_000);
   if (!limit.allowed) {
     return NextResponse.json(

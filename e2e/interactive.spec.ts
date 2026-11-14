@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { signInAsPatient, signInAsStaff } from "./helpers";
 
 test.describe("Interactive Redesign Fixes & Invariants", () => {
   test("1. /check-in handles scale tapping with accessible names, Not Today skip, and no saving claims", async ({
     page,
   }) => {
+    await signInAsPatient(page);
     await page.goto("/check-in");
 
     // Tap choice 2 in the first row ("Mood") reached by its accessible name
@@ -40,6 +42,7 @@ test.describe("Interactive Redesign Fixes & Invariants", () => {
   test("2. /patient action buttons show simulated status message", async ({
     page,
   }) => {
+    await signInAsPatient(page);
     await page.goto("/patient");
 
     const acceptButton = page.getByTestId("patient-suggestion-accept");
@@ -57,6 +60,7 @@ test.describe("Interactive Redesign Fixes & Invariants", () => {
   test("3. /clinic action buttons show simulated status message", async ({
     page,
   }) => {
+    await signInAsStaff(page);
     await page.goto("/clinic");
 
     const nurseCallButton = page.getByTestId("clinic-action-nurse-call");
@@ -74,6 +78,7 @@ test.describe("Interactive Redesign Fixes & Invariants", () => {
   test("4. / and /check-in show all crisis links in viewport at 375px, 640px, and 768px", async ({
     page,
   }) => {
+    await signInAsPatient(page);
     for (const width of [375, 640, 768]) {
       await page.setViewportSize({ width, height: 667 });
 

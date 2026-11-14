@@ -13,6 +13,7 @@ import {
   sliceDatasetThroughDay,
   type SimulatedPersonDataset,
 } from "@/lib/simulation";
+import { readServerSession } from "@/server/auth";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import {
   ForestCanopyArtwork,
@@ -172,7 +173,10 @@ function buildMomentSummary(
   };
 }
 
-function ExploreViewsGrid() {
+function ExploreViewsGrid({ role }: { role: "patient" | "staff" }) {
+  const showPatient = role === "patient";
+  const showStaff = role === "staff";
+
   return (
     <section aria-label="Workstream modules" className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -181,8 +185,9 @@ function ExploreViewsGrid() {
             Explore each view
           </h2>
           <p className="text-sm text-ink-secondary">
-            Step through the patient&apos;s home check-in views or the
-            clinic&apos;s follow-up view.
+            {showStaff
+              ? "Open the clinic follow-up overview."
+              : "Step through your home check-in and sensing views."}
           </p>
         </div>
         <span className="text-xs text-ink-muted">
@@ -191,113 +196,174 @@ function ExploreViewsGrid() {
       </div>
 
       <div className="divide-y divide-border-hairline rounded-2xl border border-border-hairline bg-surface-card">
-        <Link
-          href="/check-in"
-          data-testid="card-check-in"
-          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
-        >
-          <div className="max-w-xl space-y-1.5">
-            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
-              Twice-weekly wellbeing check-in
-            </h3>
-            <p className="text-sm leading-relaxed text-ink-secondary">
-              Two quick 0 to 4 tap questions twice a week, or a single tap on
-              &ldquo;Not today&rdquo; when you want to rest. Missed rounds are
-              simply noted as missed, and phone numbers for a real person stay
-              at the top of the page.
-            </p>
-          </div>
-          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
-            Open check-in <span aria-hidden="true">&rarr;</span>
-          </span>
-        </Link>
+        {showPatient ? (
+          <>
+            <Link
+              href="/check-in"
+              data-testid="card-check-in"
+              className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
+            >
+              <div className="max-w-xl space-y-1.5">
+                <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
+                  Twice-weekly wellbeing check-in
+                </h3>
+                <p className="text-sm leading-relaxed text-ink-secondary">
+                  Two quick 0 to 4 tap questions twice a week, or a single tap
+                  on &ldquo;Not today&rdquo; when you want to rest. Missed
+                  rounds are simply noted as missed, and phone numbers for a
+                  real person stay at the top of the page.
+                </p>
+              </div>
+              <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
+                Open check-in <span aria-hidden="true">&rarr;</span>
+              </span>
+            </Link>
 
-        <Link
-          href="/patient"
-          data-testid="card-patient"
-          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
-        >
-          <div className="max-w-xl space-y-1.5">
-            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
-              Patient view: One small step for today
-            </h3>
-            <p className="text-sm leading-relaxed text-ink-secondary">
-              Offers one simple idea (&ldquo;Take a 10-minute walk
-              outside&rdquo;) when a check-in dips below usual, without charts
-              or scores.
-            </p>
-          </div>
-          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
-            Open patient view <span aria-hidden="true">&rarr;</span>
-          </span>
-        </Link>
+            <Link
+              href="/patient"
+              data-testid="card-patient"
+              className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
+            >
+              <div className="max-w-xl space-y-1.5">
+                <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
+                  Patient view: One small step for today
+                </h3>
+                <p className="text-sm leading-relaxed text-ink-secondary">
+                  Offers one simple idea (&ldquo;Take a 10-minute walk
+                  outside&rdquo;) when a check-in dips below usual, without
+                  charts or scores.
+                </p>
+              </div>
+              <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
+                Open patient view <span aria-hidden="true">&rarr;</span>
+              </span>
+            </Link>
 
-        <Link
-          href="/camera"
-          data-testid="card-camera"
-          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
-        >
-          <div className="max-w-xl space-y-1.5">
-            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
-              On-device camera check
-            </h3>
-            <p className="text-sm leading-relaxed text-ink-secondary">
-              MediaPipe Face Landmarker runs in your browser for 20 seconds and
-              keeps only two summary numbers for face and head movement. No
-              video or images are ever saved.
-            </p>
-          </div>
-          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
-            Open camera check <span aria-hidden="true">&rarr;</span>
-          </span>
-        </Link>
+            <Link
+              href="/camera"
+              data-testid="card-camera"
+              className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
+            >
+              <div className="max-w-xl space-y-1.5">
+                <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
+                  On-device camera check
+                </h3>
+                <p className="text-sm leading-relaxed text-ink-secondary">
+                  MediaPipe Face Landmarker runs in your browser for 20 seconds
+                  and keeps only two summary numbers for face and head movement.
+                  No video or images are ever saved.
+                </p>
+              </div>
+              <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
+                Open camera check <span aria-hidden="true">&rarr;</span>
+              </span>
+            </Link>
 
-        <Link
-          href="/clinic"
-          data-testid="card-clinic"
-          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
-        >
-          <div className="max-w-xl space-y-1.5">
-            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
-              Clinic view: Follow-up flag for the nurse
-            </h3>
-            <p className="text-sm leading-relaxed text-ink-secondary">
-              Shows the care team which broad life areas shifted and when the
-              change started, with buttons to arrange a nurse call or a
-              5-session booster cluster.
-            </p>
-          </div>
-          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
-            Open clinic overview <span aria-hidden="true">&rarr;</span>
-          </span>
-        </Link>
+            <Link
+              href="/monitoring"
+              data-testid="card-monitoring"
+              className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
+            >
+              <div className="max-w-xl space-y-1.5">
+                <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
+                  Monitoring &amp; consent settings
+                </h3>
+                <p className="text-sm leading-relaxed text-ink-secondary">
+                  Review which channels are active, adjust your sharing
+                  preferences, and see how your own first weeks form a personal
+                  baseline.
+                </p>
+              </div>
+              <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
+                Open monitoring &amp; consent{" "}
+                <span aria-hidden="true">&rarr;</span>
+              </span>
+            </Link>
+          </>
+        ) : null}
 
-        <Link
-          href="/monitoring"
-          data-testid="card-monitoring"
-          className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
-        >
-          <div className="max-w-xl space-y-1.5">
-            <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
-              Monitoring &amp; consent settings
-            </h3>
-            <p className="text-sm leading-relaxed text-ink-secondary">
-              Review which channels are active, adjust your sharing preferences,
-              and see how your own first weeks form a personal baseline.
-            </p>
-          </div>
-          <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
-            Open monitoring &amp; consent <span aria-hidden="true">&rarr;</span>
-          </span>
-        </Link>
+        {showStaff ? (
+          <Link
+            href="/clinic"
+            data-testid="card-clinic"
+            className="group flex flex-col justify-between gap-4 p-6 transition hover:bg-surface-subtle/60 sm:flex-row sm:items-center sm:p-8"
+          >
+            <div className="max-w-xl space-y-1.5">
+              <h3 className="font-display text-xl font-semibold text-ink-primary group-hover:text-accent-sage">
+                Clinic view: Follow-up flag for the nurse
+              </h3>
+              <p className="text-sm leading-relaxed text-ink-secondary">
+                Shows the care team which broad life areas shifted and when the
+                change started, with buttons to arrange a nurse call or a
+                5-session booster cluster.
+              </p>
+            </div>
+            <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border-tactile bg-surface-subtle px-4 py-2 text-xs font-semibold text-ink-primary transition group-hover:border-accent-sage group-hover:bg-accent-sage group-hover:text-white">
+              Open clinic overview <span aria-hidden="true">&rarr;</span>
+            </span>
+          </Link>
+        ) : null}
       </div>
     </section>
   );
 }
 
-export default async function HomePage() {
-  const fullSimulatedDataset = generateSimulatedPersonWeeks();
+function PublicOverviewContent() {
+  return (
+    <div className="space-y-12 sm:space-y-16">
+      <header className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SimulatedBadge subtitle="Post-TMS home wellbeing companion" />
+          <span className="text-xs text-ink-muted">
+            Sign in required for participant &amp; clinic views
+          </span>
+        </div>
 
+        <div className="max-w-3xl space-y-3">
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-primary sm:text-5xl">
+            Staying well at home after TMS
+          </h1>
+          <p className="text-base leading-relaxed text-ink-secondary sm:text-lg">
+            Finishing a course of Transcranial Magnetic Stimulation (TMS) often
+            leaves a gap between clinic visits. Cepheus uses a short
+            twice-weekly check-in and consented home wellbeing measures to
+            support timely nurse follow-up, without diagnosis or treatment
+            claims.
+          </p>
+        </div>
+
+        <ForestCanopyArtwork className="w-full pt-2 text-accent-sage" />
+      </header>
+
+      <section
+        aria-label="Sign in required"
+        data-testid="logged-out-overview-card"
+        className="flex flex-col justify-between gap-4 rounded-2xl border border-border-hairline bg-surface-card p-6 sm:flex-row sm:items-center sm:p-8"
+      >
+        <div className="max-w-xl space-y-1.5">
+          <h2 className="font-display text-xl font-semibold text-ink-primary">
+            Sign in to view your workspace
+          </h2>
+          <p className="text-sm leading-relaxed text-ink-secondary">
+            Participant check-ins, sensor settings, and clinic follow-up tools
+            are hidden until you sign in. Direct crisis support numbers stay
+            available at the top of every screen.
+          </p>
+        </div>
+        <Link
+          href="/sign-in"
+          data-testid="landing-sign-in-link"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-accent-sage px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-sage-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+        >
+          Sign in to Cepheus
+        </Link>
+      </section>
+    </div>
+  );
+}
+
+async function loadSignedInOverview() {
+  const fullSimulatedDataset = generateSimulatedPersonWeeks();
   let dbSeeded = false;
   let participantLabel = fullSimulatedDataset.participant.label;
   let tmsCompletedDate = fullSimulatedDataset.participant.tmsCompletedDate;
@@ -315,7 +381,6 @@ export default async function HomePage() {
         patientSuggestions: true,
       },
     });
-
     if (dbParticipant) {
       dbSeeded = true;
       participantLabel = dbParticipant.label;
@@ -327,13 +392,33 @@ export default async function HomePage() {
       ).length;
     }
   } catch {
-    // Seamless fallback to deterministic generator if DB isn't seeded yet
     dbSeeded = false;
   }
 
-  const momentSummaries = DEMO_MOMENT_LIST.map((meta) =>
-    buildMomentSummary(fullSimulatedDataset, meta)
-  );
+  return {
+    dbSeeded,
+    participantLabel,
+    tmsCompletedDate,
+    activeConsentCount,
+    momentSummaries: DEMO_MOMENT_LIST.map((meta) =>
+      buildMomentSummary(fullSimulatedDataset, meta)
+    ),
+  };
+}
+
+export default async function HomePage() {
+  const session = await readServerSession();
+  if (!session) {
+    return <PublicOverviewContent />;
+  }
+
+  const {
+    dbSeeded,
+    participantLabel,
+    tmsCompletedDate,
+    activeConsentCount,
+    momentSummaries,
+  } = await loadSignedInOverview();
 
   return (
     <div className="space-y-12 sm:space-y-16">
@@ -372,7 +457,7 @@ export default async function HomePage() {
 
       <ForestDivider variant="grove" />
 
-      <ExploreViewsGrid />
+      <ExploreViewsGrid role={session.kind} />
     </div>
   );
 }

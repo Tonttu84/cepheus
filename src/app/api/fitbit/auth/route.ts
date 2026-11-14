@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/server/auth";
 import { getEnv } from "@/server/env";
 import {
   buildFitbitAuthorizeUrl,
@@ -17,6 +18,11 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const limit = checkRateLimit(getClientKey(request, "fitbit-auth"), 20, 60_000);
   if (!limit.allowed) {
     return NextResponse.json(
