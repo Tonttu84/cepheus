@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { containsRawMediaFields } from "@/domain/arduino";
@@ -144,7 +145,7 @@ function storageFailureResponse(
 ): NextResponse {
   console.error("[arduino/check-in] Storing the bedside check-in failed:", {
     kind: input.kind,
-    deviceId: input.deviceId,
+    deviceHash: crypto.createHash("sha256").update(input.deviceId).digest("hex").slice(0, 12),
     date: input.date,
     isSimulated: input.isSimulated,
     error: err instanceof Error ? err.message : String(err),
