@@ -5,8 +5,10 @@ import {
 } from "@/components/forest-divider";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
+import { requirePatientPageSession } from "@/server/auth";
 
-export default function CameraPage() {
+export default async function CameraPage() {
+  await requirePatientPageSession();
   const dataset = generateSimulatedPersonWeeks({ throughDay: 29 });
   const latestCamera =
     dataset.cameraReadings[dataset.cameraReadings.length - 1] ?? null;

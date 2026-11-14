@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireApiSession } from "@/server/auth";
 import { generateNursePreCallBrief } from "@/server/verda/client";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +55,10 @@ export async function POST(request: Request) {
       { ok: false, error: "Cross-origin POST rejected." },
       { status: 403 }
     );
+  }
+  const auth = requireApiSession(request, "staff");
+  if (!auth.ok) {
+    return auth.response;
   }
   if (isRateLimited()) {
     return NextResponse.json(

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { SAFE_ACTION_KEYS } from "@/domain/ai-support";
+import { requireApiSession } from "@/server/auth";
 import { getEnv } from "@/server/env";
 import { generateTailoredPatientStep } from "@/server/verda/client";
 
@@ -57,6 +58,10 @@ export async function POST(request: Request) {
       { ok: false, error: "Cross-origin POST rejected." },
       { status: 403 }
     );
+  }
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
   }
   if (isRateLimited()) {
     return NextResponse.json(

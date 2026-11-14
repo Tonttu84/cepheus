@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireApiSession } from "@/server/auth";
 import { getEnv } from "@/server/env";
 import {
   fetchFitbitWindowDays,
@@ -38,6 +39,11 @@ export async function POST(request: Request) {
       { ok: false, error: "Cross-origin POST rejected." },
       { status: 403 }
     );
+  }
+
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
   }
 
   const limit = checkRateLimit(getClientKey(request, "fitbit-sync"), 15, 60_000);

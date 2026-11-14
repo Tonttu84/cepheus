@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { signInAsPatient, signInAsStaff, signOutSession } from "./helpers";
 
 test.describe("Cepheus Foundation Shell & Safety Invariants", () => {
-  test("1. Overview (/) loads, labels simulated data, shows crisis path, and switches demo moments", async ({
+  test("1. Overview (/) loads, labels simulated data, shows crisis path, and switches demo moments when signed in", async ({
     page,
   }) => {
+    await signInAsPatient(page);
     const response = await page.goto("/");
     expect(response?.status()).toBe(200);
 
@@ -47,12 +49,12 @@ test.describe("Cepheus Foundation Shell & Safety Invariants", () => {
     ).toContainText("Day 56");
   });
 
-  test("2. /check-in, /camera, /patient, and /clinic return 200 and keep the crisis path visible", async ({
+  test("2. /check-in, /camera, /patient, and /clinic return 200 for authorized roles and keep the crisis path visible", async ({
     page,
+    context,
   }) => {
-    const routes = ["/check-in", "/camera", "/patient", "/clinic"];
-
-    for (const route of routes) {
+    await signInAsPatient(page, context);
+    for (const route of ["/check-in", "/camera", "/patient"]) {
       const response = await page.goto(route);
       expect(response?.status(), `Expected 200 on ${route}`).toBe(200);
 
@@ -67,11 +69,23 @@ test.describe("Cepheus Foundation Shell & Safety Invariants", () => {
       await expect(badge).toBeVisible();
       await expect(badge).toContainText("Simulated data");
     }
+
+    await signOutSession(context);
+    await signInAsStaff(page, context);
+    const clinicResp = await page.goto("/clinic");
+    expect(clinicResp?.status(), "Expected 200 on /clinic").toBe(200);
+    await expect(
+      page.getByRole("region", { name: /Immediate support and emergency help/i })
+    ).toBeVisible();
+    await expect(page.getByTestId("simulated-badge").first()).toContainText(
+      "Simulated data"
+    );
   });
 
   test("3. /patient shows a single low-effort suggestion and contains no streak counters", async ({
     page,
   }) => {
+    await signInAsPatient(page);
     const response = await page.goto("/patient");
     expect(response?.status()).toBe(200);
 
@@ -84,7 +98,8 @@ test.describe("Cepheus Foundation Shell & Safety Invariants", () => {
     expect(mainText.toLowerCase()).not.toContain("streak");
   });
 
-  test("4. /api/health and /api/demo?moment=small_dip return valid 200 JSON with isSimulated: true", async ({
+  test("4. /api/health is public and /api/demo?moment=small_dip requires auth then returns valid 200 JSON", async ({
+    page,
     request,
   }) => {
     const healthRes = await request.get("/api/health");
@@ -95,7 +110,11 @@ test.describe("Cepheus Foundation Shell & Safety Invariants", () => {
     expect(typeof healthJson.participantCount).toBe("number");
     expect(healthJson.isSimulated).toBe(true);
 
-    const demoRes = await request.get("/api/demo?moment=small_dip");
+    const unsignedDemoRes = await request.get("/api/demo?moment=small_dip");
+    expect(unsignedDemoRes.status()).toBe(401);
+
+    await signInAsPatient(page);
+    const demoRes = await page.request.get("/api/demo?moment=small_dip");
     expect(demoRes.status()).toBe(200);
     const demoJson = await demoRes.json();
     expect(demoJson.ok).toBe(true);

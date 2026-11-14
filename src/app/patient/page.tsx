@@ -1,13 +1,16 @@
 import { PATIENT_SUGGESTIONS } from "@/lib/constants";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
+import { requirePatientPageSession } from "@/server/auth";
 import { SimulatedBadge } from "@/components/simulated-badge";
+import { SessionContextPill } from "@/components/session-context-banner";
 import { PatientSuggestionCard } from "@/components/patient-suggestion-card";
 import {
   ForestCanopyArtwork,
   ForestDivider,
 } from "@/components/forest-divider";
 
-export default function PatientPage() {
+export default async function PatientPage() {
+  await requirePatientPageSession();
   const dataset = generateSimulatedPersonWeeks({ throughDay: 29 });
   const activeSuggestion =
     dataset.patientSuggestions[dataset.patientSuggestions.length - 1] ??
@@ -18,9 +21,12 @@ export default function PatientPage() {
       <header className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Day 29 · Week 5 gentle check-in view" />
-          <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
-            Patient View
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <SessionContextPill expectedRole="patient" />
+            <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
+              Patient View
+            </span>
+          </div>
         </div>
 
         <div className="max-w-3xl space-y-2.5">

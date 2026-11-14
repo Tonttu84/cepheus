@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/server/auth";
 import { FITBIT_STATE_COOKIE, FITBIT_TOKEN_COOKIE } from "@/server/fitbit/client";
 import { verifySameOrigin } from "@/server/security";
 
@@ -10,6 +11,11 @@ export async function POST(request: Request) {
       { ok: false, error: "Cross-origin POST rejected." },
       { status: 403 }
     );
+  }
+
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
   }
 
   const response = NextResponse.json({ ok: true, disconnected: true });

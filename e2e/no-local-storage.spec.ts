@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { signInAsPatient } from "./helpers";
 
 /**
  * Case 1 (D45): nothing is kept on the person's device. After the real
@@ -26,6 +27,7 @@ async function expectNothingKeptOnDevice(page: Page, context: BrowserContext) {
 
 test.describe("Case 1: nothing is kept on the device", () => {
   test("answering both check-in prompts leaves no browser storage", async ({ page, context }) => {
+    await signInAsPatient(page, context);
     await page.goto("/check-in");
 
     const mood = page.getByRole("button", { name: "Mood: 3 of 4" });
@@ -40,6 +42,7 @@ test.describe("Case 1: nothing is kept on the device", () => {
   });
 
   test("tapping Not today leaves no browser storage", async ({ page, context }) => {
+    await signInAsPatient(page, context);
     await page.goto("/check-in");
 
     await page.getByTestId("not-today-button").click();

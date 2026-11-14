@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { signInAsPatient, signInAsStaff, signOutSession } from "./helpers";
 
 test.describe("Verda EU Gemma Nurse Pre-Call Brief & Guardrails (Trail #31)", () => {
   test("1. /patient remains clean without unapproved AI step controls or streaks", async ({
     page,
   }) => {
+    await signInAsPatient(page);
     await page.goto("/patient");
     await expect(page.getByTestId("patient-suggestion-card")).toBeVisible();
     await expect(page.getByTestId("verda-patient-step-btn")).toHaveCount(0);
@@ -15,6 +17,7 @@ test.describe("Verda EU Gemma Nurse Pre-Call Brief & Guardrails (Trail #31)", ()
   test("2. /clinic generates a faithfulness-checked nurse pre-call brief with source metrics & HITL confirmation", async ({
     page,
   }) => {
+    await signInAsStaff(page);
     await page.goto("/clinic");
 
     await page.getByTestId("verda-nurse-brief-btn").click();
@@ -27,10 +30,19 @@ test.describe("Verda EU Gemma Nurse Pre-Call Brief & Guardrails (Trail #31)", ()
     await expect(page.getByTestId("verda-nurse-confirm")).toBeChecked();
   });
 
-  test("3. AI endpoints enforce off-by-default patient switch, same-origin, and strict schema validation", async ({
+  test("3. AI endpoints enforce auth, off-by-default patient switch, same-origin, and strict schema validation", async ({
+    page,
+    context,
     request,
   }) => {
-    const patientStepRes = await request.post("/api/ai/patient-step", {
+    const unsignedRes = await request.post("/api/ai/nurse-brief", {
+      headers: { origin: "http://127.0.0.1:3100" },
+      data: {},
+    });
+    expect(unsignedRes.status()).toBe(401);
+
+    await signInAsPatient(page, context);
+    const patientStepRes = await page.request.post("/api/ai/patient-step", {
       headers: { origin: "http://127.0.0.1:3100" },
       data: {
         participantCode: "sim-01",
@@ -56,7 +68,9 @@ test.describe("Verda EU Gemma Nurse Pre-Call Brief & Guardrails (Trail #31)", ()
     });
     expect(crossOriginRes.status()).toBe(403);
 
-    const invalidTriggerRes = await request.post("/api/ai/nurse-brief", {
+    await signOutSession(context);
+    await signInAsStaff(page, context);
+    const invalidTriggerRes = await page.request.post("/api/ai/nurse-brief", {
       headers: { origin: "http://127.0.0.1:3100" },
       data: {
         participantCode: "sim-01",

@@ -4,6 +4,7 @@ import {
   MEASUREMENT_METHODS,
   PHQ9_ITEMS,
 } from "@/lib/constants";
+import { requirePatientPageSession } from "@/server/auth";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { CheckInInteractive } from "@/components/check-in-interactive";
 import {
@@ -11,7 +12,8 @@ import {
   ForestDivider,
 } from "@/components/forest-divider";
 
-export default function CheckInPage() {
+export default async function CheckInPage() {
+  await requirePatientPageSession();
   const coreMethods = MEASUREMENT_METHODS.filter((m) => m.core);
 
   return (

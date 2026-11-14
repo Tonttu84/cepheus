@@ -20,16 +20,16 @@ In open trails (`phase: building`, not yet merged):
 
 Even with Trail #53, **logged-out users still see all patient/clinic navigation and unprotected pages/APIs**, and Trail #53 is 3 commits behind `main` (overwriting the new `/cepheus-icon.png` header mark).
 
-- [ ] **P0.1 — Hide patient & clinic navigation when logged out (`src/components/site-nav.tsx`, `src/app/page.tsx`)**
+- [x] **P0.1 — Hide patient & clinic navigation when logged out (`src/components/site-nav.tsx`, `src/app/page.tsx`)**
   - Pass session/actor state from server layout into `SiteNav`.
   - When **logged out**: render only `Overview` (`/`), `Sign in`, and the always-visible `CrisisHelpBar` — **no** `/check-in`, `/camera`, `/monitoring`, `/patient`, or `/clinic` links in `SiteNav` OR in `ExploreViewsGrid()` on `/` (`src/app/page.tsx`), and **no** sensitive/patient data.
   - When **patient** is signed in: show only patient nav (`/check-in`, `/camera`, `/monitoring`, `/patient`).
   - When **clinic staff** is signed in: show only `/clinic`.
   - Keep `main`'s `/cepheus-icon.png` brand mark when merging/rebasing Trail #53.
-- [ ] **P0.2 — Gate protected pages & redirect when logged out or wrong role (`src/app/**`)**
+- [x] **P0.2 — Gate protected pages & redirect when logged out or wrong role (`src/app/**`)**
   - Require a valid session on `/patient`, `/check-in`, `/camera`, `/monitoring` (patient role) and `/clinic` (staff role); redirect logged-out visitors to `/sign-in` and refuse wrong-role access instead of only showing `SessionContextPill` over full views.
   - Clean up `/` (`src/app/page.tsx`): remove direct `getPrisma()` participant query when logged out and hide `ExploreViewsGrid` / `DemoTimelinePreview` patient/clinic details unless signed in (or replace with a static, zero-PII public overview + Sign-in CTA).
-- [ ] **P0.3 — Protect all patient/clinic API routes (`src/app/api/**`)**
+- [x] **P0.3 — Protect all patient/clinic API routes (`src/app/api/**`)**
   - Enforce session + role (`decideAccess`) on:
     - `/api/monitoring/summary` (patient or staff D8 view)
     - `/api/monitoring/consent` (patient only)
@@ -37,7 +37,7 @@ Even with Trail #53, **logged-out users still see all patient/clinic navigation 
     - `/api/ai/patient-step` (patient only)
     - `/api/fitbit/auth`, `/api/fitbit/status`, `/api/fitbit/sync`, `/api/fitbit/disconnect` (patient only)
   - Lock or remove `/api/demo` for unauthenticated callers; leave `/api/health` (status only, zero patient data), `/api/auth/*`, and signed/token-verified machine routes (`/api/webhooks/health-connect`, `/api/arduino/*`) properly scoped.
-- [ ] **P0.4 — Add logged-out nav & route-matrix tests**
+- [x] **P0.4 — Add logged-out nav & route-matrix tests**
   - Assert in Vitest + Playwright (`e2e/auth.spec.ts`) that a logged-out browser sees zero patient/clinic nav links (in `SiteNav` and on `/`), gets redirected from `/patient`, `/check-in`, `/camera`, `/monitoring`, and `/clinic` to `/sign-in`, and receives `401` on all protected API endpoints.
 
 ---

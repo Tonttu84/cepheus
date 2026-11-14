@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { signInAsPatient, signInAsStaff } from "./helpers";
 
 test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () => {
   test("1. /monitoring loads with security headers, crisis bar, simulated badge, and consent toggles", async ({
     page,
   }) => {
+    await signInAsPatient(page);
     const response = await page.goto("/monitoring");
     expect(response?.status()).toBe(200);
 
@@ -29,6 +31,7 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
   test("2. Simulated Fitbit sync and Arduino UNO Q push compute rhythm metrics and store derived numbers", async ({
     page,
   }) => {
+    await signInAsPatient(page);
     await page.goto("/monitoring");
 
     await page.getByTestId("fitbit-sync-simulated").click();
@@ -58,7 +61,8 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     );
   });
 
-  test("3. Security API boundaries reject raw media payloads and cross-origin POSTs", async ({
+  test("3. Security API boundaries reject raw media payloads, unauthenticated summary reads, and cross-origin POSTs", async ({
+    page,
     request,
   }) => {
     const rawMediaRes = await request.post("/api/arduino/ingest", {
@@ -101,7 +105,16 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     });
     expect(badSigWebhook.status()).toBe(401);
 
-    const staffRes = await request.get("/api/monitoring/summary?viewer=staff");
+    const unsignedStaffRes = await request.get(
+      "/api/monitoring/summary?viewer=staff"
+    );
+    expect(unsignedStaffRes.status()).toBe(401);
+
+    await signInAsStaff(page);
+    // Even if staff requests ?viewer=patient, session role enforces D8 redaction
+    const staffRes = await page.request.get(
+      "/api/monitoring/summary?viewer=patient"
+    );
     expect(staffRes.status()).toBe(200);
     const staffJson = await staffRes.json();
     expect(staffJson.demoOnly).toBe(true);
