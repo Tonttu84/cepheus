@@ -58,6 +58,25 @@ Vitest, and Playwright. See D15 in `docs/decisions.md`.
 | Stop the local database | `npm run db:stop` |
 | Before a branch is published | `npm run check && npm run test:db && npm run build && npm run test:e2e` |
 
+## Code
+
+Guidance, not hard limits. The linter reports the numbers below as warnings, so the gate
+stays green. A reviewer asks for a reason when one is exceeded.
+
+- A function does one thing, at one level of detail. Aim for under about 60 lines; a
+  screen component may run to about 150.
+- Return early. Deal with the error, the empty case and the refusal first, then write
+  the main path at the top level of the function.
+- Keep nesting to three levels. Deeper than that, move the inner part into a function
+  with a name.
+- At most five parameters. Beyond that, pass one object.
+- Keep the number of branches in one function to about 15.
+- Split where a piece earns a name that hides real detail. Do not split into helpers
+  that are used once and only pass their arguments on.
+- A function that is mostly control flow, one branch for each case with each branch
+  calling something, may be longer. Say so in a comment above it.
+- Tests are exempt from the length limit, not from the others.
+
 ## Rules of the problem
 
 These hold whatever is built.
@@ -108,6 +127,13 @@ These hold whatever is built.
   provides the `git-remote-entire` helper, on the PATH, and a completed `entire login`.
 - Most figures in `docs/research/` come from abstracts. Each report lists what it could
   not check; read that list before relying on a number.
+- The local database in `npm run db:setup` uses PostgreSQL binaries from the
+  embedded-postgres package; on Linux they need the PostgreSQL client library
+  (libpq.so.5) installed on the system first, for example the `libpq5` package on
+  Debian or Ubuntu (not checked on every distribution); without it,
+  `npm run db:setup`, `npm run test:db` and the browser tests fail, while
+  `npm run check` and the build still run. It was seen on a teammate's Linux
+  machine on 14 Nov 2026.
 
 ## Entire Brain
 
