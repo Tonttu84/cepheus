@@ -1,4 +1,4 @@
-# Fitbit + Arduino UNO Q Home Monitoring Workflow
+# Wearable + Arduino UNO Q Home Monitoring Workflow
 
 This document describes the passive home-monitoring pipeline added on top of Cepheus's core post-TMS check-in flow.
 
@@ -14,11 +14,14 @@ This document describes the passive home-monitoring pipeline added on top of Cep
 └──────────────────────────────────┬──────────────────────────────────────┘
                                    │
 ┌──────────────────────────────────▼──────────────────────────────────────┐
-│ 2. PASSIVE WEARABLE: Fitbit Web API (OAuth2 + PKCE S256)                │
-│    - One-time pairing (no Apple Health / Health Connect native app)     │
-│    - Pulls sleep stages -> 1440-min sleepWakeGrid, WASO, sleep midpoint │
-│    - Pulls daily & 15-min intraday steps + resting HR                   │
-│    - Feeds src/domain/signals/ (RA, IS, IV, SRI, Sleep Midpoint SD)     │
+│ 2. PASSIVE WEARABLE (Shared RingDay + RhythmWindow Pipeline)            │
+│    Option A: Android Health Connect / Apple Health Webhook (Trail #23)  │
+│      - Free Play Store / App Store bridge (Health Connect to Webhook    │
+│        or Life Dashboard Companion) pushes sleep, steps, HR, HRV to     │
+│        POST /api/webhooks/health-connect (HMAC-SHA256 / Bearer auth)    │
+│    Option B: Fitbit Web API (OAuth2 + PKCE S256)                        │
+│      - Pulls sleep stages, steps, and resting HR via /api/fitbit/*      │
+│    -> Both feed src/domain/signals/ (RA, IS, IV, SRI, Midpoint SD)      │
 └──────────────────────────────────┬──────────────────────────────────────┘
                                    │
 ┌──────────────────────────────────▼──────────────────────────────────────┐
@@ -29,6 +32,18 @@ This document describes the passive home-monitoring pipeline added on top of Cep
 │    - Home routine signals never raise a clinic flag alone (D12)         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+## Health Connect / Apple Health Webhook Setup (Trail #23)
+
+Works with **Fitbit, Oura, Garmin, Samsung Health, Gadgetbridge, or Apple Watch** without vendor developer keys:
+
+1. Set `HEALTH_CONNECT_WEBHOOK_SECRET` (16+ random chars) in `.env`.
+2. On Android, enable **Health Connect** sync inside the Fitbit / Oura / Garmin app.
+3. Install **Health Connect to Webhook** (`com.hcwebhook.app`, free on Google Play) or **Life Dashboard Companion** (Android/iOS):
+   - **Endpoint URL:** `https://<your-host>/api/webhooks/health-connect`
+   - **Authentication:** either `Authorization: Bearer <HEALTH_CONNECT_WEBHOOK_SECRET>`, `X-Webhook-Token: <HEALTH_CONNECT_WEBHOOK_SECRET>`, or Life Dashboard's `X-Signature: sha256=<HMAC-SHA256>` using that secret.
+4. Initial `{"test": true}` pings return `204 No Content` without writing data; real sync batches upsert `RingDay` (`source: "health_connect"`) and recompute `RhythmWindow`.
+5. Without a phone connected, click **Simulate Health Connect webhook push** on `/monitoring` (records are marked `isSimulated: true`).
 
 ## Fitbit Setup (Real OAuth2 PKCE)
 
@@ -59,6 +74,6 @@ This document describes the passive home-monitoring pipeline added on top of Cep
 
 ## Clinical & Privacy Boundaries Enforced
 
-- **No diagnostic or mood-reading AI:** Neither Fitbit nor Arduino data is sent to any AI to infer mood or diagnose depression.
+- **No diagnostic or mood-reading AI:** Neither Health Connect, Fitbit, nor Arduino data is sent to any AI to infer mood or diagnose depression.
 - **No raw media:** `evaluateArduinoEdgePayload` rejects any payload containing raw media fields (`frame`, `imageBase64`, `video`, `audio`, etc.), and `/api/arduino/ingest` caps body size at 16 KB.
 - **Broad-area clinic view only (D8/D12):** Home routine signals belong to `daily_routine` and never trigger a clinic alert on their own.

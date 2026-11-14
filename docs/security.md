@@ -11,12 +11,14 @@ This document summarizes the security controls implemented across Cepheus's web 
 ## 2. CSRF, Rate Limiting, and Hardware Auth (`src/server/security/http.ts`, `rate-limit.ts`)
 
 - **Same-Origin Verification:** Browser `POST` endpoints (`/api/fitbit/sync`, `/api/fitbit/disconnect`, `/api/monitoring/consent`) verify `Origin` / `Referer` host matches `Host` / `X-Forwarded-Host`.
-- **Hardware Bearer Authentication:** `/api/arduino/ingest` requires `Authorization: Bearer <ARDUINO_INGEST_TOKEN>` when configured and **fails closed (`401`) in production** if `ARDUINO_INGEST_TOKEN` is unset.
-- **Sliding-Window Rate Limiting:** OAuth, sync, consent, and hardware ingest routes enforce per-IP sliding-window limits with `429` + `Retry-After`.
+- **Hardware & Webhook Authentication:**
+  - `/api/arduino/ingest` requires `Authorization: Bearer <ARDUINO_INGEST_TOKEN>` when configured and **fails closed (`401`) in production** if `ARDUINO_INGEST_TOKEN` is unset.
+  - `/api/webhooks/health-connect` verifies `X-Signature: sha256=<HMAC-SHA256(secret, rawBody)>` (Life Dashboard Companion) or `Authorization: Bearer` / `X-Webhook-Token` against `HEALTH_CONNECT_WEBHOOK_SECRET` in constant time (`verifyHmacSha256Signature` / `timingSafeEqualString`), failing closed (`401`) when missing or invalid.
+- **Sliding-Window Rate Limiting:** OAuth, sync, consent, webhook, and hardware ingest routes enforce per-IP sliding-window limits with `429` + `Retry-After`.
 
 ## 3. Strict Input Validation & Raw-Media Refusal
 
-- **Payload Size Cap:** `/api/arduino/ingest` rejects bodies over 16 KB (`413 Payload Too Large`).
+- **Payload Size Caps:** `/api/arduino/ingest` rejects bodies over 16 KB (`413`), and `/api/webhooks/health-connect` rejects bodies over 512 KB (`413`).
 - **Recursive Raw-Media Guard:** `src/domain/arduino/evaluate.ts` (`containsRawMediaFields`) rejects any JSON key associated with raw frames, images, or audio (`frame`, `imageBase64`, `video`, `audio`, `pcm`, etc.).
 - **Zod 4 Strict Schemas:** API inputs reject unknown properties (`.strict()`) and invalid ranges.
 
