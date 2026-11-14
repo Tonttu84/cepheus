@@ -55,6 +55,9 @@ model Clinic {
   clinicFlags           ClinicFlag[]
   nurseCallRecords      NurseCallRecord[]
   crisisEvents          CrisisEvent[]
+  smallDips             SmallDip[]
+  baselineNotices       BaselineNotice[]
+  extraAnswers          ExtraAnswer[]
 }
 
 /// Named clinic staff account (nurse or admin). The only named people in the DB.
@@ -79,31 +82,32 @@ model StaffUser {
 /// Pseudonymous participant profile (simulated trajectory, open dataset, or live patient).
 /// Never store real patient names, phone numbers, emails, DOBs, or national IDs here.
 model Participant {
-  id               String   @id @default(cuid())
-  clinicId         String?
-  clinic           Clinic?  @relation(fields: [clinicId], references: [id], onDelete: SetNull)
-  externalId       String?  @unique
-  participantCode  String?  @unique
-  label            String   // Anonymous label, e.g. "Simulated post-TMS participant"
-  source           String   // "synthetic" | "depresjon" | "kossakowski" | "oura" | "live"
-  isSimulated      Boolean  @default(true)
-  seed             Int?
-  enrolmentDate    String?  // "YYYY-MM-DD"
-  scheduleDaysJson String?  // JSON tuple of 2 ISO weekdays, e.g. "[1,4]"
-  scheduleTime     String?  // "HH:MM"
-  timeZone         String   @default("Europe/Helsinki")
-  takingPart       Boolean  @default(false)
-  ruleCheckConsent Boolean  @default(false)
-  tmsCompletedDate String?
-  currentDemoDay   Int      @default(56)
+  id                 String   @id @default(cuid())
+  clinicId           String?
+  clinic             Clinic?  @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  externalId         String?  @unique
+  participantCode    String?  @unique
+  label              String // Anonymous label, e.g. "Simulated post-TMS participant"
+  source             String // "synthetic" | "depresjon" | "kossakowski" | "oura" | "live"
+  isSimulated        Boolean  @default(true)
+  seed               Int?
+  enrolmentDate      String? // "YYYY-MM-DD"
+  scheduleDaysJson   String? // JSON tuple of 2 ISO weekdays, e.g. "[1,4]"
+  scheduleTime       String? // "HH:MM"
+  timeZone           String   @default("Europe/Helsinki")
+  takingPart         Boolean  @default(false)
+  ruleCheckConsent   Boolean  @default(false)
+  questionnairesJson String? // JSON array of "phq9" | "gad7"; null means the default set
+  tmsCompletedDate   String?
+  currentDemoDay     Int      @default(56)
   // Study-only fields for open datasets or synthetic trajectories; always null for live patients:
-  group            String?
-  age              Int?
-  gender           String?
-  madrsBaseline    Int?
-  madrsEnd         Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  group              String?
+  age                Int?
+  gender             String?
+  madrsBaseline      Int?
+  madrsEnd           Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   enrolmentCodes        EnrolmentCode[]
   consents              MeasurementConsent[]
@@ -122,6 +126,9 @@ model Participant {
   clinicFlags           ClinicFlag[]
   nurseCallRecords      NurseCallRecord[]
   crisisEvents          CrisisEvent[]
+  smallDips             SmallDip[]
+  baselineNotices       BaselineNotice[]
+  extraAnswers          ExtraAnswer[]
 
   @@index([clinicId])
 }
@@ -149,8 +156,8 @@ model MeasurementConsent {
   participant         Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
   clinicId            String?
   clinic              Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
-  method              String      // "check_in" | "phq9" | "ring_rhythm" | "camera_expressivity" | "speech_rate" | "ambiguous_faces" | "home_routine" | "financial_routine"
-  broadArea           String      // "check_in" | "sleep" | "daily_routine" | "activity_outside_home" | "financial_routine"
+  method              String // "check_in" | "phq9" | "ring_rhythm" | "camera_expressivity" | "speech_rate" | "ambiguous_faces" | "home_routine" | "financial_routine"
+  broadArea           String // "check_in" | "sleep" | "daily_routine" | "activity_outside_home" | "financial_routine"
   recordedDescription String
   enabled             Boolean     @default(true)
   isPersonalSign      Boolean     @default(false)
@@ -169,8 +176,8 @@ model ConsentEvent {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
   clinicId      String?
   clinic        Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
-  layer         String      // "taking_part" | "method" | "rule_check"
-  method        String?     // Present when layer === "method"
+  layer         String // "taking_part" | "method" | "rule_check"
+  method        String? // Present when layer === "method"
   enabled       Boolean
   noticeVersion String      @default("v1")
   recordedAt    DateTime    @default(now())
@@ -190,13 +197,13 @@ model CheckInRound {
   scheduledAt       DateTime
   respondedAt       DateTime?
   reminderSentAt    DateTime?
-  date              String      // "YYYY-MM-DD"
+  date              String // "YYYY-MM-DD"
   dayIndex          Int
   weekNumber        Int
   roundNumber       Int
-  status            String      // "completed" | "not_today" | "missed"
-  moodScore         Int?        // 0..4 ("very low" .. "very good")
-  interestScore     Int?        // 0..4 ("not at all" .. "very much")
+  status            String // "completed" | "not_today" | "missed" | "open" (reminder sent, no outcome yet)
+  moodScore         Int? // 0..4 ("very low" .. "very good")
+  interestScore     Int? // 0..4 ("not at all" .. "very much")
   itemOrderJson     String?
   responseLatencyMs Int?
   ringActiveAtRound Boolean?
@@ -219,13 +226,13 @@ model Phq9Assessment {
   clinic                 Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   scheduledAt            DateTime
   completedAt            DateTime?
-  date                   String      // "YYYY-MM-DD"
+  date                   String // "YYYY-MM-DD"
   dayIndex               Int
   weekNumber             Int
   roundNumber            Int
   completedInRoundNumber Int?
-  status                 String      // "completed" | "in_progress" | "missed"
-  totalScore             Int?        // 0..27
+  status                 String // "completed" | "in_progress" | "missed"
+  totalScore             Int? // 0..27
   item1Interest          Int?
   item2Mood              Int?
   item3Sleep             Int?
@@ -268,20 +275,25 @@ model CrisisEvent {
 /// Immutable audit entry for access checks. Keyed by pseudonymous `patientCode` (no answers)
 /// so logs remain intact when a participant requests data deletion.
 model AccessLog {
-  id          String   @id @default(cuid())
-  clinicId    String?
-  actorKind   String   // "patient" | "staff" | "system"
-  actorId     String?
-  patientCode String?
-  action      String   // "read" | "write" | "delete"
-  targetKind  String
-  purpose     String
-  allowed     Boolean
-  reason      String
-  timestamp   DateTime @default(now())
+  id              String   @id @default(cuid())
+  clinicId        String?
+  actorKind       String // "patient" | "staff" | "system"
+  actorId         String?
+  patientCode     String?
+  action          String // "read" | "write" | "delete"
+  targetKind      String
+  purpose         String
+  allowed         Boolean
+  reason          String
+  timestamp       DateTime @default(now())
+  actorClinicId   String?
+  actorRole       String? // "nurse" | "admin" when actorKind is "staff"
+  targetPatientId String? // The patient id as it was asked for; it can name no stored patient
+  targetMethod    String?
 
   @@index([clinicId, timestamp])
   @@index([patientCode, timestamp])
+  @@index([targetPatientId, timestamp])
 }
 
 /// Daily smart-ring summary plus compact 24h hourly array and 1440-min sleep/wake string
@@ -292,7 +304,7 @@ model RingDay {
   participant           Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
   clinicId              String?
   clinic                Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
-  date                  String      // "YYYY-MM-DD"
+  date                  String // "YYYY-MM-DD"
   dayIndex              Int
   ringActive            Boolean     @default(true)
   wearMinutes           Int         @default(1400)
@@ -303,10 +315,10 @@ model RingDay {
   m10                   Float?
   l5                    Float?
   relativeAmplitude     Float?
-  hourlyActivityJson    String?     // JSON array of 24 hourly mean activity floats, clock hours 0..23
+  hourlyActivityJson    String? // JSON array of 24 hourly mean activity floats, clock hours 0..23
   bedtimeStart          DateTime?
   bedtimeEnd            DateTime?
-  sleepMidpointMin      Float?      // Minutes relative to midnight, e.g. -45 for 23:15, +195 for 03:15
+  sleepMidpointMin      Float? // Minutes relative to midnight, e.g. -45 for 23:15, +195 for 03:15
   timeInBedMin          Float?
   totalSleepMin         Float?
   onsetLatencyMin       Float?
@@ -316,7 +328,7 @@ model RingDay {
   avgHrBpm              Float?
   avgHrvRmssdMs         Float?
   tempDeviationC        Float?
-  sleepWakeGrid         String?     // 1440-char string of '0'=wake and '1'=sleep for exact per-minute SRI
+  sleepWakeGrid         String? // 1440-char string of '0'=wake and '1'=sleep for exact per-minute SRI
   sleepPhase5MinRaw     String?
   isSimulated           Boolean     @default(false)
   source                String      @default("synthetic")
@@ -385,7 +397,7 @@ model CameraReading {
   clinicId             String?
   clinic               Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   recordedAt           DateTime    @default(now())
-  date                 String      // "YYYY-MM-DD"
+  date                 String // "YYYY-MM-DD"
   dayIndex             Int?
   taskId               String      @default("check_in_clip_60s")
   durationSec          Float
@@ -482,8 +494,8 @@ model RoutineSignalReading {
   periodStartDate String
   periodEndDate   String
   dayIndex        Int?
-  channel         String      // "laundry" | "shower_humidity" | "kitchen_motion" | "financial_routine"
-  broadArea       String      // "daily_routine" | "financial_routine"
+  channel         String // "laundry" | "shower_humidity" | "kitchen_motion" | "financial_routine"
+  broadArea       String // "daily_routine" | "financial_routine"
   derivedValue    Float
   unit            String
   baselineZScore  Float?
@@ -525,8 +537,8 @@ model PatientSuggestion {
   createdAt        DateTime    @default(now())
   date             String
   dayIndex         Int?
-  reason           String      // "small_dip" | "practice"
-  actionKey        String      // "short_walk" | "breathing_space" | "bright_light" | "social_contact"
+  reason           String // "small_dip" | "practice"
+  actionKey        String // "short_walk" | "breathing_space" | "bright_light" | "social_contact"
   actionTitle      String
   actionDetail     String?
   effortTier       String      @default("low")
@@ -548,17 +560,20 @@ model ClinicFlag {
   clinicId                String?
   clinic                  Clinic?           @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   createdAt               DateTime          @default(now())
-  sinceDate               String            // "YYYY-MM-DD"
+  sinceDate               String // "YYYY-MM-DD"
   dayIndex                Int?
-  triggerKind             String            // "low_answers" | "silence" | "mixed" | "phq9" | "sustained_dip"
+  triggerKind             String // "low_answers" | "silence" | "mixed" | "phq9" | "sustained_dip"
   ruleVersion             Int               @default(1)
-  primaryArea             String            // "check_in" | "sleep" | "daily_routine" | "activity_outside_home" | "financial_routine"
-  broadAreasJson          String            // JSON array of broad area keys
+  primaryArea             String // "check_in" | "sleep" | "daily_routine" | "activity_outside_home" | "financial_routine"
+  broadAreasJson          String // JSON array of broad area keys
   status                  String            @default("open") // "open" | "nurse_call_requested" | "booster_offered" | "watching" | "resolved"
   ringActiveDuringSilence Boolean?
   patientSharedDetails    Boolean           @default(false)
   sharedAt                DateTime?
   isSimulated             Boolean           @default(false)
+  causeType               String? // "round" | "phq9" | "gad7": what made the rule raise this flag
+  causeRoundNumber        Int? // Present when causeType is "round"
+  causeDate               String? // "YYYY-MM-DD"; the cause holds no score and no answer
   nurseCalls              NurseCallRecord[]
 
   @@index([participantId, status])
@@ -579,14 +594,71 @@ model NurseCallRecord {
   requestedAt            DateTime    @default(now())
   completedAt            DateTime?
   status                 String      @default("requested") // "requested" | "completed" | "unreachable"
-  outcomeTier            String?     // "rough_patch" | "sustained_decline" | "full_relapse" | "crisis" | "false_alarm"
-  actionTaken            String?     // "advice_and_medication_check" | "booster_tms_cluster" | "new_tms_course_referral" | "urgent_care" | "none"
+  outcomeTier            String? // "rough_patch" | "sustained_decline" | "full_relapse" | "crisis" | "false_alarm"
+  actionTaken            String? // "advice_and_medication_check" | "booster_tms_cluster" | "new_tms_course_referral" | "urgent_care" | "none"
   medicationChecked      Boolean     @default(false)
   watchNextRounds        Int         @default(0)
   boosterSessionsPlanned Int?
   isSimulated            Boolean     @default(false)
+  date                   String? // "YYYY-MM-DD" local date on which the call took place; null until then
+  position               String? // "before" | "after": the call's place relative to the round of that date
 
   @@index([participantId, requestedAt])
   @@index([clinicId])
   @@index([staffUserId])
+}
+
+/// A small dip found by the warning rule. It makes the one suggestion wait for the patient.
+/// The cause holds a round or a date only, never a score or an answer.
+model SmallDip {
+  id               String      @id @default(cuid())
+  participantId    String
+  participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId         String?
+  clinic           Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  roundNumber      Int
+  date             String // "YYYY-MM-DD"
+  ruleVersion      Int
+  causeType        String // "round" | "phq9" | "gad7"
+  causeRoundNumber Int?
+  causeDate        String
+  shownAt          DateTime
+
+  @@index([participantId, roundNumber])
+  @@index([clinicId])
+}
+
+/// Notice to the clinic that the first complete PHQ-9 (the baseline) was at or above the cut-off.
+/// The cause holds a date only, never the score.
+model BaselineNotice {
+  id               String      @id @default(cuid())
+  participantId    String
+  participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId         String?
+  clinic           Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  ruleVersion      Int
+  causeType        String // "round" | "phq9" | "gad7"
+  causeRoundNumber Int?
+  causeDate        String
+  notifiedAt       DateTime
+
+  @@index([participantId])
+  @@index([clinicId])
+}
+
+/// Answer to the experimental rotating extra question (D25), at most one per round.
+/// Never used by the warning rule, the baselines or the flags.
+model ExtraAnswer {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId      String?
+  clinic        Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  roundNumber   Int
+  itemId        String
+  value         Int // 0..4
+  answeredAt    DateTime
+
+  @@unique([participantId, roundNumber])
+  @@index([clinicId])
 }
