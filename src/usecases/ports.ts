@@ -85,12 +85,17 @@ export interface CallRepository {
   saveCall(call: StoredCall): Promise<void>;
 }
 
+export type StoredCause =
+  | { readonly type: 'round'; readonly roundNumber: number; readonly date: string }
+  | { readonly type: 'phq9'; readonly date: string }
+  | { readonly type: 'gad7'; readonly date: string };
+
 export interface StoredWarning {
   readonly patientId: string;
   readonly kind: 'low_answers' | 'silence' | 'mixed' | 'phq9' | 'gad7';
   readonly since: string;
   readonly version: number;
-  readonly causedBy: EvaluatedEffect['causedBy'];
+  readonly causedBy: StoredCause;
   readonly raisedAt: string;
 }
 
@@ -118,7 +123,7 @@ export interface StoredSmallDip {
   readonly roundNumber: number;
   readonly date: string;
   readonly version: number;
-  readonly causedBy: EvaluatedEffect['causedBy'];
+  readonly causedBy: StoredCause;
   readonly shownAt: string;
 }
 
@@ -144,7 +149,7 @@ export interface CrisisRepository {
 export interface StoredBaselineNotWellNotice {
   readonly patientId: string;
   readonly version: number;
-  readonly causedBy: EvaluatedEffect['causedBy'];
+  readonly causedBy: StoredCause;
   readonly notifiedAt: string;
 }
 

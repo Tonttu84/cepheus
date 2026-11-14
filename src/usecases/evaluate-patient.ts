@@ -14,6 +14,7 @@ import type {
   EvaluatePatientResult,
   PatientRecord,
   Ports,
+  StoredCause,
   StoredRound,
   StoredWarning,
   StoredSmallDip,
@@ -43,10 +44,7 @@ function isEffectStored(
   smallDips: readonly StoredSmallDip[],
   notices: readonly StoredBaselineNotWellNotice[]
 ): boolean {
-  const isSameCause = (
-    c1: EvaluatedEffect['causedBy'],
-    c2: EvaluatedEffect['causedBy']
-  ) => {
+  const isSameCause = (c1: StoredCause, c2: StoredCause) => {
     if (c1.type !== c2.type) return false;
     if (c1.type === 'round' && c2.type === 'round') {
       return c1.roundNumber === c2.roundNumber && c1.date === c2.date;
@@ -69,6 +67,13 @@ function isEffectStored(
   return notices.some((n) => isSameCause(n.causedBy, effect.causedBy));
 }
 
+function toStoredCause(cause: EvaluatedEffect['causedBy']): StoredCause {
+  if (cause.type === 'round') {
+    return { type: 'round', roundNumber: cause.roundNumber, date: cause.date };
+  }
+  return { type: cause.type, date: cause.date };
+}
+
 async function persistNewEffect(
   effect: EvaluatedEffect,
   patientId: string,
@@ -81,7 +86,7 @@ async function persistNewEffect(
       kind: effect.kind!,
       since: effect.since!,
       version: effect.version,
-      causedBy: effect.causedBy,
+      causedBy: toStoredCause(effect.causedBy),
       raisedAt: now,
     });
   } else if (effect.type === 'small_dip') {
@@ -91,14 +96,14 @@ async function persistNewEffect(
       roundNumber,
       date: effect.causedBy.date,
       version: effect.version,
-      causedBy: effect.causedBy,
+      causedBy: toStoredCause(effect.causedBy),
       shownAt: now,
     });
   } else if (effect.type === 'baseline_not_well') {
     await ports.baselineNotWell.saveNotice({
       patientId,
       version: effect.version,
-      causedBy: effect.causedBy,
+      causedBy: toStoredCause(effect.causedBy),
       notifiedAt: now,
     });
   }
