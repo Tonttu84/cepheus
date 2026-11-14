@@ -165,7 +165,9 @@ export async function getCheckInState(
             ? 'not_today'
             : 'waiting';
       const history = buildPhq9DueHistory(openRound.number, storedRounds, storedPhq9s);
-      const phq9Due = isPhq9Due(openRound.number, history);
+      // After "Not today" nothing more is asked in this round; a due PHQ-9
+      // carries over to the next round instead.
+      const phq9Due = taps !== 'not_today' && isPhq9Due(openRound.number, history);
       const phq9Progress = resolvePhq9Progress(openRound.number, phq9Due, storedPhq9s);
       const hasSuggestionWaiting = smallDips.some((d) => d.roundNumber === openRound.number);
       const extraConfig = ports.extraItemsConfig ?? DEFAULT_EXTRA_ITEMS_CONFIG;
