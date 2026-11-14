@@ -21,6 +21,7 @@ export interface FitbitSealedSession {
   refreshToken: string;
   expiresAtMs: number;
   scope: string;
+  patientId?: string;
 }
 
 const fitbitTokenResponseSchema = z.object({

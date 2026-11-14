@@ -23,6 +23,13 @@ import {
 
 export const dynamic = "force-dynamic";
 
+function readCookie(request: Request, name: string): string | undefined {
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) return undefined;
+  const match = new RegExp(`(?:^|;\\s*)${name}=([^;]+)`).exec(cookieHeader);
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 const syncBodySchema = z
   .object({
     mode: z.enum(["live", "simulated"]).default("live"),
@@ -30,6 +37,8 @@ const syncBodySchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .optional(),
+    patientId: z.string().optional(),
+    participantCode: z.string().optional(),
   })
   .strict();
 
@@ -79,6 +88,25 @@ export async function POST(request: Request) {
     );
   }
 
+  if (
+    parsed.data.patientId &&
+    parsed.data.patientId !== auth.session.actor.patientId
+  ) {
+    return NextResponse.json(
+      { ok: false, code: "forbidden", error: "Access denied." },
+      { status: 403 }
+    );
+  }
+  if (
+    parsed.data.participantCode &&
+    parsed.data.participantCode !== auth.session.participantCode
+  ) {
+    return NextResponse.json(
+      { ok: false, code: "forbidden", error: "Access denied." },
+      { status: 403 }
+    );
+  }
+
   const endDate = parsed.data.endDate ?? new Date().toISOString().slice(0, 10);
 
   if (parsed.data.mode === "simulated") {
@@ -116,14 +144,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const cookieStore = await cookies();
-  const rawToken = cookieStore.get(FITBIT_TOKEN_COOKIE)?.value;
+  let rawToken = readCookie(request, FITBIT_TOKEN_COOKIE);
+  if (!rawToken) {
+    const cookieStore = await cookies().catch(() => null);
+    rawToken = cookieStore?.get(FITBIT_TOKEN_COOKIE)?.value;
+  }
   const session = unsealJson<FitbitSealedSession>(rawToken);
 
   if (!session) {
     return NextResponse.json(
       { ok: false, error: "Fitbit account is not connected." },
       { status: 401 }
+    );
+  }
+
+  if (
+    session.patientId &&
+    session.patientId !== auth.session.actor.patientId
+  ) {
+    return NextResponse.json(
+      { ok: false, code: "forbidden", error: "Access denied." },
+      { status: 403 }
     );
   }
 
@@ -158,9 +199,13 @@ export async function POST(request: Request) {
     });
 
     if (updatedSession.accessToken !== session.accessToken) {
+      const sessionWithPatient: FitbitSealedSession = {
+        ...updatedSession,
+        patientId: auth.session.actor.patientId,
+      };
       response.cookies.set(
         FITBIT_TOKEN_COOKIE,
-        sealJson(updatedSession, 30 * 24 * 60 * 60_000),
+        sealJson(sessionWithPatient, 30 * 24 * 60 * 60_000),
         {
           httpOnly: true,
           sameSite: "lax",
