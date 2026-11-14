@@ -130,6 +130,11 @@ function collectMatchedScores(norm: string, mode: VoiceChoiceMode): Set<number> 
   return matched;
 }
 
+function containsWholePhrase(norm: string, phrase: string): boolean {
+  const paddedNorm = ` ${norm} `;
+  return paddedNorm.includes(` ${phrase} `);
+}
+
 /**
  * Deterministically maps a local STT transcript string to a fixed score or action.
  * Crisis keywords take priority; negated or mixed/ambiguous transcripts return `unclear`.
@@ -144,13 +149,13 @@ export function parseSpokenChoice(
   }
 
   for (const phrase of CRISIS_PHRASES) {
-    if (norm === phrase || norm.includes(phrase)) {
+    if (containsWholePhrase(norm, phrase)) {
       return { kind: "crisis_help" };
     }
   }
 
   for (const phrase of NOT_TODAY_PHRASES) {
-    if (norm === phrase || norm.includes(phrase)) {
+    if (containsWholePhrase(norm, phrase)) {
       return { kind: "not_today" };
     }
   }

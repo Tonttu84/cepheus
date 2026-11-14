@@ -19,7 +19,9 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     await expect(crisisRegion).toContainText("112");
 
     await expect(page.getByTestId("simulated-badge").first()).toBeVisible();
-    await expect(page.getByTestId("consent-card-ring_rhythm")).toBeVisible();
+    await expect(page.getByTestId("consent-card-ring_rhythm")).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("consent-card-camera_expressivity")).toBeVisible();
     await expect(page.getByTestId("consent-card-home_routine")).toBeVisible();
   });

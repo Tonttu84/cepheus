@@ -66,6 +66,10 @@ TAP_LABELS = (
 )
 
 
+def _contains_whole_phrase(norm: str, phrase: str) -> bool:
+    return f" {phrase} " in f" {norm} "
+
+
 def parse_spoken_tap_choice(transcript: str) -> tuple[str, int | None]:
     """
     Deterministic mirror of src/domain/arduino/voice.ts parseSpokenChoice(..., 'tap').
@@ -76,10 +80,10 @@ def parse_spoken_tap_choice(transcript: str) -> tuple[str, int | None]:
     if not norm:
         return ("unclear", None)
     for phrase in CRISIS_PHRASES:
-        if phrase in norm:
+        if _contains_whole_phrase(norm, phrase):
             return ("crisis_help", None)
     for phrase in NOT_TODAY_PHRASES:
-        if phrase in norm:
+        if _contains_whole_phrase(norm, phrase):
             return ("not_today", None)
 
     without_not_at_all = f" {norm} ".replace(" not at all ", " ").strip()
@@ -190,8 +194,14 @@ def post_checkin_result(payload: dict[str, Any]) -> dict[str, Any]:
     if token:
         headers["Authorization"] = f"Bearer {token}"
     resp = requests.post(f"{base_url}/api/arduino/check-in", json=payload, headers=headers, timeout=10)
+    try:
+        body = resp.json()
+    except Exception:
+        body = {}
+    if isinstance(body, dict) and body.get("showCrisisPath"):
+        return body
     resp.raise_for_status()
-    return resp.json()
+    return body if isinstance(body, dict) else {}
 
 
 def trigger_crisis_response() -> None:

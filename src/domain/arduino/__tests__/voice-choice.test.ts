@@ -64,6 +64,11 @@ describe("Arduino Voice Kiosk Choice Parser (src/domain/arduino/voice)", () => {
     expect(parseSpokenChoice("0 or 1", "phq9")).toEqual({ kind: "unclear" });
   });
 
+  it("does not false-trigger crisis or skip on substring collisions like helpful or passing", () => {
+    expect(parseSpokenChoice("helpful", "tap")).toEqual({ kind: "unclear" });
+    expect(parseSpokenChoice("passing", "tap")).toEqual({ kind: "unclear" });
+  });
+
   it("returns unclear for empty or unrelated speech without guessing", () => {
     expect(parseSpokenChoice("", "tap")).toEqual({ kind: "unclear" });
     expect(parseSpokenChoice("maybe tomorrow morning", "tap")).toEqual({
