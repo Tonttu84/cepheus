@@ -3,6 +3,7 @@ import { toSafeClinicFlagView } from "@/lib/schemas";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
 import { ClinicNurseBriefPanel } from "@/components/clinic-nurse-brief-panel";
 import { SimulatedBadge } from "@/components/simulated-badge";
+import { SessionContextPill } from "@/components/session-context-banner";
 import { ClinicFlagCard } from "@/components/clinic-flag-card";
 import { ForestDivider } from "@/components/forest-divider";
 
@@ -30,9 +31,12 @@ export default function ClinicPage() {
       <header className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Day 56 · Week 8 clinic follow-up view" />
-          <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
-            TMS Care Team Overview
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <SessionContextPill expectedRole="staff" />
+            <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
+              TMS Care Team Overview
+            </span>
+          </div>
         </div>
 
         <div className="max-w-3xl space-y-2.5">
