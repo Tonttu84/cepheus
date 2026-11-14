@@ -12,6 +12,7 @@ import {
   createWarningRepository,
 } from "./effects";
 import { createExtraAnswerRepository } from "./extra-answers";
+import { createGad7Repository } from "./gad7";
 import { createPatientRepository } from "./patients";
 import { createPhq9Repository } from "./phq9";
 import { createRoundRepository } from "./rounds";
@@ -32,6 +33,7 @@ export function createPrismaPorts(
     patients: createPatientRepository(ctx),
     rounds: createRoundRepository(ctx),
     phq9: createPhq9Repository(ctx),
+    gad7: createGad7Repository(ctx),
     calls: createCallRepository(ctx),
     warnings: createWarningRepository(ctx),
     smallDips: createSmallDipRepository(ctx),

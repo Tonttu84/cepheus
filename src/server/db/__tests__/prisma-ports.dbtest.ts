@@ -94,6 +94,7 @@ describe("Use cases on the PostgreSQL ports (*.dbtest.ts)", () => {
       "patients",
       "rounds",
       "phq9",
+      "gad7",
       "calls",
       "warnings",
       "smallDips",
@@ -174,6 +175,27 @@ describe("Use cases on the PostgreSQL ports (*.dbtest.ts)", () => {
     expect(flags[0].clinicId).toBe(clinicId);
     expect(flags[0].primaryArea).toBe("check_in");
   }, 60_000);
+
+  it("raises the GAD-7 warning from a stored GAD-7 for a patient who has the GAD-7", async () => {
+    const { ports, patientId, actor } = await enrol("gad7");
+    await ports.patients.savePatient({ ...recordFor(patientId), questionnaires: ["phq9", "gad7"] });
+    expect((await submitTaps(actor, { patientId, mood: 3, interest: 3 }, ports)).ok).toBe(true);
+    await ports.gad7!.saveGad7({
+      patientId,
+      roundNumber: 1,
+      answers: ["1", "2", "3", "4", "5", "6", "7"].map((id) => ({ id, value: 3 })),
+      total: 21,
+      completedAt: "2026-11-16T16:30:00.000Z",
+      date: "2026-11-16",
+    });
+
+    const evaluated = await evaluatePatient(systemActor, { patientId }, ports);
+
+    expect(evaluated.ok).toBe(true);
+    const warnings = await ports.warnings.getWarnings(patientId);
+    expect(warnings.map((w) => w.kind)).toEqual(["gad7"]);
+    expect(warnings[0].causedBy).toEqual({ type: "gad7", date: "2026-11-16" });
+  });
 
   it("stores a self-harm answer with exactly one crisis event, and the later rule run raises the PHQ-9 warning and the baseline notice", async () => {
     const { ports, patientId, actor } = await enrol("crisis");
