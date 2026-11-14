@@ -23,6 +23,7 @@ vi.mock("@/server/monitoring", async (importOriginal) => {
 });
 
 import { POST as arduinoCheckIn } from "@/app/api/arduino/check-in/route";
+import { saveArduinoBedsideCheckIn } from "@/server/monitoring";
 import { _resetEnv } from "@/server/env";
 import { _resetDeviceReplays } from "@/server/security/device-auth";
 import { _resetRateLimits } from "@/server/security/rate-limit";
@@ -123,5 +124,72 @@ describe("Arduino Bedside Check-in Route (POST /api/arduino/check-in)", () => {
     const json = await item9Res.json();
     expect(json.showCrisisPath).toBe(true);
     expect(json.crisisResources.emergency.number).toBe("112");
+  });
+});
+
+describe("Arduino Bedside Check-in Route when storage fails", () => {
+  const postCheckIn = (body: Record<string, unknown>) =>
+    arduinoCheckIn(
+      new Request("http://localhost:3000/api/arduino/check-in", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer unoq-check-in-secret-123",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          deviceId: "unoq-1",
+          date: "2026-11-14",
+          timestampMs: Date.now(),
+          ...body,
+        }),
+      })
+    );
+
+  it("still returns the crisis path, marked as not saved, for item 9 above 0", async () => {
+    vi.mocked(saveArduinoBedsideCheckIn).mockRejectedValueOnce(new Error("db down"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await postCheckIn({
+      nonce: "storage-fail-crisis-1",
+      kind: "phq9_item",
+      itemId: "9",
+      value: 2,
+    });
+
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.ok).toBe(false);
+    expect(json.saved).toBe(false);
+    expect(json.showCrisisPath).toBe(true);
+    expect(json.crisisResources.length).toBeGreaterThan(0);
+    expect(errorSpy).toHaveBeenCalled();
+    const logged = JSON.stringify(errorSpy.mock.calls);
+    expect(logged).toContain("db down");
+    expect(logged).toContain("phq9_item");
+    expect(logged).not.toContain('"value"');
+    errorSpy.mockRestore();
+  });
+
+  it("returns a plain error without crisis fields for a non-crisis input", async () => {
+    vi.mocked(saveArduinoBedsideCheckIn).mockRejectedValueOnce(new Error("db down"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await postCheckIn({
+      nonce: "storage-fail-taps-1",
+      kind: "taps",
+      mood: 3,
+      interest: 1,
+    });
+
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.ok).toBe(false);
+    expect(json.saved).toBe(false);
+    expect(json.showCrisisPath).toBeUndefined();
+    expect(json.crisisResources).toBeUndefined();
+    const logged = JSON.stringify(errorSpy.mock.calls);
+    expect(logged).toContain("taps");
+    expect(logged).not.toContain('"mood"');
+    errorSpy.mockRestore();
   });
 });

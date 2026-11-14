@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { containsRawMediaFields } from "@/domain/arduino";
 import { getEnv } from "@/server/env";
-import { saveArduinoBedsideCheckIn } from "@/server/monitoring";
+import { CRISIS_RESOURCES } from "@/lib/constants";
+import { isCrisisBedsideInput, saveArduinoBedsideCheckIn } from "@/server/monitoring";
 import {
   checkAndRecordDeviceReplay,
   checkRateLimit,
@@ -132,6 +133,29 @@ async function parseAndValidateBedsideBody(
   return { ok: true, data: parsed.data };
 }
 
+/**
+ * Storage threw: nothing was saved. A crisis input still gets the crisis path,
+ * because showing help must never depend on the database. The log names the
+ * kind and device but never the answer values.
+ */
+function storageFailureResponse(
+  input: z.infer<typeof bedsideCheckInSchema>,
+  err: unknown
+): NextResponse {
+  console.error("[arduino/check-in] Storing the bedside check-in failed:", {
+    kind: input.kind,
+    deviceId: input.deviceId,
+    date: input.date,
+    isSimulated: input.isSimulated,
+    error: err instanceof Error ? err.message : String(err),
+  });
+  const error = "The check-in could not be saved.";
+  const body = isCrisisBedsideInput(input)
+    ? { ok: false, saved: false, error, showCrisisPath: true, crisisResources: CRISIS_RESOURCES }
+    : { ok: false, saved: false, error };
+  return NextResponse.json(body, { status: 503 });
+}
+
 export async function POST(request: Request) {
   const parsed = await parseAndValidateBedsideBody(request);
   if (!parsed.ok) {
@@ -157,7 +181,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
 
-    const outcome = await saveArduinoBedsideCheckIn(parsed.data);
+  let outcome: Awaited<ReturnType<typeof saveArduinoBedsideCheckIn>>;
+  try {
+    outcome = await saveArduinoBedsideCheckIn(parsed.data);
+  } catch (err) {
+    return storageFailureResponse(parsed.data, err);
+  }
   if (!outcome.ok) {
     return NextResponse.json(
       {
