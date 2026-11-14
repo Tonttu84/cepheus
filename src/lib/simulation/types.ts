@@ -99,7 +99,7 @@ export interface SimulatedPhq9AssessmentRecord {
   date: string;
   dayIndex: number;
   weekNumber: number;
-  roundNumber: number | null;
+  roundNumber: number;
   completedInRoundNumber: number | null;
   status: "completed" | "missed";
   totalScore: number | null;

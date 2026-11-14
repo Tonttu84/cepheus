@@ -16,12 +16,22 @@ describe("PostgreSQL Database Integration Tests (*.dbtest.ts)", () => {
       await prisma.participant.deleteMany({
         where: {
           externalId: {
-            in: ["tx-commit-1", "tx-commit-2", "tx-rollback-1", "step2-delete-check"],
+            in: [
+              "tx-commit-1",
+              "tx-commit-2",
+              "tx-rollback-1",
+              "step2-delete-check",
+              "phq9-unique-test-participant",
+            ],
           },
         },
       });
       await prisma.clinic.deleteMany({
-        where: { code: "test-clinic-step2" },
+        where: {
+          code: {
+            in: ["test-clinic-step2", "test-clinic-phq9-unique"],
+          },
+        },
       });
       await prisma.accessLog.deleteMany({
         where: { patientCode: "P-STEP2-DEL" },
@@ -261,5 +271,76 @@ describe("PostgreSQL Database Integration Tests (*.dbtest.ts)", () => {
     });
     expect(logs).toHaveLength(1);
     expect(logs[0].targetKind).toBe("crisis_messages");
+  });
+
+  it("fails with unique-constraint error when storing a second PHQ-9 for the same participant and round", async () => {
+    const clinic = await prisma.clinic.upsert({
+      where: { code: "test-clinic-phq9-unique" },
+      update: {},
+      create: {
+        code: "test-clinic-phq9-unique",
+        name: "PHQ-9 Unique Constraint Test Clinic",
+      },
+    });
+
+    const participant = await prisma.participant.create({
+      data: {
+        clinicId: clinic.id,
+        externalId: "phq9-unique-test-participant",
+        participantCode: "P-PHQ9-UNIQ",
+        label: "PHQ-9 Unique Constraint Participant",
+        source: "synthetic",
+        isSimulated: true,
+        enrolmentDate: "2026-11-14",
+        scheduleDaysJson: "[1,4]",
+        scheduleTime: "18:00",
+        timeZone: "Europe/Helsinki",
+        takingPart: true,
+        ruleCheckConsent: false,
+      },
+    });
+
+    await prisma.phq9Assessment.create({
+      data: {
+        participantId: participant.id,
+        clinicId: clinic.id,
+        scheduledAt: new Date("2026-11-14T10:00:00Z"),
+        completedAt: new Date("2026-11-14T10:15:00Z"),
+        date: "2026-11-14",
+        dayIndex: 1,
+        weekNumber: 1,
+        roundNumber: 1,
+        completedInRoundNumber: 1,
+        status: "completed",
+        totalScore: 3,
+        item1Interest: 0,
+        item2Mood: 0,
+        item3Sleep: 1,
+        item4Energy: 1,
+        item5Appetite: 0,
+        item6SelfWorth: 0,
+        item7Concentration: 1,
+        item8Psychomotor: 0,
+        item9SelfHarm: 0,
+      },
+    });
+
+    await expect(
+      prisma.phq9Assessment.create({
+        data: {
+          participantId: participant.id,
+          clinicId: clinic.id,
+          scheduledAt: new Date("2026-11-14T11:00:00Z"),
+          completedAt: new Date("2026-11-14T11:20:00Z"),
+          date: "2026-11-14",
+          dayIndex: 1,
+          weekNumber: 1,
+          roundNumber: 1,
+          completedInRoundNumber: 1,
+          status: "completed",
+          totalScore: 5,
+        },
+      })
+    ).rejects.toThrow(/unique constraint/i);
   });
 });

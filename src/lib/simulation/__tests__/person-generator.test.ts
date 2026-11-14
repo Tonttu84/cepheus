@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   createSeededRng,
   DEFAULT_SIMULATION_SEED,
+  generateDepressionAndAnxietySamplePatient,
+  generateDepressionSamplePatient,
   generateSimulatedPersonWeeks,
   SIMULATED_PARTICIPANT_EXTERNAL_ID,
   sliceDatasetThroughDay,
@@ -76,6 +78,27 @@ describe("generateSimulatedPersonWeeks", () => {
     }
     for (const row of dataset.clinicFlags) {
       expect(row.isSimulated).toBe(true);
+    }
+  });
+
+  it("gives every PHQ-9 a round number and no two the same round per participant", () => {
+    const datasets = [
+      generateSimulatedPersonWeeks(),
+      generateDepressionSamplePatient(),
+      generateDepressionAndAnxietySamplePatient(),
+    ];
+
+    for (const dataset of datasets) {
+      expect(dataset.phq9Assessments.length).toBeGreaterThan(0);
+      const seenRounds = new Set<number>();
+
+      for (const phq9 of dataset.phq9Assessments) {
+        expect(typeof phq9.roundNumber).toBe("number");
+        expect(Number.isInteger(phq9.roundNumber)).toBe(true);
+        expect(phq9.roundNumber).toBeGreaterThan(0);
+        expect(seenRounds.has(phq9.roundNumber)).toBe(false);
+        seenRounds.add(phq9.roundNumber);
+      }
     }
   });
 

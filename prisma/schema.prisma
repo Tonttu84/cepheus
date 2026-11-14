@@ -222,7 +222,7 @@ model Phq9Assessment {
   date                   String      // "YYYY-MM-DD"
   dayIndex               Int
   weekNumber             Int
-  roundNumber            Int?
+  roundNumber            Int
   completedInRoundNumber Int?
   status                 String      // "completed" | "in_progress" | "missed"
   totalScore             Int?        // 0..27
@@ -240,8 +240,8 @@ model Phq9Assessment {
   source                 String      @default("live")
   createdAt              DateTime    @default(now())
 
+  @@unique([participantId, roundNumber])
   @@index([participantId, date])
-  @@index([participantId, roundNumber])
   @@index([clinicId])
 }
 
