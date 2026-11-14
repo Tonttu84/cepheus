@@ -34,6 +34,41 @@ class _FakeMicProc:
         self.terminated = True
 
 
+class _StalledFakePipe:
+    """Simulates an audio stream that blocks indefinitely without delivering bytes."""
+
+    def __init__(self) -> None:
+        self._closed = threading.Event()
+
+    def read(self, n: int = -1) -> bytes:
+        self._closed.wait()
+        return b""
+
+    def close(self) -> None:
+        self._closed.set()
+
+
+class _StalledFakeProc:
+    """Capture process whose stdout stalls until terminated."""
+
+    def __init__(self, pipe: _StalledFakePipe | None = None) -> None:
+        self.stdout = pipe if pipe is not None else _StalledFakePipe()
+        self.terminated = False
+
+    def terminate(self) -> None:
+        self.terminated = True
+        if hasattr(self.stdout, "close"):
+            self.stdout.close()
+
+    def wait(self, timeout: float | None = None) -> int:
+        return 0
+
+    def kill(self) -> None:
+        self.terminated = True
+        if hasattr(self.stdout, "close"):
+            self.stdout.close()
+
+
 class _FakeRecognizer:
     def __init__(self, scripted_steps: list[tuple[bool, str]]) -> None:
         self._steps = list(scripted_steps)
@@ -409,6 +444,61 @@ class BluetoothAndSimultaneousVoiceCameraTests(unittest.TestCase):
             summary = cam.stop(abort=False)
 
         self.assertEqual(summary, {"deviceId": "unoq-home-01", "ok": True})
+
+    def test_stalled_audio_pipe_returns_within_deadline(self) -> None:
+        fake_vosk_mod = types.ModuleType("vosk")
+        fake_vosk_mod.KaldiRecognizer = mock.Mock()  # type: ignore[attr-defined]
+        stalled_proc = _StalledFakeProc()
+
+        start = time.monotonic()
+        with (
+            mock.patch.dict(sys.modules, {"vosk": fake_vosk_mod}),
+            mock.patch.object(voice_kiosk, "open_mic_pcm_stream", return_value=stalled_proc),
+            mock.patch.object(voice_kiosk, "poll_mcu_button_event", return_value=None),
+        ):
+            transcript, btn = voice_kiosk.listen_for_voice_transcript(
+                vosk_model=object(),
+                route=None,
+                timeout_sec=0.3,
+                allow_keyboard_fallback=False,
+            )
+        elapsed = time.monotonic() - start
+
+        self.assertEqual(transcript, "")
+        self.assertIsNone(btn)
+        self.assertTrue(stalled_proc.terminated)
+        self.assertGreaterEqual(elapsed, 0.25)
+        self.assertLess(elapsed, 2.0)
+
+    def test_button_press_during_stalled_read_is_returned(self) -> None:
+        fake_vosk_mod = types.ModuleType("vosk")
+        fake_vosk_mod.KaldiRecognizer = mock.Mock()  # type: ignore[attr-defined]
+        stalled_proc = _StalledFakeProc()
+
+        # Simulate button pressed on the 2nd polling iteration (~100 ms in)
+        btn_polls = [None, "BTN_CRISIS"]
+
+        def fake_poll_btn() -> str | None:
+            return btn_polls.pop(0) if btn_polls else "BTN_CRISIS"
+
+        start = time.monotonic()
+        with (
+            mock.patch.dict(sys.modules, {"vosk": fake_vosk_mod}),
+            mock.patch.object(voice_kiosk, "open_mic_pcm_stream", return_value=stalled_proc),
+            mock.patch.object(voice_kiosk, "poll_mcu_button_event", side_effect=fake_poll_btn),
+        ):
+            transcript, btn = voice_kiosk.listen_for_voice_transcript(
+                vosk_model=object(),
+                route=None,
+                timeout_sec=5.0,
+                allow_keyboard_fallback=False,
+            )
+        elapsed = time.monotonic() - start
+
+        self.assertEqual(transcript, "")
+        self.assertEqual(btn, "BTN_CRISIS")
+        self.assertTrue(stalled_proc.terminated)
+        self.assertLess(elapsed, 1.5)
 
 
 if __name__ == "__main__":

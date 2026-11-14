@@ -25,11 +25,13 @@ import gc
 import glob
 import json
 import os
+import queue
 import re
 import secrets
 import struct
 import subprocess
 import sys
+import threading
 import time
 from typing import Any
 
@@ -284,6 +286,24 @@ def _terminate_stream(proc: subprocess.Popen[bytes]) -> None:
             pass
 
 
+def _audio_reader_worker(
+    pipe: Any,
+    chunk_bytes: int,
+    audio_queue: queue.Queue[bytes | None],
+    stop_event: threading.Event,
+) -> None:
+    try:
+        while not stop_event.is_set():
+            data = pipe.read(chunk_bytes)
+            if not data:
+                break
+            audio_queue.put(bytes(data))
+    except Exception:
+        pass
+    finally:
+        audio_queue.put(None)
+
+
 def listen_for_voice_transcript(
     vosk_model: Any | None,
     route: AudioRoute | None = None,
@@ -314,15 +334,36 @@ def listen_for_voice_transcript(
     last_voice_ts: float | None = None
     saw_partial = False
 
+    audio_queue: queue.Queue[bytes | None] = queue.Queue()
+    stop_event = threading.Event()
+    reader_thread: threading.Thread | None = None
+
+    if proc.stdout is not None:
+        reader_thread = threading.Thread(
+            target=_audio_reader_worker,
+            args=(proc.stdout, chunk_bytes, audio_queue, stop_event),
+            daemon=True,
+        )
+        reader_thread.start()
+
     try:
+        if proc.stdout is None:
+            return ("", None)
+
         while (time.monotonic() - start) < timeout_sec:
             mcu_btn = poll_mcu_button_event()
             if mcu_btn is not None:
                 return ("", mcu_btn)
-            if proc.stdout is None:
+
+            try:
+                chunk = audio_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
+
+            if chunk is None:
                 break
 
-            raw = bytearray(proc.stdout.read(chunk_bytes))
+            raw = bytearray(chunk)
             if not raw:
                 break
 
@@ -355,7 +396,10 @@ def listen_for_voice_transcript(
             return (tail, None)
         return ("", None)
     finally:
+        stop_event.set()
         _terminate_stream(proc)
+        if reader_thread is not None and reader_thread.is_alive():
+            reader_thread.join(timeout=0.5)
         del rec
         gc.collect()
 
