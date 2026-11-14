@@ -182,13 +182,10 @@ export interface OpenRoundInfo {
 
 export interface CheckInState {
   readonly openRound: OpenRoundInfo | null;
-  readonly areTapsAnswered: boolean;
-  readonly tapsAnswered: boolean;
+  readonly taps: 'waiting' | 'answered' | 'not_today';
   readonly isPhq9Due: boolean;
-  readonly phq9Due: boolean;
   readonly phq9Progress: Phq9Progress;
   readonly hasSuggestionWaiting: boolean;
-  readonly suggestionWaiting: boolean;
 }
 
 export interface SubmitTapsResult {

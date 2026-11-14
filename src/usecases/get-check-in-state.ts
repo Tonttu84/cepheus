@@ -1,4 +1,4 @@
-import { decideAccess, type Actor, type TargetData } from '../domain/access';
+import { decideAccess, type Actor, type TargetData, type Purpose } from '../domain/access';
 import {
   getOpenRound,
   isPhq9Due,
@@ -10,6 +10,8 @@ import { buildPhq9DueHistory } from './shared';
 export interface GetCheckInStateInput {
   readonly patientId: string;
 }
+
+const USE_CASE_PURPOSE: Purpose = 'self_access';
 
 function resolvePhq9Progress(
   openRoundNumber: number,
@@ -47,7 +49,7 @@ export async function getCheckInState(
     actor,
     action: 'read',
     target: initialTarget,
-    purpose: 'self_access',
+    purpose: USE_CASE_PURPOSE,
   });
 
   if (!initialAccess.ok) {
@@ -61,7 +63,7 @@ export async function getCheckInState(
         actor,
         action: 'read',
         target: initialTarget,
-        purpose: 'self_access',
+        purpose: USE_CASE_PURPOSE,
         allowed: false,
         reason: initialAccess.value.reason,
         timestamp: ports.clock.now(),
@@ -96,7 +98,7 @@ export async function getCheckInState(
         actor,
         action: 'read',
         target,
-        purpose: 'self_access',
+        purpose: USE_CASE_PURPOSE,
         consent: switches.consent,
       });
 
@@ -109,7 +111,7 @@ export async function getCheckInState(
             actor,
             action: 'read',
             target,
-            purpose: 'self_access',
+            purpose: USE_CASE_PURPOSE,
             allowed: false,
             reason: access.value.reason,
             timestamp: now,
@@ -124,7 +126,7 @@ export async function getCheckInState(
           actor,
           action: 'read',
           target,
-          purpose: 'self_access',
+          purpose: USE_CASE_PURPOSE,
           allowed: true,
           reason: 'allowed',
           timestamp: now,
@@ -139,13 +141,10 @@ export async function getCheckInState(
       if (!openRound) {
         returnValue = {
           openRound: null,
-          areTapsAnswered: false,
-          tapsAnswered: false,
+          taps: 'waiting',
           isPhq9Due: false,
-          phq9Due: false,
           phq9Progress: 'not_started',
           hasSuggestionWaiting: false,
-          suggestionWaiting: false,
         };
         return;
       }
@@ -157,7 +156,12 @@ export async function getCheckInState(
       ]);
 
       const currentRoundRecord = storedRounds.find((r) => r.roundNumber === openRound.number);
-      const areTapsAnswered = currentRoundRecord?.status === 'answered';
+      const taps: 'waiting' | 'answered' | 'not_today' =
+        currentRoundRecord?.status === 'answered'
+          ? 'answered'
+          : currentRoundRecord?.status === 'not_today'
+            ? 'not_today'
+            : 'waiting';
       const history = buildPhq9DueHistory(openRound.number, storedRounds, storedPhq9s);
       const phq9Due = isPhq9Due(openRound.number, history);
       const phq9Progress = resolvePhq9Progress(openRound.number, phq9Due, storedPhq9s);
@@ -170,13 +174,10 @@ export async function getCheckInState(
           opensAt: openRound.opensAt,
           endsAt: openRound.endsAt,
         },
-        areTapsAnswered,
-        tapsAnswered: areTapsAnswered,
+        taps,
         isPhq9Due: phq9Due,
-        phq9Due,
         phq9Progress,
         hasSuggestionWaiting,
-        suggestionWaiting: hasSuggestionWaiting,
       };
     });
   } catch (err) {

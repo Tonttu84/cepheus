@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import type { PatientActor, SystemActor } from '../../domain/access';
+import { describe, expect, it, vi } from 'vitest';
+import type { PatientActor, StaffActor, SystemActor } from '../../domain/access';
 import type { PatientRecord } from '../ports';
 import { createFakePorts } from '../testing';
 import { evaluatePatient } from '../evaluate-patient';
@@ -214,5 +214,37 @@ describe('evaluatePatient Use Case', () => {
     expect(warnings[0].kind).toBe('silence');
     expect(warnings[0].raisedAt).toBe('2026-11-19T18:00:00.000Z');
     expect(warnings[0]).toEqual(existingWarning);
+  });
+
+  it('calls decideAccess before checking patientId and an invalid patientId returns an error and reads no patient data', async () => {
+    const { ports } = createFakePorts('2026-11-25T16:00:00.000Z');
+    await ports.patients.savePatient(sampleRecord);
+
+    const getPatientSpy = vi.spyOn(ports.patients, 'getPatient');
+    const getSwitchesSpy = vi.spyOn(ports.patients, 'getPatientAccessSwitches');
+
+    // With staff actor and invalid patientId: decideAccess refuses first
+    const staffActor: StaffActor = {
+      kind: 'staff',
+      staffId: 'nurse-1',
+      clinicId,
+      role: 'nurse',
+    };
+    const staffRes = await evaluatePatient(staffActor, { patientId: '' }, ports);
+    expect(staffRes.ok).toBe(false);
+    if (!staffRes.ok) {
+      expect(staffRes.error).not.toBe('Invalid patientId'); // refused by decideAccess!
+    }
+    expect(getPatientSpy).not.toHaveBeenCalled();
+    expect(getSwitchesSpy).not.toHaveBeenCalled();
+
+    // With system actor and invalid patientId: returns Invalid patientId and reads no patient data
+    const systemRes = await evaluatePatient(systemActor, { patientId: '' }, ports);
+    expect(systemRes.ok).toBe(false);
+    if (!systemRes.ok) {
+      expect(systemRes.error).toBe('Invalid patientId');
+    }
+    expect(getPatientSpy).not.toHaveBeenCalled();
+    expect(getSwitchesSpy).not.toHaveBeenCalled();
   });
 });

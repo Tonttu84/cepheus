@@ -1,4 +1,4 @@
-import { decideAccess, type Actor, type TargetData } from '../domain/access';
+import { decideAccess, type Actor, type TargetData, type Purpose } from '../domain/access';
 import {
   listRounds,
   checkReminder,
@@ -15,6 +15,8 @@ import type {
 export interface CloseElapsedRoundsInput {
   readonly patientId: string;
 }
+
+const USE_CASE_PURPOSE: Purpose = 'care';
 
 interface RoundUpdates {
   roundsToUpdate: StoredRound[];
@@ -130,7 +132,7 @@ export async function closeElapsedRounds(
       actor,
       action: 'write',
       target: initialTarget,
-      purpose: 'care',
+      purpose: USE_CASE_PURPOSE,
     });
 
     if (!initialAccess.ok) {
@@ -144,7 +146,7 @@ export async function closeElapsedRounds(
           actor,
           action: 'write',
           target: initialTarget,
-          purpose: 'care',
+          purpose: USE_CASE_PURPOSE,
           allowed: false,
           reason: initialAccess.value.reason,
           timestamp: ports.clock.now(),
@@ -182,7 +184,7 @@ export async function closeElapsedRounds(
         actor,
         action: 'write',
         target,
-        purpose: 'care',
+        purpose: USE_CASE_PURPOSE,
         consent: switches.consent,
       });
 
@@ -195,7 +197,7 @@ export async function closeElapsedRounds(
             actor,
             action: 'write',
             target,
-            purpose: 'care',
+            purpose: USE_CASE_PURPOSE,
             allowed: false,
             reason: access.value.reason,
             timestamp: now,
@@ -210,7 +212,7 @@ export async function closeElapsedRounds(
           actor,
           action: 'write',
           target,
-          purpose: 'care',
+          purpose: USE_CASE_PURPOSE,
           allowed: true,
           reason: 'allowed',
           timestamp: now,
@@ -235,19 +237,6 @@ export async function closeElapsedRounds(
 
       closedCount = evaluated.closedCount;
       remindersCount = evaluated.remindersCount;
-
-      // Point E: Allowed access that must be logged is written inside unit of work
-      if (access.value.log) {
-        await ports.accessLog.appendLog({
-          actor,
-          action: 'write',
-          target,
-          purpose: 'care',
-          allowed: true,
-          reason: 'allowed',
-          timestamp: now,
-        });
-      }
 
       for (const round of evaluated.roundsToUpdate) {
         await ports.rounds.saveRound(round);

@@ -48,7 +48,7 @@ describe('Demo Story: 4 weeks well, one small dip, recovery, then two silent rou
     expect(state1.ok).toBe(true);
     if (!state1.ok) return;
     expect(state1.value.openRound?.number).toBe(1);
-    expect(state1.value.areTapsAnswered).toBe(false);
+    expect(state1.value.taps).toBe('waiting');
     expect(state1.value.isPhq9Due).toBe(true);
     expect(state1.value.phq9Progress).toBe('not_started');
     expect(state1.value.hasSuggestionWaiting).toBe(false);

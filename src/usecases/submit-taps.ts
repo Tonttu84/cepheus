@@ -21,6 +21,8 @@ function validateInput(input: SubmitTapsInput): { ok: true } | { ok: false; erro
   return { ok: true };
 }
 
+const USE_CASE_PURPOSE: Purpose = 'self_access';
+
 export async function submitTaps(
   actor: Actor,
   input: SubmitTapsInput,
@@ -32,12 +34,11 @@ export async function submitTaps(
     patientId: input?.patientId,
     clinicId: actor.kind === 'patient' || actor.kind === 'staff' ? actor.clinicId : undefined,
   };
-  const initialPurpose: Purpose = actor.kind === 'patient' ? 'self_access' : 'care';
   const initialAccess = decideAccess({
     actor,
     action: 'write',
     target: initialTarget,
-    purpose: initialPurpose,
+    purpose: USE_CASE_PURPOSE,
   });
 
   if (!initialAccess.ok) {
@@ -58,7 +59,7 @@ export async function submitTaps(
           actor,
           action: 'write',
           target: initialTarget,
-          purpose: initialPurpose,
+          purpose: USE_CASE_PURPOSE,
           allowed: false,
           reason: initialAccess.value.reason,
           timestamp: ports.clock.now(),
@@ -94,7 +95,7 @@ export async function submitTaps(
         actor,
         action: 'write',
         target,
-        purpose: 'self_access',
+        purpose: USE_CASE_PURPOSE,
         consent: switches.consent,
       });
 
@@ -107,7 +108,7 @@ export async function submitTaps(
             actor,
             action: 'write',
             target,
-            purpose: 'self_access',
+            purpose: USE_CASE_PURPOSE,
             allowed: false,
             reason: access.value.reason,
             timestamp: now,
@@ -122,7 +123,7 @@ export async function submitTaps(
           actor,
           action: 'write',
           target,
-          purpose: 'self_access',
+          purpose: USE_CASE_PURPOSE,
           allowed: true,
           reason: 'allowed',
           timestamp: now,
@@ -146,19 +147,6 @@ export async function submitTaps(
       if (appResult.isDuplicate) {
         isDuplicate = true;
         return;
-      }
-
-      // Point E: Allowed access that must be logged is written inside unit of work
-      if (access.value.log) {
-        await ports.accessLog.appendLog({
-          actor,
-          action: 'write',
-          target,
-          purpose: 'self_access',
-          allowed: true,
-          reason: 'allowed',
-          timestamp: now,
-        });
       }
 
       await ports.rounds.saveRound({

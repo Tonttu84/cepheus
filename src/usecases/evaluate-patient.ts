@@ -1,4 +1,4 @@
-import { decideAccess, type Actor, type TargetData } from '../domain/access';
+import { decideAccess, type Actor, type TargetData, type Purpose } from '../domain/access';
 import {
   evaluateHistory,
   type EvaluatedEffect,
@@ -7,6 +7,8 @@ import {
   type HistoryRound,
   type PatientHistory,
 } from '../domain/history';
+
+const USE_CASE_PURPOSE: Purpose = 'care';
 import type {
   EvaluatePatientResult,
   PatientRecord,
@@ -115,18 +117,19 @@ export async function evaluatePatient(
   input: EvaluatePatientInput,
   ports: Ports
 ): Promise<UseCaseResult<EvaluatePatientResult>> {
-  if (!input.patientId || typeof input.patientId !== 'string') {
-    return { ok: false, error: 'Invalid patientId' };
-  }
-
   // Check initial access permissions before entering unit of work for non-system actors
   if (actor.kind !== 'system') {
-    const target = { kind: 'flags' as const, patientId: input.patientId };
+    const clinicId = (actor as { clinicId?: string }).clinicId ?? 'unknown';
+    const initialTarget: TargetData = {
+      kind: 'flags',
+      patientId: input?.patientId,
+      clinicId,
+    };
     const initialAccess = decideAccess({
       actor,
       action: 'write',
-      target,
-      purpose: 'care',
+      target: initialTarget,
+      purpose: USE_CASE_PURPOSE,
     });
 
     if (!initialAccess.ok) {
@@ -138,8 +141,8 @@ export async function evaluatePatient(
         await ports.accessLog.appendLog({
           actor,
           action: 'write',
-          target,
-          purpose: 'care',
+          target: initialTarget,
+          purpose: USE_CASE_PURPOSE,
           allowed: false,
           reason: initialAccess.value.reason,
           timestamp: ports.clock.now(),
@@ -147,6 +150,10 @@ export async function evaluatePatient(
       }
       return { ok: false, error: initialAccess.value.reason };
     }
+  }
+
+  if (!input.patientId || typeof input.patientId !== 'string') {
+    return { ok: false, error: 'Invalid patientId' };
   }
 
   let resultValue: EvaluatePatientResult | null = null;
@@ -173,7 +180,7 @@ export async function evaluatePatient(
         actor,
         action: 'write',
         target,
-        purpose: 'care',
+        purpose: USE_CASE_PURPOSE,
         consent: switches.consent,
       });
 
@@ -188,13 +195,26 @@ export async function evaluatePatient(
             actor,
             action: 'write',
             target,
-            purpose: 'care',
+            purpose: USE_CASE_PURPOSE,
             allowed: false,
             reason: consentAccess.value.reason,
             timestamp: now,
           });
         }
         return;
+      }
+
+      // Point E: Allowed access that must be logged is written inside unit of work
+      if (consentAccess.value.log) {
+        await ports.accessLog.appendLog({
+          actor,
+          action: 'write',
+          target,
+          purpose: USE_CASE_PURPOSE,
+          allowed: true,
+          reason: 'allowed',
+          timestamp: now,
+        });
       }
 
       // Patient data is read only after the access decision is allowed.

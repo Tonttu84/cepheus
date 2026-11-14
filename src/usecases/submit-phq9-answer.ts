@@ -59,6 +59,8 @@ function mergeAnswer(answers: readonly Phq9Answer[], itemId: string, value: numb
   return next;
 }
 
+const USE_CASE_PURPOSE: Purpose = 'self_access';
+
 /**
  * Submits an answer to one PHQ-9 question item.
  *
@@ -84,12 +86,11 @@ export async function submitPhq9Answer(
     patientId: input?.patientId,
     clinicId: actor.kind === 'patient' || actor.kind === 'staff' ? actor.clinicId : undefined,
   };
-  const initialPurpose: Purpose = actor.kind === 'patient' ? 'self_access' : 'care';
   const initialAccess = decideAccess({
     actor,
     action: 'write',
     target: initialTarget,
-    purpose: initialPurpose,
+    purpose: USE_CASE_PURPOSE,
   });
 
   // Point B: worked out from the answer before anything is stored
@@ -113,7 +114,7 @@ export async function submitPhq9Answer(
           actor,
           action: 'write',
           target: initialTarget,
-          purpose: initialPurpose,
+          purpose: USE_CASE_PURPOSE,
           allowed: false,
           reason: initialAccess.value.reason,
           timestamp: ports.clock.now(),
@@ -152,7 +153,7 @@ export async function submitPhq9Answer(
         actor,
         action: 'write',
         target,
-        purpose: 'self_access',
+        purpose: USE_CASE_PURPOSE,
         consent: switches.consent,
       });
 
@@ -165,7 +166,7 @@ export async function submitPhq9Answer(
             actor,
             action: 'write',
             target,
-            purpose: 'self_access',
+            purpose: USE_CASE_PURPOSE,
             allowed: false,
             reason: access.value.reason,
             timestamp: now,
@@ -180,7 +181,7 @@ export async function submitPhq9Answer(
           actor,
           action: 'write',
           target,
-          purpose: 'self_access',
+          purpose: USE_CASE_PURPOSE,
           allowed: true,
           reason: 'allowed',
           timestamp: now,
@@ -214,19 +215,6 @@ export async function submitPhq9Answer(
       const answers = mergeAnswer(unfinished ? unfinished.answers : [], input.itemId, input.value);
       isComplete = answers.length === 9;
       progress = isComplete ? 'completed' : 'unfinished';
-
-      // Point E: Allowed access that must be logged is written inside unit of work
-      if (access.value.log) {
-        await ports.accessLog.appendLog({
-          actor,
-          action: 'write',
-          target,
-          purpose: 'self_access',
-          allowed: true,
-          reason: 'allowed',
-          timestamp: now,
-        });
-      }
 
       await ports.phq9.savePhq9({
         patientId: patient.patientId,
