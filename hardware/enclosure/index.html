@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cepheus Desk Buddy — Interactive 3D Design Explorer</title>
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --panel: rgba(255, 253, 248, 0.93);
+      --border: #dfd8c8;
+      --text: #222623;
+      --muted: #616762;
+      --accent: #2c5e54;
+      --accent-soft: #e4eeeb;
+      --warm: #b97a4b;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #canvas-wrap {
+      position: fixed;
+      inset: 0;
+    }
+    .panel {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      width: 318px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 12px 32px rgba(31, 36, 33, 0.08);
+      z-index: 10;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 3px 8px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 17px;
+      margin: 0 0 4px 0;
+      font-weight: 700;
+    }
+    .sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 14px 0;
+      line-height: 1.45;
+    }
+    .section {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .btn-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .btn-row-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    button {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 7px 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      border-color: var(--accent);
+    }
+    button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    button.active-warm {
+      background: var(--warm);
+      color: #fff;
+      border-color: var(--warm);
+    }
+    .privacy-note {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin: 7px 0 0 0;
+      line-height: 1.4;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+    .val {
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 38px;
+      text-align: right;
+    }
+    .toggle-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+      cursor: pointer;
+    }
+    .dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 7px;
+    }
+    .specs {
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .specs strong { color: var(--text); }
+    .hint {
+      position: fixed;
+      bottom: 14px;
+      right: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      z-index: 10;
+    }
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--muted);
+      background: var(--bg);
+      z-index: 20;
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./node_modules/three/build/three.module.js",
+        "three/addons/": "./node_modules/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="loading">Loading Cepheus 3D assembly...</div>
+  <div id="canvas-wrap"></div>
+
+  <aside class="panel">
+    <span class="badge">Cepheus Desk Buddy</span>
+    <h1>Cozy Companion Pebble</h1>
+    <p class="sub">100% solid-filament enclosure (no translucent parts needed): peaceful sleeping buddy at rest, flip-up visor for brief check-ins.</p>
+
+    <div class="section">
+      <div class="section-title">Sleep Visor Mode</div>
+      <div class="btn-row-2">
+        <button id="visor-sleep" class="active-warm">Sleeping (At Rest)</button>
+        <button id="visor-awake">Awake (Check-in)</button>
+      </div>
+      <p class="privacy-note" id="privacy-note">At rest: solid sleep mask hides the camera 100%, showing calm closed eyes and a soft smile.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Top Shell Mode</div>
+      <div class="btn-row">
+        <button id="mode-solid" class="active">Solid</button>
+        <button id="mode-xray">X-Ray</button>
+        <button id="mode-hidden">Hidden</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Exploded Assembly</div>
+      <div class="slider-row">
+        <input id="explode-slider" type="range" min="0" max="100" value="0" />
+        <span id="explode-val" class="val">0%</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Camera Views</div>
+      <div class="btn-row-2">
+        <button data-view="iso">Front 3/4</button>
+        <button data-view="top">Top-Down Fit</button>
+        <button data-view="rear">Rear Hub Bay</button>
+        <button data-view="side">Side Profile</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Visible Parts</div>
+      <div class="toggle-list" id="part-toggles"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Datasheet-Verified Envelope (mm)</div>
+      <div class="specs">
+        <strong>Print material:</strong> 100% solid Peach &amp; White PLA<br />
+        <strong>Joints (screwless):</strong> Front hook + 2 snap-tabs + split visor pins<br />
+        <strong>Outer buddy:</strong> 169 &times; 166 &times; 159 mm (incl. ears)<br />
+        <strong>Arduino UNO Q (ABX00162):</strong> 68.58 &times; 53.34 mm (front bay)<br />
+        <strong>8-in-1 Hub (TPX00241):</strong> 119 &times; 27.8 &times; 16 mm + 53.8 mm plug bay<br />
+        <strong>USB Camera (TPX00246):</strong> &Oslash; 62 mm ring puck + 28 mm USB-A head
+      </div>
+    </div>
+  </aside>
+
+  <div class="hint">Left-drag: Orbit &middot; Right-drag: Pan &middot; Scroll: Zoom</div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    const wrap = document.getElementById("canvas-wrap");
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf5f1e8);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.5, 4000);
+    camera.position.set(-220, 185, 245);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.06;
+    wrap.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 72, 0);
+
+    // Warm studio lighting + soft ground grid
+    const hemi = new THREE.HemisphereLight(0xfffcf5, 0x9b9488, 1.15);
+    scene.add(hemi);
+
+    const key = new THREE.DirectionalLight(0xfff7e8, 1.85);
+    key.position.set(-180, 280, 220);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.near = 20;
+    key.shadow.camera.far = 900;
+    const d = 170;
+    key.shadow.camera.left = -d;
+    key.shadow.camera.right = d;
+    key.shadow.camera.top = d;
+    key.shadow.camera.bottom = -d;
+    key.shadow.bias = -0.0005;
+    key.shadow.normalBias = 0.9;
+    scene.add(key);
+
+    const rim = new THREE.DirectionalLight(0xf3eadc, 0.85);
+    rim.position.set(200, 150, -220);
+    scene.add(rim);
+
+    const grid = new THREE.GridHelper(320, 32, 0xcac2b2, 0xe6e0d4);
+    grid.position.y = -0.2;
+    scene.add(grid);
+
+    const partsMeta = [
+      { key: "Shell_Top", label: "Buddy Body (Peach PLA)", color: "#f8b18a", explodeY: 78, explodeZ: 0 },
+      { key: "Privacy_Visor", label: "Sleep Mask (White PLA)", color: "#f6f4ef", explodeY: 78, explodeZ: 0 },
+      { key: "HW_Paws", label: "Paw Pads (White PLA)", color: "#f6f4ef", explodeY: 78, explodeZ: 0 },
+      { key: "Tray_Bottom", label: "Base Plinth (White PLA)", color: "#f6f4ef", explodeY: 0, explodeZ: 0 },
+      { key: "HW_Arduino_UNO_Q", label: "Arduino UNO Q", color: "#0b6e73", explodeY: 14, explodeZ: 0 },
+      { key: "HW_USB_C_Hub_8in1", label: "8-in-1 USB-C Hub", color: "#767b82", explodeY: 18, explodeZ: -18 },
+      { key: "HW_USB_Camera", label: "Arduino USB Camera", color: "#2d3033", explodeY: 36, explodeZ: 22 },
+    ];
+
+    const partObjects = {};
+    const basePositions = {};
+    const shellMaterials = [];
+    let faceInlayNode = null;
+    let faceInlayBasePos = null;
+    let faceInlayBaseQuat = null;
+    let visorArmsNode = null;
+    let visorArmsBasePos = null;
+    let visorArmsBaseQuat = null;
+    let hingePinsNode = null;
+    let hingePinsBasePos = null;
+    let unoPinsNode = null;
+    let unoPinsBasePos = null;
+    let visorBaseQuat = null;
+
+    const VISOR_OPEN_RAD = (-56 * Math.PI) / 180;
+    let targetAwakeT = 0; // 0 = Sleeping (visor down), 1 = Awake (visor flipped up)
+    let currentAwakeT = 0;
+    const localXAxis = new THREE.Vector3(1, 0, 0);
+    const tiltQuat = new THREE.Quaternion();
+
+    const loader = new GLTFLoader();
+    loader.load(
+      "./cepheus_assembly.glb",
+      (gltf) => {
+        const root = gltf.scene;
+        scene.add(root);
+
+        root.traverse((node) => {
+          if (node.isMesh) {
+            node.castShadow = true;
+            node.receiveShadow = true;
+          }
+          if (node.name === "Sleep_Face_Inlay") {
+            faceInlayNode = node;
+            faceInlayBasePos = node.position.clone();
+            faceInlayBaseQuat = node.quaternion.clone();
+          } else if (node.name === "Visor_Arms") {
+            visorArmsNode = node;
+            visorArmsBasePos = node.position.clone();
+            visorArmsBaseQuat = node.quaternion.clone();
+          } else if (node.name === "Hinge_Pins") {
+            hingePinsNode = node;
+            hingePinsBasePos = node.position.clone();
+          } else if (node.name === "HW_UNO_Pins") {
+            unoPinsNode = node;
+            unoPinsBasePos = node.position.clone();
+          }
+          for (const meta of partsMeta) {
+            if (node.name === meta.key || node.name.startsWith(meta.key)) {
+              if (!partObjects[meta.key]) {
+                partObjects[meta.key] = node;
+                basePositions[meta.key] = node.position.clone();
+              }
+            }
+          }
+        });
+
+        const topShell = partObjects["Shell_Top"];
+        if (topShell) {
+          topShell.traverse((n) => {
+            if (n.isMesh && n.material) {
+              const mats = Array.isArray(n.material) ? n.material : [n.material];
+              mats.forEach((m) => shellMaterials.push(m));
+            }
+          });
+        }
+
+        const visor = partObjects["Privacy_Visor"];
+        if (visor) {
+          visorBaseQuat = visor.quaternion.clone();
+        }
+
+        buildPartToggles();
+        document.getElementById("loading").style.display = "none";
+      },
+      undefined,
+      (err) => {
+        document.getElementById("loading").textContent = "Failed to load cepheus_assembly.glb: " + err.message;
+      }
+    );
+
+    function buildPartToggles() {
+      const container = document.getElementById("part-toggles");
+      partsMeta.forEach((meta) => {
+        const obj = partObjects[meta.key];
+        const label = document.createElement("label");
+        label.className = "toggle-item";
+        label.innerHTML = `
+          <span><span class="dot" style="background:${meta.color}"></span>${meta.label}</span>
+          <input type="checkbox" checked />
+        `;
+        const cb = label.querySelector("input");
+        cb.addEventListener("change", () => {
+          if (obj) obj.visible = cb.checked;
+          if (meta.key === "HW_Arduino_UNO_Q" && unoPinsNode) {
+            unoPinsNode.visible = cb.checked;
+          }
+          if (meta.key === "Privacy_Visor") {
+            if (faceInlayNode) faceInlayNode.visible = cb.checked;
+            if (visorArmsNode) visorArmsNode.visible = cb.checked;
+            if (hingePinsNode) hingePinsNode.visible = cb.checked;
+          }
+        });
+        container.appendChild(label);
+      });
+    }
+
+    // Sleep Visor Mode toggle
+    const visorSleepBtn = document.getElementById("visor-sleep");
+    const visorAwakeBtn = document.getElementById("visor-awake");
+    const privacyNote = document.getElementById("privacy-note");
+    function setAwakeMode(isAwake) {
+      targetAwakeT = isAwake ? 1 : 0;
+      visorSleepBtn.classList.toggle("active-warm", !isAwake);
+      visorAwakeBtn.classList.toggle("active", isAwake);
+      privacyNote.textContent = isAwake
+        ? "Check-in active: sleep mask flips up cleanly in front of the ears so the Arduino USB Camera can see."
+        : "At rest: solid sleep mask hides the camera 100%, showing calm closed eyes and a soft smile.";
+    }
+    visorSleepBtn.onclick = () => setAwakeMode(false);
+    visorAwakeBtn.onclick = () => setAwakeMode(true);
+
+    // Shell mode buttons
+    const modeBtns = {
+      solid: document.getElementById("mode-solid"),
+      xray: document.getElementById("mode-xray"),
+      hidden: document.getElementById("mode-hidden"),
+    };
+    function setShellMode(mode) {
+      Object.entries(modeBtns).forEach(([k, b]) => b.classList.toggle("active", k === mode));
+      const topShell = partObjects["Shell_Top"];
+      if (!topShell) return;
+      if (mode === "hidden") {
+        topShell.visible = false;
+      } else {
+        topShell.visible = true;
+        shellMaterials.forEach((m) => {
+          m.transparent = mode === "xray";
+          m.opacity = mode === "xray" ? 0.28 : 1.0;
+          m.depthWrite = mode !== "xray";
+          m.needsUpdate = true;
+        });
+      }
+    }
+    modeBtns.solid.onclick = () => setShellMode("solid");
+    modeBtns.xray.onclick = () => setShellMode("xray");
+    modeBtns.hidden.onclick = () => setShellMode("hidden");
+
+    // Explode slider
+    const explodeSlider = document.getElementById("explode-slider");
+    const explodeVal = document.getElementById("explode-val");
+    explodeSlider.addEventListener("input", () => {
+      const t = Number(explodeSlider.value) / 100;
+      explodeVal.textContent = `${explodeSlider.value}%`;
+      partsMeta.forEach((meta) => {
+        const obj = partObjects[meta.key];
+        const base = basePositions[meta.key];
+        if (!obj || !base) return;
+        obj.position.set(base.x, base.y + meta.explodeY * t, base.z + meta.explodeZ * t);
+      });
+      if (faceInlayNode && faceInlayBasePos) {
+        faceInlayNode.position.set(faceInlayBasePos.x, faceInlayBasePos.y + 78 * t, faceInlayBasePos.z);
+      }
+      if (visorArmsNode && visorArmsBasePos) {
+        visorArmsNode.position.set(visorArmsBasePos.x, visorArmsBasePos.y + 78 * t, visorArmsBasePos.z);
+      }
+      if (hingePinsNode && hingePinsBasePos) {
+        hingePinsNode.position.set(hingePinsBasePos.x, hingePinsBasePos.y + 78 * t, hingePinsBasePos.z);
+      }
+      if (unoPinsNode && unoPinsBasePos) {
+        unoPinsNode.position.set(unoPinsBasePos.x, unoPinsBasePos.y + 14 * t, unoPinsBasePos.z);
+      }
+    });
+
+    // Camera view presets
+    const views = {
+      iso: { pos: [-220, 185, 245], target: [0, 72, 0] },
+      top: { pos: [0, 315, 15], target: [0, 18, 0] },
+      rear: { pos: [175, 150, -245], target: [0, 56, 0] },
+      side: { pos: [-295, 100, 0], target: [0, 72, 0] },
+    };
+    document.querySelectorAll("[data-view]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const v = views[btn.dataset.view];
+        if (!v) return;
+        camera.position.set(...v.pos);
+        controls.target.set(...v.target);
+        controls.update();
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+
+      currentAwakeT += (targetAwakeT - currentAwakeT) * Math.min(1, dt * 8);
+      tiltQuat.setFromAxisAngle(localXAxis, currentAwakeT * VISOR_OPEN_RAD);
+
+      const visor = partObjects["Privacy_Visor"];
+      if (visor && visorBaseQuat) {
+        visor.quaternion.copy(visorBaseQuat).multiply(tiltQuat);
+      }
+      if (faceInlayNode && faceInlayBaseQuat) {
+        faceInlayNode.quaternion.copy(faceInlayBaseQuat).multiply(tiltQuat);
+      }
+      if (visorArmsNode && visorArmsBaseQuat) {
+        visorArmsNode.quaternion.copy(visorArmsBaseQuat).multiply(tiltQuat);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
