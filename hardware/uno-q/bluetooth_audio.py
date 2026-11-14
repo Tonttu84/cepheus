@@ -2,21 +2,24 @@
 Bluetooth headphone detection, routing, TTS playback, and live PCM mic capture
 for the Arduino UNO Q bedside unit.
 
-Keeps all audio strictly in RAM (zero .wav or raw PCM files written to disk).
-Automatically routes spoken questions to connected Bluetooth headphones
-(PipeWire / PulseAudio `bluez_output.*` or `bluez_sink.*`) and selects the
-active Bluetooth headset mic or USB webcam mic for voice answers.
+Supports native PipeWire (`pw-dump`, `wpctl`, `pw-play`, `pw-record --raw`),
+PulseAudio / pipewire-pulse (`pactl`, `paplay`, `parec`), and ALSA (`aplay`,
+`arecord`). Keeps all audio strictly in RAM (zero .wav or raw PCM files written
+to disk).
 """
 
 from __future__ import annotations
 
 import dataclasses
+import glob
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
 import time
+from typing import Any
 
 
 @dataclasses.dataclass(frozen=True)
@@ -32,12 +35,22 @@ class AudioRoute:
 AUDIO_UUID_PREFIXES = ("0000110b", "00001108", "0000111e", "0000110d")
 
 
+def _audio_env() -> dict[str, str]:
+    env = os.environ.copy()
+    if "XDG_RUNTIME_DIR" not in env and hasattr(os, "getuid"):
+        runtime_dir = f"/run/user/{os.getuid()}"
+        if os.path.isdir(runtime_dir):
+            env["XDG_RUNTIME_DIR"] = runtime_dir
+    return env
+
+
 def _run_cmd(args: list[str], timeout: float = 3.0) -> str:
     try:
         res = subprocess.run(
             args,
             capture_output=True,
             text=True,
+            env=_audio_env(),
             timeout=timeout,
             check=False,
         )
@@ -71,6 +84,115 @@ def _detect_bluez_connected_name() -> str | None:
             if "Connected: yes" in dev_info:
                 return parts[2].strip()
     return None
+
+
+def _parse_pw_dump(raw_json: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    try:
+        items = json.loads(raw_json)
+    except Exception:
+        return ([], [], [])
+    if not isinstance(items, list):
+        return ([], [], [])
+
+    sinks: list[dict[str, Any]] = []
+    sources: list[dict[str, Any]] = []
+    devices: list[dict[str, Any]] = []
+    for obj in items:
+        if not isinstance(obj, dict):
+            continue
+        info = obj.get("info")
+        props = info.get("props", {}) if isinstance(info, dict) else {}
+        media_class = str(props.get("media.class", ""))
+        if media_class == "Audio/Sink":
+            sinks.append(obj)
+        elif media_class == "Audio/Source":
+            sources.append(obj)
+        elif media_class == "Audio/Device":
+            devices.append(obj)
+    return (sinks, sources, devices)
+
+
+def _maybe_switch_pipewire_bt_profile(
+    devices: list[dict[str, Any]],
+    sinks: list[dict[str, Any]],
+    sources: list[dict[str, Any]],
+    prefer_bt_mic: bool,
+) -> bool:
+    if not shutil.which("wpctl"):
+        return False
+    bt_devs = [
+        d for d in devices
+        if str(d.get("info", {}).get("props", {}).get("device.name", "")).startswith("bluez_card.")
+    ]
+    if not bt_devs:
+        return False
+
+    sink_names = [str(s.get("info", {}).get("props", {}).get("node.name", "")) for s in sinks]
+    src_names = [
+        str(s.get("info", {}).get("props", {}).get("node.name", ""))
+        for s in sources
+        if not str(s.get("info", {}).get("props", {}).get("node.name", "")).endswith(".monitor")
+    ]
+    has_bt_sink = any(n.startswith(("bluez_output.", "bluez_sink.")) for n in sink_names)
+    has_bt_mic = any(n.startswith(("bluez_input.", "bluez_source.")) for n in src_names)
+    need_bt_mic = (prefer_bt_mic or not src_names) and not has_bt_mic
+    if has_bt_sink and not need_bt_mic:
+        return False
+
+    dev = bt_devs[0]
+    dev_id = dev.get("id")
+    enum_profiles = dev.get("info", {}).get("params", {}).get("EnumProfile", [])
+    wanted = ("headset-head-unit", "handsfree", "hfp", "hsp") if need_bt_mic else ("a2dp", "headset")
+    for keyword in wanted:
+        for prof in enum_profiles if isinstance(enum_profiles, list) else []:
+            pname = str(prof.get("name", "")).lower()
+            pidx = prof.get("index")
+            if keyword in pname and pidx is not None and dev_id is not None:
+                _run_cmd(["wpctl", "set-profile", str(dev_id), str(pidx)])
+                time.sleep(0.35)
+                return True
+    return False
+
+
+def _detect_pipewire_route(
+    env_out: str, env_in: str, use_bt_mic: bool, bt_name: str | None
+) -> AudioRoute:
+    sinks, sources, devices = _parse_pw_dump(_run_cmd(["pw-dump"]))
+    if _maybe_switch_pipewire_bt_profile(devices, sinks, sources, use_bt_mic):
+        sinks, sources, _ = _parse_pw_dump(_run_cmd(["pw-dump"]))
+
+    out_sink: str | None = env_out or None
+    bt_desc: str | None = bt_name
+    if not out_sink:
+        for sink in sinks:
+            props = sink.get("info", {}).get("props", {})
+            name = str(props.get("node.name", ""))
+            if name.startswith(("bluez_output.", "bluez_sink.")):
+                out_sink = name
+                bt_desc = bt_desc or str(props.get("node.description", "")) or name
+                if shutil.which("wpctl") and sink.get("id") is not None:
+                    _run_cmd(["wpctl", "set-default", str(sink["id"])])
+                break
+    if not out_sink and sinks:
+        out_sink = str(sinks[0].get("info", {}).get("props", {}).get("node.name", "")) or None
+
+    real_sources = [
+        str(s.get("info", {}).get("props", {}).get("node.name", ""))
+        for s in sources
+        if not str(s.get("info", {}).get("props", {}).get("node.name", "")).endswith(".monitor")
+    ]
+    in_src = _pick_source_by_priority(real_sources, env_in)
+    bt_active = bool(
+        bt_desc or (out_sink and out_sink.startswith(("bluez_output.", "bluez_sink.")))
+    )
+    return AudioRoute(
+        bt_connected=bt_active,
+        bt_device_name=bt_desc,
+        output_backend="pipewire",
+        output_sink=out_sink,
+        input_backend="pipewire",
+        input_source=in_src,
+    )
 
 
 def _ensure_bt_card_profile(
@@ -123,15 +245,14 @@ def _pick_pulse_sink(sinks: list[str], env_out: str) -> str | None:
     return sinks[0] if sinks else None
 
 
-def _pick_pulse_source(sources: list[str], env_in: str) -> str | None:
+def _pick_source_by_priority(real_sources: list[str], env_in: str) -> str | None:
     if env_in:
         return env_in
-    real = [s for s in sources if not s.endswith(".monitor")]
     for prefix in ("bluez_input.", "bluez_source.", "alsa_input.usb-"):
-        for src in real:
+        for src in real_sources:
             if src.startswith(prefix):
                 return src
-    return real[0] if real else None
+    return real_sources[0] if real_sources else None
 
 
 def _detect_alsa_capture_device() -> str | None:
@@ -165,7 +286,8 @@ def detect_audio_route(prefer_bt_mic: bool = False) -> AudioRoute:
         cards = _parse_pactl_names(_run_cmd(["pactl", "list", "short", "cards"]))
         sinks, sources = _ensure_bt_card_profile(cards, sinks, sources, use_bt_mic)
         out_sink = _pick_pulse_sink(sinks, env_out)
-        in_src = _pick_pulse_source(sources, env_in)
+        real_sources = [s for s in sources if not s.endswith(".monitor")]
+        in_src = _pick_source_by_priority(real_sources, env_in)
         bt_active = bool(
             bt_name
             or (out_sink and out_sink.startswith(("bluez_output.", "bluez_sink.")))
@@ -178,6 +300,9 @@ def detect_audio_route(prefer_bt_mic: bool = False) -> AudioRoute:
             input_backend="pulse" if in_src or shutil.which("parec") else "alsa",
             input_source=in_src,
         )
+
+    if shutil.which("pw-dump") and shutil.which("pw-play"):
+        return _detect_pipewire_route(env_out, env_in, use_bt_mic, bt_name)
 
     alsa_in = env_in or _detect_alsa_capture_device()
     return AudioRoute(
@@ -200,7 +325,7 @@ def wait_for_bluetooth_headphones(
     while True:
         route = detect_audio_route(prefer_bt_mic=prefer_bt_mic)
         if route.bt_connected:
-            if route.output_backend == "pulse" and not (
+            if route.output_backend in ("pulse", "pipewire") and not (
                 route.output_sink
                 and route.output_sink.startswith(("bluez_output.", "bluez_sink."))
             ):
@@ -212,14 +337,25 @@ def wait_for_bluetooth_headphones(
         time.sleep(poll_interval_sec)
 
 
-def _build_pcm_player_cmd(
-    route: AudioRoute, raw_22k: bool
-) -> list[str] | None:
+def _find_piper_binary_and_model() -> tuple[str | None, str | None]:
+    venv_piper = os.path.join(os.path.dirname(sys.executable), "piper")
+    piper_bin = venv_piper if os.path.isfile(venv_piper) else shutil.which("piper")
+    here = os.path.dirname(__file__)
+    local_onnx = sorted(glob.glob(os.path.join(here, "*.onnx")))
+    cached_onnx = sorted(glob.glob(os.path.expanduser("~/.cache/piper/*.onnx")))
+    candidates = [
+        os.environ.get("PIPER_MODEL_PATH", "").strip(),
+        *local_onnx,
+        *cached_onnx,
+    ]
+    model = next((p for p in candidates if p and os.path.isfile(p)), None)
+    return piper_bin, model
+
+
+def _build_wav_player_cmd(route: AudioRoute) -> list[str] | None:
     paplay = shutil.which("paplay")
     if paplay and route.output_backend == "pulse":
         cmd = [paplay]
-        if raw_22k:
-            cmd.extend(["--raw", "--rate=22050", "--format=s16le", "--channels=1"])
         if route.output_sink:
             cmd.append(f"--device={route.output_sink}")
         return cmd
@@ -227,9 +363,7 @@ def _build_pcm_player_cmd(
     pw_play = shutil.which("pw-play")
     if pw_play:
         cmd = [pw_play]
-        if raw_22k:
-            cmd.extend(["--rate=22050", "--format=s16", "--channels=1"])
-        if route.output_sink:
+        if route.output_sink and route.output_backend in ("pipewire", "pulse"):
             cmd.append(f"--target={route.output_sink}")
         cmd.append("-")
         return cmd
@@ -239,33 +373,36 @@ def _build_pcm_player_cmd(
         cmd = [aplay, "-q"]
         if route.output_sink and route.output_backend == "alsa":
             cmd.extend(["-D", route.output_sink])
-        if raw_22k:
-            cmd.extend(["-r", "22050", "-f", "S16_LE", "-c", "1", "-t", "raw"])
         cmd.append("-")
         return cmd
     return None
 
 
-def _pipe_tts_to_player(tts_cmd: list[str], player_cmd: list[str], stdin_bytes: bytes | None) -> bool:
+def _pipe_tts_to_player(
+    tts_cmd: list[str], player_cmd: list[str], stdin_bytes: bytes | None
+) -> bool:
+    env = _audio_env()
     p_tts = subprocess.Popen(
         tts_cmd,
         stdin=subprocess.PIPE if stdin_bytes is not None else None,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
+        env=env,
     )
     p_play = subprocess.Popen(
         player_cmd,
         stdin=p_tts.stdout,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        env=env,
     )
     if p_tts.stdout is not None:
         p_tts.stdout.close()
     if stdin_bytes is not None and p_tts.stdin is not None:
         p_tts.stdin.write(stdin_bytes)
         p_tts.stdin.close()
-    p_tts.wait(timeout=25)
-    p_play.wait(timeout=25)
+    p_tts.wait(timeout=30)
+    p_play.wait(timeout=30)
     return p_play.returncode == 0
 
 
@@ -275,31 +412,29 @@ def speak_text_routed(text: str, route: AudioRoute | None = None) -> bool:
     target_label = active_route.output_sink or active_route.output_backend
     print(f"[TTS -> {target_label}] {text}", flush=True)
 
-    piper_bin = shutil.which("piper")
-    piper_model = os.environ.get("PIPER_MODEL_PATH", "").strip()
-    raw_player = _build_pcm_player_cmd(active_route, raw_22k=True)
-    if piper_bin and piper_model and os.path.exists(piper_model) and raw_player:
+    wav_player = _build_wav_player_cmd(active_route)
+    piper_bin, piper_model = _find_piper_binary_and_model()
+    if piper_bin and piper_model and wav_player:
         return _pipe_tts_to_player(
-            [piper_bin, "--model", piper_model, "--output-raw"],
-            raw_player,
+            [piper_bin, "-m", piper_model, "-f", "-"],
+            wav_player,
             text.encode("utf-8"),
         )
 
     espeak = shutil.which("espeak-ng") or shutil.which("espeak")
-    wav_player = _build_pcm_player_cmd(active_route, raw_22k=False)
     if espeak and wav_player:
         return _pipe_tts_to_player([espeak, "-s", "155", "--stdout", text], wav_player, None)
 
     if espeak:
-        env = os.environ.copy()
+        env = _audio_env()
         if active_route.output_sink and active_route.output_backend == "pulse":
             env["PULSE_SINK"] = active_route.output_sink
         res = subprocess.run([espeak, "-s", "155", text], env=env, check=False, timeout=25)
         return res.returncode == 0
 
     print(
-        "[WARN] No local TTS binary found. Install `espeak-ng` and `pulseaudio-utils` "
-        "(or set PIPER_MODEL_PATH with `piper`) so Bluetooth headphones speak prompts.",
+        "[WARN] No local TTS engine found. Install `piper-tts` (`pip install piper-tts`) "
+        "or `espeak-ng` so Bluetooth headphones can speak prompts.",
         file=sys.stderr,
     )
     return False
@@ -310,6 +445,8 @@ def open_mic_pcm_stream(
 ) -> subprocess.Popen[bytes]:
     """Starts a live 16-bit mono PCM capture stream strictly in RAM."""
     active_route = route or detect_audio_route()
+    env = _audio_env()
+
     parec = shutil.which("parec")
     if parec and active_route.input_backend == "pulse":
         cmd = [
@@ -322,15 +459,21 @@ def open_mic_pcm_stream(
         ]
         if active_route.input_source:
             cmd.append(f"--device={active_route.input_source}")
-        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=env)
 
     pw_rec = shutil.which("pw-record")
-    if pw_rec and active_route.input_backend == "pulse":
-        cmd = [pw_rec, f"--rate={sample_rate}", "--format=s16", "--channels=1"]
+    if pw_rec and active_route.input_backend in ("pipewire", "pulse"):
+        cmd = [
+            pw_rec,
+            "--raw",
+            f"--rate={sample_rate}",
+            "--format=s16",
+            "--channels=1",
+        ]
         if active_route.input_source:
             cmd.append(f"--target={active_route.input_source}")
         cmd.append("-")
-        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=env)
 
     arecord = shutil.which("arecord")
     if arecord:
@@ -338,8 +481,8 @@ def open_mic_pcm_stream(
         if active_route.input_source and active_route.input_backend == "alsa":
             cmd.extend(["-D", active_route.input_source])
         cmd.extend(["-f", "S16_LE", "-r", str(sample_rate), "-c", "1", "-t", "raw"])
-        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=env)
 
     raise RuntimeError(
-        "No microphone capture binary found. Install `pulseaudio-utils` (parec) or `alsa-utils` (arecord)."
+        "No microphone capture binary found (`pw-record`, `parec`, or `arecord`)."
     )

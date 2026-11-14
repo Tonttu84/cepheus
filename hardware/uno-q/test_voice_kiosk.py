@@ -144,6 +144,9 @@ class BluetoothAndSimultaneousVoiceCameraTests(unittest.TestCase):
 
         with (
             mock.patch.object(bluetooth_audio.shutil, "which", side_effect=fake_which),
+            mock.patch.object(
+                bluetooth_audio, "_find_piper_binary_and_model", return_value=(None, None)
+            ),
             mock.patch.object(bluetooth_audio, "_pipe_tts_to_player", return_value=True) as mock_pipe,
         ):
             ok = bluetooth_audio.speak_text_routed("How is your mood?", route=route)
@@ -152,6 +155,54 @@ class BluetoothAndSimultaneousVoiceCameraTests(unittest.TestCase):
         tts_cmd, player_cmd, _ = mock_pipe.call_args[0]
         self.assertEqual(tts_cmd[:3], ["/usr/bin/espeak-ng", "-s", "155"])
         self.assertIn("--device=bluez_output.11_22_33_44_55_66.1", player_cmd)
+
+    def test_native_pipewire_pw_dump_and_raw_pw_record(self) -> None:
+        pw_json = json.dumps(
+            [
+                {
+                    "id": 50,
+                    "info": {
+                        "props": {
+                            "media.class": "Audio/Source",
+                            "node.name": "alsa_input.usb-Web_Camera.analog-stereo",
+                        }
+                    },
+                },
+                {
+                    "id": 77,
+                    "info": {
+                        "props": {
+                            "media.class": "Audio/Sink",
+                            "node.name": "bluez_output.AA_BB_CC.1",
+                            "node.description": "Bose QC",
+                        }
+                    },
+                },
+            ]
+        )
+
+        def fake_which(cmd: str) -> str | None:
+            return f"/usr/bin/{cmd}" if cmd in ("pw-dump", "pw-play", "pw-record", "wpctl") else None
+
+        def fake_run_cmd(args: list[str], timeout: float = 3.0) -> str:
+            return pw_json if args == ["pw-dump"] else ""
+
+        with (
+            mock.patch.object(bluetooth_audio.shutil, "which", side_effect=fake_which),
+            mock.patch.object(bluetooth_audio, "_run_cmd", side_effect=fake_run_cmd),
+        ):
+            route = bluetooth_audio.detect_audio_route()
+            with mock.patch.object(bluetooth_audio.subprocess, "Popen") as mock_popen:
+                bluetooth_audio.open_mic_pcm_stream(route=route, sample_rate=16000)
+
+        self.assertTrue(route.bt_connected)
+        self.assertEqual(route.bt_device_name, "Bose QC")
+        self.assertEqual(route.output_backend, "pipewire")
+        self.assertEqual(route.output_sink, "bluez_output.AA_BB_CC.1")
+        self.assertEqual(route.input_source, "alsa_input.usb-Web_Camera.analog-stereo")
+        rec_cmd = mock_popen.call_args[0][0]
+        self.assertIn("--raw", rec_cmd)
+        self.assertIn("--target=alsa_input.usb-Web_Camera.analog-stereo", rec_cmd)
 
     def test_streams_voice_answer_without_keyboard_and_ignores_unk_noise(self) -> None:
         fake_vosk_mod = types.ModuleType("vosk")

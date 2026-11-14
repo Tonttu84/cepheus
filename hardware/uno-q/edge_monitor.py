@@ -17,8 +17,10 @@ import argparse
 import dataclasses
 import datetime as dt
 import gc
+import glob
 import math
 import os
+import re
 import secrets
 import threading
 import time
@@ -94,6 +96,27 @@ def cpu_supports_mediapipe() -> bool:
             return "atomics" in fh.read()
     except OSError:
         return True
+
+
+def detect_default_camera_index() -> int:
+    """Picks explicit CAMERA_INDEX or first UVC camera (skipping Qualcomm Venus codecs)."""
+    raw_env = os.environ.get("CAMERA_INDEX", "").strip()
+    if raw_env:
+        return int(raw_env)
+
+    skip_tokens = ("venus", "codec", "decoder", "encoder", "isp")
+    for name_file in sorted(glob.glob("/sys/class/video4linux/video*/name")):
+        match = re.search(r"video(\d+)/name$", name_file)
+        if not match:
+            continue
+        try:
+            with open(name_file, encoding="utf-8") as fh:
+                label = fh.read().strip().lower()
+        except OSError:
+            continue
+        if label and not any(tok in label for tok in skip_tokens):
+            return int(match.group(1))
+    return 0
 
 
 def _load_haar_cascade(filename: str) -> Any | None:
@@ -546,7 +569,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model_path = os.environ.get("MEDIAPIPE_FACE_MODEL", "face_landmarker.task")
-    cam_idx = int(os.environ.get("CAMERA_INDEX", "0"))
+    cam_idx = detect_default_camera_index()
     summary = run_edge_window(
         duration_sec=args.duration,
         camera_index=cam_idx,

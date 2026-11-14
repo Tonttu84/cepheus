@@ -40,7 +40,12 @@ from bluetooth_audio import (
     speak_text_routed,
     wait_for_bluetooth_headphones,
 )
-from edge_monitor import ConcurrentEdgeCamera, EdgeWindowConfig, post_derived_metrics
+from edge_monitor import (
+    ConcurrentEdgeCamera,
+    EdgeWindowConfig,
+    detect_default_camera_index,
+    post_derived_metrics,
+)
 
 CRISIS_SPOKEN_MESSAGE = (
     "If you need someone right now: call emergency 112, "
@@ -400,7 +405,7 @@ def _start_simultaneous_camera() -> ConcurrentEdgeCamera | None:
     cfg = EdgeWindowConfig(
         duration_sec=float(os.environ.get("CAMERA_MAX_DURATION_SEC", "180")),
         min_duration_sec=1.5,
-        camera_index=int(os.environ.get("CAMERA_INDEX", "0")),
+        camera_index=detect_default_camera_index(),
         face_landmarker_model=os.environ.get("MEDIAPIPE_FACE_MODEL", "face_landmarker.task"),
         width=int(os.environ.get("CAMERA_WIDTH", "640")),
         height=int(os.environ.get("CAMERA_HEIGHT", "480")),
