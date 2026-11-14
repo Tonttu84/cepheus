@@ -65,6 +65,55 @@ describe("isOpen and collectOpen", () => {
     const [row] = parseRequests(doc);
     expect(rowKey({ ...row, status: "waiting" })).toBe(rowKey(row));
   });
+
+  it("gives no open row when done in the first document and open in the second", () => {
+    const doneDoc = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 14 Nov 2026 | the project owner | the team | Approve trail 28. | done |",
+    ].join("\n");
+    const openDoc = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 14 Nov 2026 | the project owner | the team | Approve trail 28. | open |",
+    ].join("\n");
+
+    expect(collectOpen([doneDoc, openDoc])).toEqual([]);
+  });
+
+  it("stays open when open in the first document and done in the second, since the first decides", () => {
+    const openDoc = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 14 Nov 2026 | the project owner | the team | Approve trail 28. | open |",
+    ].join("\n");
+    const doneDoc = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 14 Nov 2026 | the project owner | the team | Approve trail 28. | done |",
+    ].join("\n");
+
+    const open = collectOpen([openDoc, doneDoc]);
+    expect(open).toHaveLength(1);
+    expect(open[0]?.request).toBe("Approve trail 28.");
+    expect(open[0]?.status).toBe("open");
+  });
+
+  it("returns an open request found only in the second document", () => {
+    const firstDoc = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 14 Nov 2026 | the project owner | the team | Approve trail 28. | done |",
+    ].join("\n");
+    const secondDoc = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 15 Nov 2026 | a teammate | the team | Bring a charger. | open |",
+    ].join("\n");
+
+    const open = collectOpen([firstDoc, secondDoc]);
+    expect(open.map((row) => row.request)).toEqual(["Bring a charger."]);
+  });
 });
 
 describe("seen file", () => {

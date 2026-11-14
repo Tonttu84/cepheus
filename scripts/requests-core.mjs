@@ -61,10 +61,11 @@ export function collectOpen(documents) {
   const byKey = new Map();
   for (const doc of documents) {
     for (const row of parseRequests(doc)) {
-      if (isOpen(row) && !byKey.has(rowKey(row))) byKey.set(rowKey(row), row);
+      const key = rowKey(row);
+      if (!byKey.has(key)) byKey.set(key, row);
     }
   }
-  return [...byKey.values()];
+  return [...byKey.values()].filter(isOpen);
 }
 
 /**
