@@ -14,3 +14,4 @@ export {
   INVALID_BODY,
   type FailureContext,
 } from "./respond";
+export { listClinicFlags, type ClinicFlagView } from "./clinic-flags";
