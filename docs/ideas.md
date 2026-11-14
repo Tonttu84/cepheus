@@ -1,88 +1,104 @@
 # Two ideas for the team: approve, disapprove or comment
 
-Status 14 Nov 2026. Two ideas from the project owner, written up for the team and for
-the Aalto mentors. Neither is built.
+Status 14 Nov 2026. Two proposals from the project owner, written up for the team and
+for the Aalto mentors. Neither is built.
 
 ## What we ask of you
 
-For each idea, reply on this trail in Entire's web client with one of: **Approved**,
-**Disapproved**, or a **comment**. A reason in one line is enough.
+For each proposal, reply on this trail in Entire's web client with one of:
+**Approved**, **Disapproved**, or a **comment**. A reason in one line is enough.
 
-| Idea | Your answer |
+| Proposal | Your answer |
 |---|---|
-| 1. A small reward for answering, and perhaps for one small activity | Approved / Disapproved / comment |
+| 1. A small reward for answering, and a rewarded walk on other days | Approved / Disapproved / comment |
 | 2. Adjusting for other conditions | Approved / Disapproved / comment |
 
 What happens with your answers:
 
 - Nothing is built and `plan.md` does not change until the team has answered.
-- An idea the team approves is put to the Aalto mentors with the questions below, and
-  is then written into `plan.md` as a proposal with a row in `decisions.md`.
-- An idea that anyone disapproves of stays out of the plan until the objection has been
-  talked through. The objection is recorded in this file.
+- A proposal the team approves is put to the Aalto mentors with the questions below,
+  and is then written into `plan.md` with a row in `decisions.md`.
+- A proposal that anyone disapproves of stays out of the plan until the objection has
+  been talked through. The objection is recorded in this file.
 - The owner decides after reading the answers.
 
-Each idea below is in two parts, kept apart on purpose: what the owner proposed, and
-how it could be done. The second part was worked out while writing this up and is not
-the owner's decision. Disagree with either part separately if you wish.
+Each proposal started as the owner's idea. The details were worked out while writing it
+up, and the owner has taken them on, so each is now one shaped proposal. You can still
+approve the idea and object to a detail.
 
 A third idea, asking for something effortful and reading the effort as a signal, was
 considered and dropped by the owner. Anything asked of an unwell person should cost
 almost no effort (`AGENTS.md`), and our research found the effort deficit in depression
 to be small (`research/2-mental-measures.md`).
 
-## 1. A small reward for answering
+## 1. A small reward for answering, and a rewarded walk on other days
 
-### The owner's idea
+### The proposal
 
-- Each answered round earns a small amount, for example 1 euro of gift-card value. When
-  10 are collected the person gets a gift card of a kind they chose, such as food
-  delivery or a sports membership.
-- The reason: people get bored and stop answering, also when they are well. A reward
-  should keep them answering and so strengthen the signal. Two euros a week is little
-  against the cost of health care. The owner notes that paying patients is likely to be
-  frowned upon.
-- A hypothesis: being active in any small way may itself help a person who has become
-  passive, and a small reward might train a useful habit. The owner expects the benefit
-  to be marginal.
-- A second small reward for doing one suggested activity, such as a short walk, is
-  worth considering.
-- One condition: a person who has no energy for both must not end up skipping both.
-- The product makes no treatment claim. A hypothesis may be stated together with the
-  way to test it.
+**For answering.**
 
-### How it could be done (proposed in this write-up)
+- Each question round in which the person responds earns a small amount, for example
+  1 euro of gift-card value. When 10 are collected the person gets a gift card of a
+  kind they chose, such as food delivery or a sports membership.
+- The reward is for responding at all, including "Not today". Nobody is paid to report
+  a particular mood, the honest way out stays free, and only true silence goes unpaid.
+- The reward never depends on what the answers say.
 
-Why it should help the signal:
+**For a walk, on other days.**
 
-- The plan treats silence as a warning, so every well person who stops out of boredom
-  costs a nurse's call. Fewer of those make silence easier to read.
+- The questions come twice a week. On two other days of the week the app offers a short
+  walk, with its own small reward of the same size.
+- The two are independent. Answering earns its reward the moment the person responds,
+  whether or not they ever walk. The walk earns its reward whether or not they
+  answered. Neither is shown as unfinished because of the other.
+- This follows the owner's condition: a person who has no energy for both must not end
+  up skipping both.
+- Leaving the walk costs nothing and is not counted against the person.
+- We cannot see whether someone walked. The reward follows from the person's own tap
+  that they did it, so it is taken on trust.
+
+**For both.**
+
+- The count never resets and is never shown as a run of days or as progress to defend.
+- The clinic hands out the card. The app holds no payment details.
+
+### Why
+
+- People get bored and stop answering, also when they are well. The plan treats silence
+  as a warning, so every well person who stops costs a nurse's call. A reward should
+  keep them answering, which makes silence easier to read. Of the reward for answering
+  alone, the owner said that two euros a week is little against the cost of health
+  care, and that paying patients is likely to be frowned upon.
+- People feel less bound to a system than to a person who calls them. A small reward is
+  meant to make up some of that.
 - The answering rate our plan leans on already comes from paid study participants:
   `research/5-products-and-gap.md` calls about 80% "the paid-study ceiling, not
   real-world use".
+- A hypothesis: being active in any small way may itself help a person who has become
+  passive, and a small reward might train a useful habit. The owner expects the benefit
+  to be marginal. The product makes no treatment claim. A hypothesis may be stated
+  together with the way to test it: the system stores every answer next to what
+  happened afterwards (plan principle 6 and D11), so patients who were offered a reward
+  can later be compared with those who were not.
 
-Where it meets our own rules. `AGENTS.md` says no streaks, no scores, and that a missed
-answer is never punished. "Collect until you have 10" is a counter, and a missed round
-loses a euro. A form that keeps to the rules:
+### How it meets our own rules
 
-- The reward is for responding at all, including "Not today". Nobody is paid to report
-  a particular mood, the honest way out stays free, and only true silence goes unpaid.
-- The count never resets and is never shown as a run of days or as progress to defend.
-- The clinic hands out the card. The app holds no payment details.
-- The reward never depends on what the answers say.
+`AGENTS.md` says no streaks, no scores, and that a missed answer is never punished.
+"Collect until you have 10" is a counter, and a round with no response earns nothing.
+The proposal keeps to the rules by rewarding "Not today" as well, by never resetting
+the count, and by never showing it as a run to defend. Whether that is enough is for
+you to judge.
 
-The activity, kept apart from answering, to meet the owner's condition:
+The plan also says the questions come twice a week and no more, because frequent
+prompts wear people out (D9). The walk adds two more prompts a week. They are offers,
+not questions, and can be left at no cost, but it is four contacts a week where the
+plan has two.
 
-- Answering always comes first, stands alone, and earns its reward the moment the
-  person responds.
-- The activity is offered afterwards as a separate step with its own reward. Leaving it
-  costs nothing, is not counted against the person, and takes nothing away from the
-  reward for answering.
-- The check-in is never shown as unfinished because the activity was left.
-- We cannot see whether someone walked. The reward would follow from the person's own
-  tap that they did it, so it is taken on trust.
+### Which activity
 
-Which activity, from `research/3-state-shifters.md`:
+Which activity is open. The owner named a walk as worth considering, or another
+activity whose effect is better confirmed. The proposal is written with a walk; the
+table shows what `research/3-state-shifters.md` found for it and for the alternatives:
 
 | Activity | What that report found | Effort |
 |---|---|---|
@@ -91,12 +107,10 @@ Which activity, from `research/3-state-shifters.md`:
 | Slow breathing | Improved positive affect over a month of daily practice; healthy volunteers only | Low |
 | Bright light, single session | Mood improved after a first session; depressed people, mostly with seasonal depression | None |
 
-The hypothesis and how to test it. The system stores every answer next to what happened
-afterwards (plan principle 6 and D11), so patients who were offered a reward can later
-be compared with those who were not. That is a research path, not a claim.
+### Cost
 
-Cost. About 100 euros a year for each patient for the answering reward alone. This is
-our own arithmetic, not a study.
+Up to 4 euros a week for each patient, so about 200 euros a year if every reward is
+earned. This is our own arithmetic, not a study.
 
 ### Risks
 
@@ -105,48 +119,47 @@ our own arithmetic, not a study.
   the health service. Not checked for Finland.
 - A reward could change what silence means in ways we have not foreseen. The rule's
   thresholds would need checking again once it is in use.
-- Rewarding an activity is closer to treatment than rewarding an answer.
+- Rewarding a walk is closer to treatment than rewarding an answer.
+- Four contacts a week may tire people where two did not.
 
 ### Questions for the mentors
 
 1. Would a clinic be allowed, and willing, to give patients a small reward for
    answering?
-2. Is a second small reward for one activity worth testing, and which activity would
-   you choose for people after TMS: a short walk, or something that costs less effort?
+2. Is a rewarded walk on other days worth testing, and is a walk the right activity for
+   people after TMS, or something that costs less effort?
 3. How would you test the hypothesis that a small reward for being active helps, and
    what would count as a result?
 
 ## 2. Adjusting for other conditions
 
-### The owner's idea
+### The proposal
 
-- Many people with serious mental conditions have other mental or physical conditions
-  as well, and these may get in the way of detecting depression.
-- For patients with several conditions it may make sense to expand the questions.
-- A pilot could cover a single other condition.
-
-### How it could be done (proposed in this write-up)
-
-A weakness in the rule as it stands. The warning rule (`questions.md`, on another open
-trail) warns when a complete PHQ-9 totals 10 or more. Three of its nine questions are
-about sleep, energy and appetite. Our reasoning, not checked against a source: long-term
-pain, poor sleep or a physical illness can raise those answers too, so a person with
-such a condition may score above 10 all the time while their depression is unchanged.
-That person would raise a warning every two weeks, and the nurse would learn to ignore
-it.
-
-Two steps, the first one small:
+Many people with serious mental conditions have other mental or physical conditions as
+well, and these may get in the way of detecting depression. Two steps, the first one
+small:
 
 1. **A personal threshold, set by the clinic.** For a patient whose usual PHQ-9 is high
    for a known reason, the clinic marks this at enrolment. For that patient the rule
    warns on a rise from their own baseline, not on the fixed total of 10. This needs no
    new question and a small, tested change to the rule, whose thresholds already sit in
    one versioned configuration.
-2. **One further questionnaire, only for patients who have that condition.** The clinic
-   switches it on for a patient. Nobody else is asked anything more, so the owner's
-   earlier rule of asking no extra question holds for everyone else. The questionnaires
-   are already stored as data, so a second one is a data file and a switch for each
-   patient.
+2. **One further questionnaire, only for patients who have that condition.** As a
+   pilot, with a single other condition. The clinic switches it on for a patient.
+   Nobody else is asked anything more, so the owner's earlier rule of asking no extra
+   question holds for everyone else. The questionnaires are already stored as data, so
+   a second one is a data file and a switch for each patient.
+
+### Why
+
+The baseline is taken straight after the course, when the clinic judges that the
+treatment has worked (`questions.md`, on another open trail). For most patients that
+gives a baseline below 10. The warning rule then warns when a complete PHQ-9 totals 10
+or more. Three of its nine questions are about sleep, energy and appetite. Our
+reasoning, not checked against a source: long-term pain, poor sleep or a physical
+illness can raise those answers too, so a person with such a condition may score above
+10 even straight after a successful course. That person would raise a warning every two
+weeks, and the nurse would learn to ignore it.
 
 Which condition to pilot is open. Anxiety is one candidate. Not checked, and to be
 confirmed before anything is built: how common it is beside depression in people
@@ -170,10 +183,11 @@ free to use, comes from the same source as the PHQ-9 and has the same answer opt
 
 ## A first literature check, not verified
 
-An automated search was run on both ideas on 14 Nov 2026. It returned search summaries
-only: no paper was read, most study sizes are missing, and an earlier search of the
-same kind contained an error. Nothing below may be used in the product or the pitch
-until someone has read the sources. It is listed so that the right questions get asked.
+An automated search was run on both proposals on 14 Nov 2026. It returned search
+summaries only: no paper was read, most study sizes are missing, and an earlier search
+of the same kind contained an error. Nothing below may be used in the product or the
+pitch until someone has read the sources. It is listed so that the right questions get
+asked.
 
 - Paid studies of repeated phone questionnaires are reported to reach higher answering
   rates than unpaid ones.
