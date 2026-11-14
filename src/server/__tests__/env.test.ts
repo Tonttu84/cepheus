@@ -285,4 +285,66 @@ describe("Environment Check (src/server/env.ts)", () => {
     expect(parseEnv({ DATABASE_URL: url, STORE_ITEM_ANSWERS: "yes" }).STORE_ITEM_ANSWERS).toBe(false);
     expect(parseEnv({ DATABASE_URL: url, STORE_ITEM_ANSWERS: " TRUE " }).STORE_ITEM_ANSWERS).toBe(true);
   });
+
+  describe("STAFF_TOTP_SECRET validation", () => {
+    const baseDev = {
+      NODE_ENV: "development",
+      DATABASE_URL:
+        "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus",
+    };
+
+    it("accepts empty or unset STAFF_TOTP_SECRET", () => {
+      const parsedWithout = parseEnv({
+        ...baseDev,
+      });
+      expect(parsedWithout.STAFF_TOTP_SECRET).toBe("");
+
+      const parsedEmpty = parseEnv({
+        ...baseDev,
+        STAFF_TOTP_SECRET: "   ",
+      });
+      expect(parsedEmpty.STAFF_TOTP_SECRET).toBe("");
+    });
+
+    it("accepts valid Base32 secret decoding to at least 16 bytes", () => {
+      // 20-byte valid Base32 secret
+      const validSecret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+      const parsed = parseEnv({
+        ...baseDev,
+        STAFF_TOTP_SECRET: validSecret,
+      });
+      expect(parsed.STAFF_TOTP_SECRET).toBe(validSecret);
+    });
+
+    it("fails when STAFF_TOTP_SECRET contains invalid Base32 characters without leaking the secret", () => {
+      const secretWithInvalidChars = "INVALID-89-BASE32-SECRET-NOT-ALLOWED!";
+      try {
+        parseEnv({
+          ...baseDev,
+          STAFF_TOTP_SECRET: secretWithInvalidChars,
+        });
+        expect.fail("Expected invalid Base32 secret to throw");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        expect(msg).toContain("STAFF_TOTP_SECRET");
+        expect(msg).not.toContain(secretWithInvalidChars);
+      }
+    });
+
+    it("fails when STAFF_TOTP_SECRET decodes to fewer than 16 bytes", () => {
+      // "JBSWY3DPEHPK3PXP" is valid Base32 but only 10 bytes (< 16)
+      const shortSecret = "JBSWY3DPEHPK3PXP";
+      try {
+        parseEnv({
+          ...baseDev,
+          STAFF_TOTP_SECRET: shortSecret,
+        });
+        expect.fail("Expected short Base32 secret to throw");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        expect(msg).toContain("STAFF_TOTP_SECRET");
+        expect(msg).not.toContain(shortSecret);
+      }
+    });
+  });
 });

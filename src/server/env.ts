@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidBase32Secret } from "@/server/auth/totp";
 
 /**
  * Documented local-only passwords for embedded PostgreSQL development.
@@ -11,6 +12,7 @@ export interface AppEnv {
   NODE_ENV: string;
   DATABASE_URL: string;
   APP_SESSION_SECRET: string;
+  STAFF_TOTP_SECRET: string;
   FITBIT_CLIENT_ID: string;
   FITBIT_CLIENT_SECRET: string;
   FITBIT_REDIRECT_URI: string;
@@ -185,6 +187,7 @@ const rawEnvSchema = z
       .string({ error: "Missing required environment variable: DATABASE_URL" })
       .min(1, "Environment variable DATABASE_URL cannot be empty"),
     APP_SESSION_SECRET: optionalTrimmedString,
+    STAFF_TOTP_SECRET: optionalTrimmedString,
     FITBIT_CLIENT_ID: optionalTrimmedString,
     FITBIT_CLIENT_SECRET: optionalTrimmedString,
     FITBIT_REDIRECT_URI: optionalTrimmedString,
@@ -206,6 +209,16 @@ const rawEnvSchema = z
     validateDatabaseUrl(val.DATABASE_URL, isProduction, isBuildPhase, ctx);
     validateOptionalHttpUrl(val.FITBIT_REDIRECT_URI, "FITBIT_REDIRECT_URI", ctx);
     validateOptionalHttpUrl(val.VERDA_INFERENCE_URL, "VERDA_INFERENCE_URL", ctx);
+    if (
+      val.STAFF_TOTP_SECRET.length > 0 &&
+      !isValidBase32Secret(val.STAFF_TOTP_SECRET, 16)
+    ) {
+      addCustomIssue(
+        ctx,
+        "STAFF_TOTP_SECRET",
+        "Invalid environment variable: STAFF_TOTP_SECRET (must be valid base32 decoding to at least 16 bytes)"
+      );
+    }
     if (isProduction && !isBuildPhase) {
       validateProductionSecrets(val, ctx);
     }
@@ -246,6 +259,7 @@ export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
     NODE_ENV: result.data.NODE_ENV,
     DATABASE_URL: result.data.DATABASE_URL,
     APP_SESSION_SECRET: result.data.APP_SESSION_SECRET,
+    STAFF_TOTP_SECRET: result.data.STAFF_TOTP_SECRET,
     FITBIT_CLIENT_ID: result.data.FITBIT_CLIENT_ID,
     FITBIT_CLIENT_SECRET: result.data.FITBIT_CLIENT_SECRET,
     FITBIT_REDIRECT_URI: result.data.FITBIT_REDIRECT_URI,

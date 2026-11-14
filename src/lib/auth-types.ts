@@ -98,14 +98,14 @@ export const SimulatedPatientPresetKeySchema = z.enum([
 
 export const PatientSignInRequestSchema = z.object({
   mode: z.literal("patient_eid"),
-  participantCode: SimulatedPatientPresetKeySchema,
+  participantCode: z.string().trim().min(1).max(64),
 });
 
 export const StaffSignInRequestSchema = z.object({
   mode: z.literal("staff"),
-  email: z.string().trim().email(),
-  password: z.string().min(1),
-  totpCode: z.string().trim().regex(/^\d{6}$/),
+  email: z.string().trim().max(254).email(),
+  password: z.string().min(1).max(256),
+  totpCode: z.string().trim().max(6).regex(/^\d{6}$/),
 });
 
 export const SignInRequestSchema = z.discriminatedUnion("mode", [

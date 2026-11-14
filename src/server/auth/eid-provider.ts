@@ -7,13 +7,18 @@ import {
 
 export interface StrongEidProvider {
   authenticateSimulatedPreset(
-    participantCode: SimulatedPatientPresetKey
+    participantCode: string
   ): Promise<PatientAuthSession | null>;
 }
 
 const DEFAULT_SIMULATED_CLINIC_ID = "sim-clinic-01";
 
-async function resolveParticipantIds(
+export type ParticipantIdResolver = (
+  participantCode: SimulatedPatientPresetKey,
+  fallbackPatientId: string
+) => Promise<{ patientId: string; clinicId: string }>;
+
+async function defaultResolveParticipantIds(
   participantCode: SimulatedPatientPresetKey,
   fallbackPatientId: string
 ): Promise<{ patientId: string; clinicId: string }> {
@@ -38,9 +43,18 @@ async function resolveParticipantIds(
   };
 }
 
+let activeParticipantIdResolver: ParticipantIdResolver =
+  defaultResolveParticipantIds;
+
+export function _setParticipantIdResolver(
+  resolver: ParticipantIdResolver | null
+): void {
+  activeParticipantIdResolver = resolver ?? defaultResolveParticipantIds;
+}
+
 export class SimulatedFinnishEidProvider implements StrongEidProvider {
   async authenticateSimulatedPreset(
-    participantCode: SimulatedPatientPresetKey
+    participantCode: string
   ): Promise<PatientAuthSession | null> {
     const preset = SIMULATED_PATIENT_PRESETS.find(
       (item) => item.participantCode === participantCode
@@ -49,7 +63,7 @@ export class SimulatedFinnishEidProvider implements StrongEidProvider {
       return null;
     }
 
-    const { patientId, clinicId } = await resolveParticipantIds(
+    const { patientId, clinicId } = await activeParticipantIdResolver(
       preset.participantCode,
       preset.externalId
     );

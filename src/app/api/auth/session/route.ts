@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getEnv } from "@/server/env";
-import { readSessionFromRequest } from "@/server/auth";
+import { getStaffSecondFactorKind, readSessionFromRequest } from "@/server/auth";
 
 export async function GET(request: Request): Promise<NextResponse> {
   const session = readSessionFromRequest(request);
@@ -9,6 +9,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       ok: true,
       session,
       demoMode: getEnv().NODE_ENV !== "production",
+      secondFactor: getStaffSecondFactorKind(),
     },
     { headers: { "Cache-Control": "no-store" } }
   );

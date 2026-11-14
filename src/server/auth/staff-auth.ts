@@ -4,12 +4,20 @@ import {
   type StaffAuthSession,
 } from "@/lib/auth-types";
 import { getEnv } from "@/server/env";
+import { verifyTotp } from "@/server/auth/totp";
 import { timingSafeEqualString } from "@/server/security/crypto";
 
 export interface StaffCredentialsInput {
   email: string;
   password: string;
   totpCode: string;
+}
+
+export type StaffSecondFactorKind = "time_based" | "fixed_demo";
+
+export function getStaffSecondFactorKind(): StaffSecondFactorKind {
+  const secret = getEnv().STAFF_TOTP_SECRET;
+  return secret && secret.length > 0 ? "time_based" : "fixed_demo";
 }
 
 export type StaffAuthResult =
@@ -25,31 +33,50 @@ export type StaffAuthResult =
     };
 
 const DEFAULT_SIMULATED_CLINIC_ID = "sim-clinic-01";
+// Demonstration defaults for simulated staff.
 const LOCAL_DEMO_PASSPHRASE = "cepheus-local-only";
+// Demonstration defaults for simulated staff.
 const LOCAL_DEMO_TOTP_CODE = "123456";
 
 function resolveConfiguredSecrets(): {
   passphrase: string;
-  totpCode: string;
+  totpKind: StaffSecondFactorKind;
+  totpSecret?: string;
+  demoTotpCode?: string;
 } | null {
-  const isProduction = getEnv().NODE_ENV === "production";
+  const env = getEnv();
+  const isProduction = env.NODE_ENV === "production";
   const envPassphrase = process.env.STAFF_DEMO_PASSPHRASE?.trim() ?? "";
-  const envTotp = process.env.STAFF_DEMO_TOTP_CODE?.trim() ?? "";
+  const passphrase = isProduction
+    ? envPassphrase
+    : envPassphrase || LOCAL_DEMO_PASSPHRASE;
 
-  if (isProduction) {
-    if (!envPassphrase || !envTotp) {
-      return null;
-    }
-    return { passphrase: envPassphrase, totpCode: envTotp };
+  if (!passphrase) {
+    return null;
   }
 
+  if (env.STAFF_TOTP_SECRET && env.STAFF_TOTP_SECRET.length > 0) {
+    return {
+      passphrase,
+      totpKind: "time_based",
+      totpSecret: env.STAFF_TOTP_SECRET,
+    };
+  }
+
+  const envTotp = process.env.STAFF_DEMO_TOTP_CODE?.trim();
   return {
-    passphrase: envPassphrase || LOCAL_DEMO_PASSPHRASE,
-    totpCode: envTotp || LOCAL_DEMO_TOTP_CODE,
+    passphrase,
+    totpKind: "fixed_demo",
+    demoTotpCode: envTotp || LOCAL_DEMO_TOTP_CODE,
   };
 }
 
-async function resolveStaffIds(
+export type StaffIdResolver = (
+  email: string,
+  fallbackStaffId: string
+) => Promise<{ staffId: string; clinicId: string }>;
+
+async function defaultResolveStaffIds(
   email: string,
   fallbackStaffId: string
 ): Promise<{ staffId: string; clinicId: string }> {
@@ -79,6 +106,12 @@ async function resolveStaffIds(
   };
 }
 
+let activeStaffIdResolver: StaffIdResolver = defaultResolveStaffIds;
+
+export function _setStaffIdResolver(resolver: StaffIdResolver | null): void {
+  activeStaffIdResolver = resolver ?? defaultResolveStaffIds;
+}
+
 export async function authenticateStaffCredentials(
   input: StaffCredentialsInput
 ): Promise<StaffAuthResult> {
@@ -97,7 +130,12 @@ export async function authenticateStaffCredentials(
     (item) => item.email === normalizedEmail
   );
 
-  if (!preset || !timingSafeEqualString(input.password, secrets.passphrase)) {
+  const passwordMatches = timingSafeEqualString(
+    input.password,
+    secrets.passphrase
+  );
+
+  if (!preset || !passwordMatches) {
     return {
       ok: false,
       status: 401,
@@ -107,19 +145,38 @@ export async function authenticateStaffCredentials(
   }
 
   const trimmedTotp = input.totpCode.trim();
-  if (
-    !/^\d{6}$/.test(trimmedTotp) ||
-    !timingSafeEqualString(trimmedTotp, secrets.totpCode)
-  ) {
-    return {
-      ok: false,
-      status: 401,
-      code: "invalid_second_factor",
-      message: "Invalid 6-digit verification code.",
-    };
+
+  if (secrets.totpKind === "time_based" && secrets.totpSecret) {
+    const verifyResult = verifyTotp({
+      secret: secrets.totpSecret,
+      code: trimmedTotp,
+      accountKey: preset.email,
+    });
+
+    if (!verifyResult.ok) {
+      return {
+        ok: false,
+        status: 401,
+        code: "invalid_second_factor",
+        message: "Invalid 6-digit verification code.",
+      };
+    }
+  } else {
+    const expectedCode = secrets.demoTotpCode ?? LOCAL_DEMO_TOTP_CODE;
+    if (
+      !/^\d{6}$/.test(trimmedTotp) ||
+      !timingSafeEqualString(trimmedTotp, expectedCode)
+    ) {
+      return {
+        ok: false,
+        status: 401,
+        code: "invalid_second_factor",
+        message: "Invalid 6-digit verification code.",
+      };
+    }
   }
 
-  const { staffId, clinicId } = await resolveStaffIds(
+  const { staffId, clinicId } = await activeStaffIdResolver(
     preset.email,
     preset.fallbackStaffId
   );
