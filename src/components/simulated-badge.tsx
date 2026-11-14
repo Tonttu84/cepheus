@@ -4,7 +4,7 @@ export interface SimulatedBadgeProps {
 }
 
 export function SimulatedBadge({
-  subtitle = "8-week post-TMS synthetic trajectory",
+  subtitle = "8-week post-TMS simulation",
   className = "",
 }: SimulatedBadgeProps) {
   return (

@@ -4,9 +4,9 @@ import { CrisisHelpBar } from "@/components/crisis-help-bar";
 import { SiteNav } from "@/components/site-nav";
 
 export const metadata: Metadata = {
-  title: "Cepheus — Beyond the Clinic",
+  title: "Cepheus · Beyond the Clinic",
   description:
-    "Post-TMS home wellbeing check-in companion supporting patient self-care and clinic follow-up.",
+    "Home wellbeing check-ins and clinic follow-up for the months after TMS treatment.",
 };
 
 export default function RootLayout({
@@ -25,12 +25,12 @@ export default function RootLayout({
         <footer className="border-t border-border-hairline bg-surface-card/80 py-8 text-xs text-ink-secondary backdrop-blur-xs">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p>
-              Wellbeing check-in prototype for post-TMS follow-up. Not a
-              diagnostic or medical device; makes no treatment or
-              relapse-prediction claims.
+              Home wellbeing check-in prototype for post-TMS follow-up. Not a
+              medical or diagnostic device. Does not diagnose, treat, or predict
+              relapse.
             </p>
             <p className="text-ink-muted">
-              Camera &amp; microphone inputs stay on-device; only derived
+              Camera and microphone inputs stay on your device. Only summary
               numbers are stored.
             </p>
           </div>

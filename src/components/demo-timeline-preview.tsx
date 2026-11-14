@@ -80,11 +80,11 @@ export function DemoTimelinePreview({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="font-display text-xl font-semibold tracking-tight text-ink-primary sm:text-2xl">
-            8-Week Post-TMS Demo Trajectory
+            Eight weeks after TMS: three moments
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-secondary">
-            Switch between three moments to see how the same dataset supports
-            low-effort patient steps and broad-area clinic follow-up.
+            Pick a week below to see what the patient sees on their phone and
+            what the clinic nurse sees on theirs.
           </p>
         </div>
         <SimulatedBadge
@@ -171,13 +171,13 @@ export function DemoTimelinePreview({
             <p className="mt-1 text-sm text-ink-secondary">{active.subtitle}</p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border-tactile bg-surface-card px-3 py-1 text-xs font-medium text-ink-secondary">
-            Active loop:{" "}
+            What happens:{" "}
             <strong className="font-semibold text-ink-primary">
               {active.recipient === "none"
-                ? "Quiet baseline (no alert)"
+                ? "Quiet week (nothing sent)"
                 : active.recipient === "patient"
-                  ? "Patient one-button step"
-                  : "Clinic nurse outreach"}
+                  ? "One small step for the patient"
+                  : "Flag for a nurse phone call"}
             </strong>
           </span>
         </div>

@@ -29,20 +29,20 @@ export default function ClinicPage() {
       {/* Header */}
       <section className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <SimulatedBadge subtitle="Day 56 · Week 8 clinic outer-loop view" />
+          <SimulatedBadge subtitle="Day 56 · Week 8 clinic follow-up view" />
           <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
             TMS Care Team Overview
           </span>
         </div>
 
         <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-ink-primary sm:text-3xl">
-          TMS outer-loop clinic overview
+          Post-TMS clinic follow-up
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-ink-secondary">
-          Supporting the clinic&apos;s judgment on when to check in with a
-          post-TMS participant. Flags name only the broad life area(s) and since
-          when — never raw sensor traces, transactions, or automated diagnostic
-          claims.
+          Helps the care team see when a post-TMS patient may benefit from a
+          phone call. A flag names only the broad areas of daily life that
+          shifted and when the change started, without raw sensor numbers or
+          automated diagnoses.
         </p>
       </section>
 
@@ -66,13 +66,12 @@ export default function ClinicPage() {
       <section className="rounded-2xl border border-border-hairline bg-surface-muted/70 p-7 text-xs leading-relaxed text-ink-secondary sm:p-10">
         <p>
           <strong className="font-semibold text-ink-primary">
-            Privacy &amp; clinical boundary:
+            Privacy and clinical boundary:
           </strong>{" "}
-          This view exposes only broad life areas (<code>check_in</code>,{" "}
-          <code>sleep</code>, <code>daily_routine</code>) and the date since
-          shift began. Detailed check-in notes or individual measurements are
-          shown only if the participant explicitly chooses to share them with
-          the clinic.
+          This page shows only broad areas of daily life (<code>check_in</code>,{" "}
+          <code>sleep</code>, <code>daily_routine</code>) and the date the shift
+          began. Individual check-in answers and daily measurements stay private
+          unless the patient chooses to share them with the clinic.
         </p>
       </section>
     </div>

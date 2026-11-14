@@ -18,7 +18,7 @@ export default function CameraPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="On-device MediaPipe summary numbers only" />
           <span className="rounded-full border border-accent-sage-border bg-accent-sage-soft px-3 py-1 text-xs font-medium text-accent-sage-hover">
-            100% In-Browser Processing · Zero Video Stored
+            Runs in your browser · No video saved
           </span>
         </div>
 
@@ -26,10 +26,10 @@ export default function CameraPage() {
           On-device camera wellbeing check
         </h1>
         <p className="mt-2.5 max-w-3xl text-sm leading-relaxed text-ink-secondary">
-          During an optional brief check-in, MediaPipe Face Landmarker runs
-          locally inside your browser on your device. Only two summary numbers
-          measuring movement of the face and head are saved — never video
-          recordings, never image frames, and never audio.
+          During an optional 20-second check-in, MediaPipe Face Landmarker runs
+          inside your browser on this device. Only two summary numbers measuring
+          movement of the face and head are saved. Video, images, and audio are
+          never recorded or stored.
         </p>
 
         <ForestCanopyArtwork className="mt-6 w-full text-accent-sage" />
@@ -90,13 +90,13 @@ export default function CameraPage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="font-display text-lg font-semibold text-ink-primary">
-                Example stored payload (derived numbers only)
+                Example saved record (summary numbers only)
               </h2>
               <p className="mt-0.5 text-xs text-ink-secondary">
                 Simulated reading from{" "}
                 <span className="tabular-nums">{latestCamera.date}</span> (Day{" "}
-                <span className="tabular-nums">{latestCamera.dayIndex}</span>) —
-                no image or video bytes exist in the database.
+                <span className="tabular-nums">{latestCamera.dayIndex}</span>).
+                No image or video bytes are stored in the database.
               </p>
             </div>
             <SimulatedBadge subtitle={`Day ${latestCamera.dayIndex} derived record`} />

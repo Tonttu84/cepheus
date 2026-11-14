@@ -170,8 +170,8 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
             ) : null}
           </div>
           <p className="mt-1 max-w-2xl text-sm text-ink-secondary">
-            If 4 taps feel like too much today, you can answer a single overall
-            check-in question or choose &ldquo;Not today&rdquo;.
+            If four questions feel like too much today, switch to a single
+            overall question or tap &ldquo;Not today&rdquo;.
           </p>
         </div>
 
@@ -207,11 +207,11 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
           className="mt-5 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
           <p className="font-semibold">
-            Recorded as missed — no score, no penalty.
+            Recorded as missed. No score and no penalty.
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
             Taking a day off from check-ins is completely fine. If you change
-            your mind later, you can tap any option below.
+            your mind later, you can still tap an option below.
           </p>
         </div>
       ) : null}
@@ -221,11 +221,11 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
           role="status"
           className="mt-5 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
-          <p className="font-semibold">Check-in noted — thank you.</p>
+          <p className="font-semibold">Check-in saved. Thank you.</p>
           <p className="mt-1 text-xs text-ink-secondary">
             {mode === "single_overall"
-              ? "Your single overall check-in is recorded for this simulated round."
-              : `All ${items.length} quick taps recorded for this simulated round.`}
+              ? "Your single answer is saved for this simulated round."
+              : `All ${items.length} answers are saved for this simulated round.`}
           </p>
         </div>
       ) : null}

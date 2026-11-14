@@ -21,21 +21,21 @@ export default function CheckInPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Twice-weekly check-in & fortnightly PHQ-9" />
           <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
-            Takes ~20 seconds · Zero effort when unwell
+            About 20 seconds · Skip whenever you need to
           </span>
         </div>
 
         <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-ink-primary sm:text-3xl">
-          Twice-weekly wellbeing check-in &amp; fortnightly PHQ-9
+          Twice-weekly wellbeing check-in
         </h1>
         <p className="mt-2.5 max-w-3xl text-sm leading-relaxed text-ink-secondary">
-          Designed for low effort after TMS treatment. You can answer four brief
-          1–5 tap questions twice a week, or tap{" "}
+          You can answer four quick 1 to 5 tap questions twice a week, or tap{" "}
           <strong className="font-semibold text-ink-primary">
             &ldquo;Not today&rdquo;
           </strong>{" "}
-          at any time. A skipped or missed check-in is recorded simply as a
-          missed round — never scored as zero and never punished.
+          whenever you want to rest. A skipped or unanswered check-in is simply
+          recorded as missed. It is never scored as zero and never held against
+          you.
         </p>
         <ForestCanopyArtwork className="mt-6 w-full text-accent-sage" />
       </section>
@@ -53,11 +53,11 @@ export default function CheckInPage() {
         className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
       >
         <h2 className="font-display text-lg font-semibold text-ink-primary">
-          What is recorded &amp; your consent controls
+          What gets saved and your consent choices
         </h2>
         <p className="mt-1 text-sm text-ink-secondary">
-          Every wellbeing check-in channel states in plain language what is
-          recorded and which broad life area it belongs to.
+          Each channel below explains in plain words what it saves and which
+          broad area of daily life it belongs to.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -93,23 +93,23 @@ export default function CheckInPage() {
         className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
       >
         <h2 className="font-display text-lg font-semibold text-ink-primary">
-          Fortnightly PHQ-9 &amp; Immediate Human Crisis Path
+          Fortnightly PHQ-9 and direct human support
         </h2>
         <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">
-          Every two weeks, the standard {PHQ9_ITEMS.length}-item PHQ-9
-          questionnaire checks in on sleep, energy, appetite, concentration, and
-          safety. Any response indicating thoughts of self-harm (Item 9) brings
-          up direct connection to a human and emergency services immediately —
+          Every two weeks, the standard {PHQ9_ITEMS.length}-question PHQ-9 asks
+          about sleep, energy, appetite, concentration, and safety. Any answer
+          above zero on question 9 (thoughts of hurting yourself) brings up
+          direct phone links to a real person and emergency help right away,
           with nothing automated in between.
         </p>
 
         <div className="mt-5 rounded-xl border border-amber-300/80 bg-amber-50/70 p-5">
           <p className="text-sm font-semibold text-ink-primary">
-            Direct human support is always available right now
+            Talk with a person right now
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
-            Whether or not you complete a check-in, you can reach a person
-            directly at any hour:
+            You do not need to finish or start a check-in to call any of these
+            numbers:
           </p>
           <div className="mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
             {CRISIS_RESOURCES.map((resource) => (

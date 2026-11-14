@@ -81,10 +81,10 @@ function buildMomentSummary(
 
   const checkInNote =
     meta.key === "well"
-      ? "Twice-weekly check-in and sleep regularity stay steady within personal post-TMS baseline."
+      ? "Twice-weekly check-ins and sleep timing stay close to this person's own first weeks after treatment."
       : meta.key === "small_dip"
-        ? "A mild one-round dip appears in Week 5 while check-ins remain answered."
-        : `${missedOrSkippedRounds.length} unanswered rounds in Week 8 while the smart ring remains actively worn.`;
+        ? "One heavier round shows up in Week 5 while check-ins continue as usual."
+        : `${missedOrSkippedRounds.length} unanswered rounds in Week 8 while the smart ring is still worn every day.`;
 
   const patientViewSummary =
     meta.key === "small_dip" && latestSuggestion
@@ -92,21 +92,21 @@ function buildMomentSummary(
           headline: "One small step for today",
           actionTitle: latestSuggestion.actionTitle,
           actionDetail: latestSuggestion.actionDetail,
-          note: "Shown on a mild dip — one low-effort action button, with zero graphs, scores, or streaks.",
+          note: "Shown on a mild dip: one optional button, with no graphs or scores.",
         }
       : meta.key === "well"
         ? {
-            headline: "Everything steady — nothing asked of you today",
+            headline: "Steady week, nothing extra asked today",
             actionTitle: null,
             actionDetail: null,
-            note: "When check-ins are steady, the app stays quiet and asks nothing extra.",
+            note: "When check-ins stay steady, the app stays quiet.",
           }
         : {
-            headline: "Gentle check-in & human outreach",
+            headline: "Human check-in from the clinic",
             actionTitle: "Your care team nurse can check in with you by phone",
             actionDetail:
-              "Missed rounds are never punished; direct crisis & clinic nurse lines stay one tap away.",
-            note: "After sustained drift and unanswered rounds, outreach shifts to a human nurse call.",
+              "Missed rounds are never penalised. Direct crisis and clinic nurse lines stay at the top of the screen.",
+            note: "After a longer drift and unanswered rounds, follow-up moves to a phone call from a nurse.",
           };
 
   const broadAreaLabels = safeFlag
@@ -125,7 +125,7 @@ function buildMomentSummary(
           "Request nurse call",
           "Offer 5-session booster cluster",
         ],
-        note: "Supporting the clinic's judgment on when to check in — naming broad life areas and since when, never raw sensor traces.",
+        note: "Gives the nurse the broad life areas that shifted and when the change started, without raw sensor numbers.",
       }
     : {
         hasOpenFlag: false,
@@ -135,8 +135,8 @@ function buildMomentSummary(
         recommendedActions: [],
         note:
           meta.key === "well"
-            ? "Baseline weeks establish personal reference ranges; no clinic flag is raised."
-            : "A single mild dip is handled gently on the patient side without raising a clinic alert.",
+            ? "The first weeks set the person's own baseline. No clinic flag is raised."
+            : "A single heavier round is handled quietly on the patient side without alerting the clinic.",
       };
 
   return {
@@ -209,27 +209,26 @@ export default async function HomePage() {
         />
 
         <div className="relative flex flex-wrap items-center justify-between gap-3">
-          <SimulatedBadge subtitle="8-week post-TMS synthetic trajectory (Days 1–56)" />
+          <SimulatedBadge subtitle="8 weeks after TMS (Days 1–56)" />
           <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
             Data source:{" "}
             <strong className="font-semibold text-ink-primary">
               {dbSeeded
                 ? "PostgreSQL seeded participant (sim-post-tms-01)"
-                : "In-memory deterministic simulation"}
+                : "In-memory simulation"}
             </strong>
           </span>
         </div>
 
         <h1 className="font-display relative mt-5 text-3xl font-semibold tracking-tight text-ink-primary sm:text-4xl">
-          Cepheus — Staying Well After TMS Treatment
+          Staying well at home after TMS
         </h1>
         <p className="relative mt-3 max-w-3xl text-sm leading-relaxed text-ink-secondary sm:text-base">
-          A calm home wellbeing check-in companion for the months after
-          Transcranial Magnetic Stimulation (TMS). Cepheus pairs a low-effort
-          twice-weekly check-in and passive smart-ring sleep rhythm with two
-          proportionate loops: a single small step for the patient on a mild
-          dip, and a broad-area flag supporting the clinic&apos;s judgment on
-          when to check in after sustained drift.
+          Finishing a course of Transcranial Magnetic Stimulation (TMS) often
+          leaves a gap between clinic visits. Cepheus uses a short twice-weekly
+          check-in and sleep timing from a smart ring to do two things: offer
+          one small step at home when a week feels heavier, and let the clinic
+          nurse know when a longer shift is worth a phone call.
         </p>
 
         <ForestCanopyArtwork className="mt-8 w-full text-accent-sage" />
@@ -245,7 +244,7 @@ export default async function HomePage() {
           </div>
           <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
             <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-              TMS Course Completed
+              TMS course finished
             </dt>
             <dd className="tabular-nums mt-1 text-sm font-semibold text-ink-primary">
               {tmsCompletedDate}
@@ -253,7 +252,7 @@ export default async function HomePage() {
           </div>
           <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
             <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-              Active Consented Channels
+              Consented channels
             </dt>
             <dd className="tabular-nums mt-1 text-sm font-semibold text-ink-primary">
               {activeConsentCount} channels
@@ -273,13 +272,13 @@ export default async function HomePage() {
         initialMoment="small_dip"
       />
 
-      {/* Workstream Entrypoint Cards (Workstreams 2–5) */}
-      <ForestDivider variant="grove" label="Core modules & views" />
+      {/* Views */}
+      <ForestDivider variant="grove" label="Pages in this prototype" />
 
       <section aria-label="Workstream modules" className="space-y-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-display text-xl font-semibold text-ink-primary">
-            Explore Workstreams
+            Explore each view
           </h2>
           <span className="text-xs text-ink-muted">
             All views use simulated data only
@@ -294,16 +293,17 @@ export default async function HomePage() {
           >
             <div>
               <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
-                Low-effort wellbeing check-in
+                Twice-weekly wellbeing check-in
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-                Four 1–5 tap questions twice a week, explicit &ldquo;Not
-                today&rdquo; skip, missed answers recorded as missed (never
-                punished), and an immediate human crisis path.
+                Four quick 1 to 5 tap questions twice a week, or a single tap on
+                &ldquo;Not today&rdquo; when you want to rest. Missed rounds are
+                simply noted as missed, and phone numbers for a real person stay
+                at the top of the page.
               </p>
             </div>
             <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
-              Open check-in flow <span aria-hidden="true">&rarr;</span>
+              Open check-in <span aria-hidden="true">&rarr;</span>
             </span>
           </Link>
 
@@ -314,12 +314,12 @@ export default async function HomePage() {
           >
             <div>
               <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
-                On-device camera wellbeing check
+                On-device camera check
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-                MediaPipe Face Landmarker runs locally in your browser to
-                compute derived facial expressivity and head movement numbers
-                only — never storing video or images.
+                MediaPipe Face Landmarker runs in your browser for 20 seconds
+                and keeps only two summary numbers for face and head movement.
+                No video or images are ever saved.
               </p>
             </div>
             <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
@@ -337,9 +337,9 @@ export default async function HomePage() {
                 Patient view: One small step for today
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-                Surfaces one low-effort suggestion (&ldquo;Take a 10-minute walk
-                outside&rdquo;) during a mild dip, with zero scores, zero
-                graphs, and zero risk labels.
+                Offers one simple idea (&ldquo;Take a 10-minute walk
+                outside&rdquo;) when a check-in dips below usual, without charts
+                or scores.
               </p>
             </div>
             <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
@@ -354,12 +354,12 @@ export default async function HomePage() {
           >
             <div>
               <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
-                Clinic view: Broad-area flag &amp; nurse outreach
+                Clinic view: Follow-up flag for the nurse
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-                Supports the clinic&apos;s judgment on when to check in by
-                showing broad life areas and since when, plus actions to request
-                a nurse call or offer a 5-session booster cluster.
+                Shows the care team which broad life areas shifted and when the
+                change started, with buttons to arrange a nurse call or a
+                5-session booster cluster.
               </p>
             </div>
             <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">

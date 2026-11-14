@@ -81,17 +81,16 @@ export function ClinicFlagCard({
       {/* Silence + Ring Active Signal */}
       <div className="mt-7 rounded-xl border border-amber-200/90 bg-amber-50/70 p-5">
         <p className="text-sm font-semibold text-amber-950">
-          Check-in silence with active wearable contact
+          Missed check-ins while the smart ring is still worn
         </p>
         <p className="mt-1.5 text-xs leading-relaxed text-amber-900/90">
-          Two consecutive lowered twice-weekly check-ins were followed by
-          unanswered rounds in Week 8 while the smart ring remained actively
-          worn (
+          After two lower check-ins, the Week 8 rounds went unanswered while the
+          smart ring continued to be worn each day (
           {ringActiveDuringSilence
-            ? "ring active during missed rounds"
-            : "ring inactive"}
-          ). Missed check-ins are treated as an outreach signal, never scored as
-          zero.
+            ? "ring worn during missed rounds"
+            : "ring not worn"}
+          ). Unanswered rounds are treated as a reason to check in by phone,
+          never scored as zero.
         </p>
       </div>
 

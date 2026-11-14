@@ -28,9 +28,9 @@ export default function PatientPage() {
           One small step for today
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-          When a recent check-in feels a little heavier than usual, Cepheus
-          offers one simple, low-effort option for today. You can try it now or
-          leave it for later — whatever feels manageable.
+          Your last check-in looked a bit heavier than usual. Here is one small
+          thing to try today, if you feel up for it. If not, leave it for
+          another day and rest.
         </p>
         <ForestCanopyArtwork className="mt-6 w-full text-accent-sage" />
       </section>
@@ -48,9 +48,10 @@ export default function PatientPage() {
       {/* Reassurance note */}
       <section className="rounded-2xl border border-border-hairline bg-surface-muted/70 p-4.5 text-xs leading-relaxed text-ink-secondary">
         <p>
-          You can always skip a suggestion or a check-in without penalty. If
-          you ever want to talk with someone directly, the TMS clinic nurse line
-          and 24/7 crisis support are at the top of this screen.
+          Skipping a suggestion or a check-in is always fine, and nothing is
+          counted against you. If you want to talk with someone directly, the
+          TMS clinic nurse line and 24/7 crisis support are at the top of this
+          screen.
         </p>
       </section>
     </div>
