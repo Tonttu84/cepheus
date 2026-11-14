@@ -18,9 +18,12 @@ import type {
   BaselineNotWellRepository,
   StoredAccessLogEntry,
   AccessLogRepository,
+  StoredExtraAnswer,
+  ExtraAnswerRepository,
   UnitOfWork,
   Ports,
 } from '../ports';
+import { DEFAULT_EXTRA_ITEMS_CONFIG, type ExtraItemsConfig } from '../../domain/extra-items';
 
 export class FakeClock implements Clock {
   constructor(private currentIso: string = '2026-11-16T18:00:00.000Z') {}
@@ -44,6 +47,7 @@ interface FakeStorageState {
   crisis: Record<string, StoredCrisisEvent[]>;
   baselineNotWell: Record<string, StoredBaselineNotWellNotice[]>;
   accessLogs: StoredAccessLogEntry[];
+  extraAnswers: Record<string, StoredExtraAnswer[]>;
 }
 
 function createEmptyState(): FakeStorageState {
@@ -57,6 +61,7 @@ function createEmptyState(): FakeStorageState {
     crisis: {},
     baselineNotWell: {},
     accessLogs: [],
+    extraAnswers: {},
   };
 }
 
@@ -257,6 +262,34 @@ export class FakeAccessLogRepository implements AccessLogRepository {
   }
 }
 
+export class FakeExtraAnswerRepository implements ExtraAnswerRepository {
+  constructor(private ctx: FakeStorageContext) {}
+
+  async getExtraAnswers(patientId: string): Promise<readonly StoredExtraAnswer[]> {
+    const list = this.ctx.state.extraAnswers[patientId] ?? [];
+    return structuredClone(list).sort((a, b) => a.roundNumber - b.roundNumber);
+  }
+
+  async getExtraAnswer(patientId: string, roundNumber: number): Promise<StoredExtraAnswer | null> {
+    const list = this.ctx.state.extraAnswers[patientId] ?? [];
+    const found = list.find((a) => a.roundNumber === roundNumber);
+    return found ? structuredClone(found) : null;
+  }
+
+  async saveExtraAnswer(answer: StoredExtraAnswer): Promise<void> {
+    if (!this.ctx.state.extraAnswers[answer.patientId]) {
+      this.ctx.state.extraAnswers[answer.patientId] = [];
+    }
+    const list = this.ctx.state.extraAnswers[answer.patientId];
+    const idx = list.findIndex((a) => a.roundNumber === answer.roundNumber);
+    if (idx >= 0) {
+      list[idx] = structuredClone(answer);
+    } else {
+      list.push(structuredClone(answer));
+    }
+  }
+}
+
 export class FakeUnitOfWork implements UnitOfWork {
   public failNext = false;
   private activePromise: Promise<void> | null = null;
@@ -296,7 +329,10 @@ export class FakeUnitOfWork implements UnitOfWork {
   }
 }
 
-export function createFakePorts(initialClockIso: string = '2026-11-16T18:00:00.000Z'): {
+export function createFakePorts(
+  initialClockIso: string = '2026-11-16T18:00:00.000Z',
+  extraItemsConfig: ExtraItemsConfig = DEFAULT_EXTRA_ITEMS_CONFIG
+): {
   ports: Ports;
   clock: FakeClock;
   ctx: FakeStorageContext;
@@ -317,6 +353,8 @@ export function createFakePorts(initialClockIso: string = '2026-11-16T18:00:00.0
     crisis: new FakeCrisisRepository(ctx),
     baselineNotWell: new FakeBaselineNotWellRepository(ctx),
     accessLog: new FakeAccessLogRepository(ctx),
+    extraAnswers: new FakeExtraAnswerRepository(ctx),
+    extraItemsConfig,
     unitOfWork,
   };
 
