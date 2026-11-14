@@ -290,4 +290,37 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     expect(rounds[0]?.respondedAt).not.toBeNull();
   });
 
+  it("completes a bedside PHQ-9 with a total only once all nine items are answered", async () => {
+    const participantFilter = { participant: { externalId: HOME_DEMO_EXTERNAL_ID } };
+    // Start without the in-progress PHQ-9 left by the earlier bedside test.
+    await prisma.phq9Assessment.deleteMany({ where: participantFilter });
+    const say = (itemId: string, value: number) =>
+      saveArduinoBedsideCheckIn(
+        { deviceId: "unoq-dbtest", date: "2026-11-21", isSimulated: true, kind: "phq9_item", itemId, value },
+        prisma
+      );
+
+    expect((await say("1", 2)).ok).toBe(true);
+    const partial = await prisma.phq9Assessment.findMany({ where: participantFilter });
+    expect(partial).toHaveLength(1);
+    expect(partial[0]?.status).toBe("in_progress");
+    expect(partial[0]?.item1Interest).toBe(2);
+    expect(partial[0]?.totalScore).toBeNull();
+    expect(partial[0]?.completedAt).toBeNull();
+    for (const col of [
+      "item2Mood", "item3Sleep", "item4Energy", "item5Appetite",
+      "item6SelfWorth", "item7Concentration", "item8Psychomotor", "item9SelfHarm",
+    ] as const) {
+      expect(partial[0]?.[col]).toBeNull();
+    }
+
+    for (const id of ["2", "3", "4", "5", "6", "7", "8", "9"]) {
+      expect((await say(id, id === "9" ? 0 : 1)).ok).toBe(true);
+    }
+    const done = await prisma.phq9Assessment.findMany({ where: participantFilter });
+    expect(done).toHaveLength(1);
+    expect(done[0]?.status).toBe("completed");
+    expect(done[0]?.totalScore).toBe(9);
+    expect(done[0]?.completedAt).not.toBeNull();
+  });
 });
