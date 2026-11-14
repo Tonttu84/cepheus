@@ -52,7 +52,7 @@ function UnsignedPopover({ onClose }: { onClose: () => void }) {
           type="button"
           data-testid="auth-tab-patient"
           onClick={() => setTab("patient")}
-          className={`min-h-9 rounded-lg px-2 py-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
+          className={`min-h-11 rounded-lg px-2 py-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
             tab === "patient"
               ? "bg-accent-sage text-white"
               : "text-ink-secondary hover:text-ink-primary"
@@ -64,7 +64,7 @@ function UnsignedPopover({ onClose }: { onClose: () => void }) {
           type="button"
           data-testid="auth-tab-staff"
           onClick={() => setTab("staff")}
-          className={`min-h-9 rounded-lg px-2 py-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
+          className={`min-h-11 rounded-lg px-2 py-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
             tab === "staff"
               ? "bg-accent-sage text-white"
               : "text-ink-secondary hover:text-ink-primary"
@@ -85,7 +85,7 @@ function UnsignedPopover({ onClose }: { onClose: () => void }) {
           href="/sign-in"
           data-testid="auth-open-signin-page"
           onClick={onClose}
-          className="inline-flex min-h-9 items-center text-xs font-medium text-accent-sage hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+          className="inline-flex min-h-11 items-center text-xs font-medium text-accent-sage hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
         >
           Full sign-in page →
         </Link>
@@ -162,7 +162,7 @@ function SignedInMenu({
               href="/check-in"
               role="menuitem"
               onClick={onClose}
-              className="flex min-h-10 items-center rounded-lg px-2.5 text-sm text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary"
+              className="flex min-h-11 items-center rounded-lg px-2.5 text-sm text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary"
             >
               Check-in
             </Link>
@@ -170,7 +170,7 @@ function SignedInMenu({
               href="/patient"
               role="menuitem"
               onClick={onClose}
-              className="flex min-h-10 items-center rounded-lg px-2.5 text-sm text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary"
+              className="flex min-h-11 items-center rounded-lg px-2.5 text-sm text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary"
             >
               Patient view
             </Link>
@@ -180,7 +180,7 @@ function SignedInMenu({
             href="/clinic"
             role="menuitem"
             onClick={onClose}
-            className="flex min-h-10 items-center rounded-lg px-2.5 text-sm text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary"
+            className="flex min-h-11 items-center rounded-lg px-2.5 text-sm text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary"
           >
             Clinic view
           </Link>
@@ -189,7 +189,7 @@ function SignedInMenu({
           href="/sign-in"
           role="menuitem"
           onClick={onClose}
-          className="flex min-h-10 items-center rounded-lg px-2.5 text-sm text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary"
+          className="flex min-h-11 items-center rounded-lg px-2.5 text-sm text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary"
         >
           Switch account
         </Link>

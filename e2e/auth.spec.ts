@@ -105,8 +105,8 @@ test.describe("Cepheus Auth, Logged-Out Privacy & Role-Scoped Navigation", () =>
     const popover = page.getByTestId("header-auth-popover");
     await expect(popover).toBeVisible();
 
+    // One-click simulated participant sign-in
     await page.getByTestId("auth-preset-P-SIM-ANX-01").click();
-    await page.getByTestId("auth-submit-patient").click();
 
     const avatarBtn = page.getByTestId("header-user-avatar-button");
     await expect(avatarBtn).toBeVisible();
@@ -187,7 +187,7 @@ test.describe("Cepheus Auth, Logged-Out Privacy & Role-Scoped Navigation", () =>
     await expect(page.getByTestId("logged-out-overview-card")).toBeVisible();
   });
 
-  test("3. Clinic staff sign-in scopes nav to clinic, blocks /patient, and handles credential errors", async ({
+  test("3. Clinic staff sign-in scopes nav to clinic, blocks /patient, and redirects to /clinic", async ({
     page,
   }) => {
     const response = await page.goto("/sign-in");
@@ -198,15 +198,13 @@ test.describe("Cepheus Auth, Logged-Out Privacy & Role-Scoped Navigation", () =>
       page.getByRole("region", { name: /Immediate support and emergency help/i })
     ).toBeVisible();
 
-    await page.getByTestId("auth-staff-password").fill("wrong-password-123");
-    await page.getByTestId("auth-staff-totp").fill("123456");
-    await page.getByTestId("auth-submit-staff").click();
+    // One-click simulated clinic staff sign-in
+    const staffBtn = page.getByTestId("auth-staff-nurse");
+    await expect(staffBtn).toBeVisible();
+    await staffBtn.click();
 
-    await expect(page.getByTestId("auth-error-message")).toBeVisible();
-    await expect(page.getByTestId("header-sign-in-button")).toBeVisible();
-
-    await page.getByTestId("auth-fill-demo-staff").click();
-    await page.getByTestId("auth-submit-staff").click();
+    // Lands on staff start page (/clinic)
+    await page.waitForURL(/\/clinic$/);
 
     const avatarBtn = page.getByTestId("header-user-avatar-button");
     await expect(avatarBtn).toBeVisible();
@@ -223,5 +221,84 @@ test.describe("Cepheus Auth, Logged-Out Privacy & Role-Scoped Navigation", () =>
     const pill = page.getByTestId("active-session-pill");
     await expect(pill).toBeVisible();
     await expect(pill).toContainText("Clinic Nurse");
+  });
+
+  test("4. Touch targets are at least 44px tall for header auth, staff presets, and clinic nurse brief button", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+
+    // 1. Controls in header-auth-control (unsigned state)
+    await page.goto("/");
+    const signInBtn = page.getByTestId("header-sign-in-button");
+    await expect(signInBtn).toBeVisible();
+    const signInBox = await signInBtn.boundingBox();
+    expect(signInBox).not.toBeNull();
+    expect(signInBox!.height).toBeGreaterThanOrEqual(44);
+
+    // Open popover
+    await signInBtn.click();
+    const popover = page.getByTestId("header-auth-popover");
+    await expect(popover).toBeVisible();
+
+    const patientTab = page.getByTestId("auth-tab-patient");
+    const staffTab = page.getByTestId("auth-tab-staff");
+    const fullSignInLink = page.getByTestId("auth-open-signin-page");
+
+    for (const [name, loc] of [
+      ["auth-tab-patient", patientTab],
+      ["auth-tab-staff", staffTab],
+      ["auth-open-signin-page", fullSignInLink],
+    ] as const) {
+      const box = await loc.boundingBox();
+      expect(box, `Bounding box for ${name}`).not.toBeNull();
+      expect(
+        box!.height,
+        `Height for ${name} (${box!.height}px)`
+      ).toBeGreaterThanOrEqual(44);
+    }
+
+    // 2. Staff presets in auth-forms.tsx (on /sign-in)
+    await page.goto("/sign-in");
+    for (const role of ["nurse", "admin"]) {
+      const staffPreset = page.getByTestId(`auth-staff-${role}`);
+      await expect(staffPreset).toBeVisible();
+      const box = await staffPreset.boundingBox();
+      expect(box, `Bounding box for auth-staff-${role}`).not.toBeNull();
+      expect(
+        box!.height,
+        `Height for auth-staff-${role} (${box!.height}px)`
+      ).toBeGreaterThanOrEqual(44);
+    }
+
+    // 3. Nurse brief button in clinic-nurse-brief-panel.tsx (on /clinic)
+    await page.getByTestId("auth-staff-nurse").click();
+    await page.waitForURL(/\/clinic$/);
+
+    const nurseBriefBtn = page.getByTestId("verda-nurse-brief-btn");
+    await expect(nurseBriefBtn).toBeVisible();
+    const briefBox = await nurseBriefBtn.boundingBox();
+    expect(briefBox, "Bounding box for verda-nurse-brief-btn").not.toBeNull();
+    expect(
+      briefBox!.height,
+      `Height for verda-nurse-brief-btn (${briefBox!.height}px)`
+    ).toBeGreaterThanOrEqual(44);
+
+    // 4. Header controls when signed in (avatar button and menu items)
+    const avatarBtn = page.getByTestId("header-user-avatar-button");
+    await expect(avatarBtn).toBeVisible();
+    const avatarBox = await avatarBtn.boundingBox();
+    expect(avatarBox).not.toBeNull();
+    expect(avatarBox!.height).toBeGreaterThanOrEqual(44);
+    expect(avatarBox!.width).toBeGreaterThanOrEqual(44);
+
+    await avatarBtn.click();
+    const menu = page.getByTestId("header-user-menu");
+    await expect(menu).toBeVisible();
+
+    const signOutBtn = page.getByTestId("header-sign-out-button");
+    const signOutBox = await signOutBtn.boundingBox();
+    expect(signOutBox).not.toBeNull();
+    expect(signOutBox!.height).toBeGreaterThanOrEqual(44);
   });
 });

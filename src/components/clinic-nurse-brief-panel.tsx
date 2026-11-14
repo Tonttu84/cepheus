@@ -99,7 +99,7 @@ export function ClinicNurseBriefPanel({
           data-testid="verda-nurse-brief-btn"
           disabled={busy}
           onClick={handleGenerateBrief}
-          className="rounded-lg border border-stone-300 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50 cursor-pointer"
+          className="min-h-11 inline-flex items-center justify-center rounded-lg border border-stone-300 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50 cursor-pointer"
         >
           {busy ? "Preparing brief..." : "Generate nurse pre-call brief"}
         </button>
