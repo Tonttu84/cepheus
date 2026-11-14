@@ -41,6 +41,8 @@ export interface ArduinoEdgePayloadInput {
   readonly deviceId: string;
   readonly date: string; // "YYYY-MM-DD"
   readonly hourOfDay?: number; // 0..23
+  readonly timestampMs?: number;
+  readonly nonce?: string;
   readonly isSimulated?: boolean;
   readonly camera?: ArduinoCameraMetricsInput | null;
   readonly routine?: ArduinoImmobilityAndLightInput | null;
@@ -79,6 +81,8 @@ export interface ArduinoLightCueDirective {
 export interface EvaluatedArduinoEdgeIngest {
   readonly deviceId: string;
   readonly date: string;
+  readonly timestampMs?: number;
+  readonly nonce?: string;
   readonly cameraReading: NormalizedArduinoCameraReading | null;
   readonly routineReadings: readonly NormalizedArduinoRoutineReading[];
   readonly lightCue: ArduinoLightCueDirective;

@@ -1,17 +1,21 @@
 """
 Cepheus — Arduino UNO Q Edge Monitor (USB Camera)
 
-Runs locally on the Arduino UNO Q with the external USB webcam.
-Privacy-by-architecture invariants:
-  - Video frames stay strictly in RAM and are discarded immediately.
-  - No images, video files, audio, or mood predictions ever leave the board.
+Runs locally on the Arduino UNO Q (2 GB / 4 GB) with the external USB webcam.
+Privacy & project-rule invariants (AGENTS.md + Trail #24/#25 review notes):
+  - Video frames and microphone audio stay strictly on the device in RAM and are
+    discarded immediately. Never stream audio/video to any cloud speech or AI API.
   - Only derived numeric summaries (motion-bout duration, ambient brightness
     proxy, and optional face/head movement dispersion) are sent to Cepheus.
+  - Any future on-device spoken question adapter (e.g. Piper TTS + whisper.cpp
+    run sequentially in 2 GB RAM) must map answers strictly to fixed item scores
+    without voice mood reading and provide an always-available crisis path to a
+    person and 112 on the physical unit.
 
 Environment variables:
   CEPHEUS_INGEST_URL   e.g. http://192.168.1.50:3000/api/arduino/ingest
-  ARDUINO_INGEST_TOKEN Bearer token matching server .env ARDUINO_INGEST_TOKEN
-  CEPHEUS_DEVICE_ID    Optional identifier (default: unoq-home-01)
+  ARDUINO_INGEST_TOKEN Per-device bearer token matching server configuration
+  CEPHEUS_DEVICE_ID    Device identifier (default: unoq-home-01)
   CAMERA_INDEX         UVC camera index (default: 0)
 """
 
@@ -20,6 +24,7 @@ from __future__ import annotations
 import datetime as dt
 import math
 import os
+import secrets
 import time
 from typing import Any
 
@@ -153,6 +158,8 @@ def run_edge_window(
         "deviceId": os.environ.get("CEPHEUS_DEVICE_ID", "unoq-home-01"),
         "date": now.strftime("%Y-%m-%d"),
         "hourOfDay": now.hour,
+        "timestampMs": int(time.time() * 1000),
+        "nonce": secrets.token_hex(16),
         "isSimulated": False,
         "routine": {
             "sensorActive": True,

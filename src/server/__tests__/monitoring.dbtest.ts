@@ -6,6 +6,7 @@ import { getPrisma } from "@/lib/db";
 import {
   buildSimulatedFitbitWeek,
   buildSimulatedHealthConnectPayload,
+  getMonitoringSummary,
   HOME_DEMO_EXTERNAL_ID,
   saveArduinoEdgeIngest,
   saveWearableDaysAndComputeRhythm,
@@ -87,11 +88,35 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     if (!evaluated.ok) return;
 
     const saved = await saveArduinoEdgeIngest(evaluated.value, prisma);
-    expect(saved.savedCamera).toBe(true);
-    expect(saved.savedRoutineCount).toBe(0);
-    expect(saved.skippedForConsent).toContain("home_routine");
+    expect(saved.ok).toBe(true);
+    if (saved.ok) {
+      expect(saved.savedCamera).toBe(true);
+      expect(saved.savedRoutineCount).toBe(0);
+      expect(saved.skippedForConsent).toContain("home_routine");
+    }
 
     await updateMethodConsent("home_routine", true, prisma);
+  });
+
+  it("enforces decideAccess D8 boundary by redacting raw readings for staff viewers", async () => {
+    await updateMethodConsent("ring_rhythm", true, prisma);
+    const days = buildSimulatedFitbitWeek("2026-11-14");
+    await saveWearableDaysAndComputeRhythm(
+      days,
+      { isSimulated: true, sourceLabel: "simulated_fitbit" },
+      prisma
+    );
+
+    const patientView = await getMonitoringSummary("patient", prisma);
+    expect(patientView.readingsRedactedForStaff).toBe(false);
+    expect(patientView.recentWearableDays.length).toBeGreaterThan(0);
+
+    const staffView = await getMonitoringSummary("staff", prisma);
+    expect(staffView.readingsRedactedForStaff).toBe(true);
+    expect(staffView.latestRhythmWindow).toBeNull();
+    expect(staffView.recentWearableDays).toEqual([]);
+    expect(staffView.recentCameraReadings).toEqual([]);
+    expect(staffView.recentRoutineReadings).toEqual([]);
   });
 
   it("persists Health Connect webhook mapped RingDays with HRV into the shared RhythmWindow pipeline", async () => {

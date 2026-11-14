@@ -60,17 +60,22 @@ Works with **Fitbit, Oura, Garmin, Samsung Health, Gadgetbridge, or Apple Watch*
 3. Open `/monitoring` → click **Connect Fitbit (PKCE)** → click **Sync last 7 days (Fitbit)**.
 4. Without Fitbit credentials, use **Simulate 7-day Fitbit sync** on `/monitoring` (records are marked `isSimulated: true`).
 
+## Demo-Only Scoping Notice
+
+Currently, `/monitoring`, `/api/monitoring/summary`, `/api/fitbit/*`, `/api/arduino/ingest`, and `/api/webhooks/health-connect` bind to a single pseudonymous demo participant (`demo-home-node-01`, no real patient data) pending Step 6 (`Better Auth` patient & clinic sessions). Once sign-in lands, device credentials and wearable webhooks will bind to the authenticated `session.patientId`, and every read/write already passes through `decideAccess()` in `src/domain/access` (redacting raw numbers for `staff` viewers per Decision `D8`).
+
 ## Arduino UNO Q Setup
 
 1. Install Python dependencies on the Arduino UNO Q (`hardware/uno-q/requirements.txt`) and download MediaPipe's `face_landmarker.task`.
-2. Set `ARDUINO_INGEST_TOKEN` in both Cepheus's `.env` and the Arduino UNO Q environment.
+2. Configure per-device SHA-256 hashed credentials in `.env` (`ARDUINO_DEVICE_KEYS_JSON='{"unoq-home-01":{"tokenHash":"<sha256-hex>","revoked":false}}'` or `ARDUINO_INGEST_TOKEN`) and set the matching `ARDUINO_INGEST_TOKEN` on the board. `edge_monitor.py` automatically attaches `timestampMs` and a single-use `nonce` for replay protection.
 3. Run:
    ```bash
    CEPHEUS_INGEST_URL="http://<host-ip>:3000/api/arduino/ingest" \
-   ARDUINO_INGEST_TOKEN="<same-token>" \
+   ARDUINO_INGEST_TOKEN="<device-token>" \
    python hardware/uno-q/edge_monitor.py
    ```
 4. View incoming numeric summaries and desk ring-light cue status on `/monitoring`.
+5. **On-device voice note (Trail #24):** Any future spoken question mode on the UNO Q must keep audio on-device (e.g. sequential Piper TTS + `whisper.cpp`), never infer mood from voice, and expose an always-available crisis path to a human and `112`.
 
 ## Clinical & Privacy Boundaries Enforced
 

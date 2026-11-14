@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import { evaluateArduinoEdgePayload } from "@/domain/arduino";
+import { evaluateArduinoEdgePayload, type EvaluatedArduinoEdgeIngest } from "@/domain/arduino";
 import { getEnv } from "@/server/env";
 import { saveArduinoEdgeIngest } from "@/server/monitoring";
 import {
+  checkAndRecordDeviceReplay,
   checkRateLimit,
   extractBearerToken,
   getClientKey,
-  timingSafeEqualString,
+  verifyArduinoDeviceCredential,
   verifySameOrigin,
 } from "@/server/security";
 
@@ -14,15 +15,48 @@ export const dynamic = "force-dynamic";
 
 const MAX_INGEST_BYTES = 16_384;
 
-export async function POST(request: Request) {
-  const limit = checkRateLimit(getClientKey(request, "arduino-ingest"), 60, 60_000);
-  if (!limit.allowed) {
-    return NextResponse.json(
-      { ok: false, error: "Rate limit exceeded." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } }
-    );
+function authenticateHardwareRequest(
+  request: Request,
+  evaluated: EvaluatedArduinoEdgeIngest,
+  rawIsSimulated: boolean
+): { ok: true } | { ok: false; status: 401 | 409; error: string } {
+  const sameOriginUiSimulation = verifySameOrigin(request) && rawIsSimulated;
+  if (sameOriginUiSimulation) {
+    return { ok: true };
   }
 
+  const env = getEnv();
+  const hasAnyCredentialConfig =
+    env.ARDUINO_DEVICE_KEYS_JSON.length > 0 || env.ARDUINO_INGEST_TOKEN.length > 0;
+
+  if (!hasAnyCredentialConfig && env.NODE_ENV === "production") {
+    return {
+      ok: false,
+      status: 401,
+      error: "Hardware device credentials must be configured in production.",
+    };
+  }
+
+  if (hasAnyCredentialConfig) {
+    const bearer = extractBearerToken(request);
+    const credCheck = verifyArduinoDeviceCredential(evaluated.deviceId, bearer);
+    if (!credCheck.ok) {
+      return { ok: false, status: 401, error: credCheck.reason };
+    }
+    const replayCheck = checkAndRecordDeviceReplay(
+      evaluated.deviceId,
+      evaluated.timestampMs,
+      evaluated.nonce
+    );
+    if (!replayCheck.ok) {
+      return { ok: false, status: replayCheck.status, error: replayCheck.reason };
+    }
+  }
+
+  return { ok: true };
+}
+
+export async function POST(request: Request) {
   let rawText: string;
   try {
     rawText = await request.text();
@@ -56,47 +90,42 @@ export async function POST(request: Request) {
 
   const evaluated = evaluateArduinoEdgePayload(body);
   if (!evaluated.ok) {
+    return NextResponse.json({ ok: false, error: evaluated.error }, { status: 400 });
+  }
+
+  const rate = checkRateLimit(
+    getClientKey(request, "arduino-ingest", evaluated.value.deviceId),
+    60,
+    60_000
+  );
+  if (!rate.allowed) {
     return NextResponse.json(
-      { ok: false, error: evaluated.error },
-      { status: 400 }
+      { ok: false, error: "Rate limit exceeded." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } }
     );
   }
 
-  const env = getEnv();
-  const bearer = extractBearerToken(request);
-  const sameOriginUiSimulation =
-    verifySameOrigin(request) &&
-    Boolean(
-      (body as { isSimulated?: unknown }).isSimulated === true
-    );
-
-  if (env.ARDUINO_INGEST_TOKEN.length > 0) {
-    const validToken =
-      bearer !== null && timingSafeEqualString(bearer, env.ARDUINO_INGEST_TOKEN);
-    if (!validToken && !sameOriginUiSimulation) {
-      return NextResponse.json(
-        { ok: false, error: "Unauthorized hardware ingest token." },
-        { status: 401 }
-      );
-    }
-  } else if (env.NODE_ENV === "production" && !sameOriginUiSimulation) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "ARDUINO_INGEST_TOKEN must be configured in production for hardware ingestion.",
-      },
-      { status: 401 }
-    );
+  const rawIsSimulated = Boolean((body as { isSimulated?: unknown }).isSimulated === true);
+  const auth = authenticateHardwareRequest(request, evaluated.value, rawIsSimulated);
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
 
   const persisted = await saveArduinoEdgeIngest(evaluated.value);
+  if (!persisted.ok) {
+    return NextResponse.json(
+      { ok: false, error: persisted.error },
+      { status: persisted.status }
+    );
+  }
 
   return NextResponse.json({
     ok: true,
     deviceId: evaluated.value.deviceId,
     date: evaluated.value.date,
-    ...persisted,
+    savedCamera: persisted.savedCamera,
+    savedRoutineCount: persisted.savedRoutineCount,
+    skippedForConsent: persisted.skippedForConsent,
     lightCue: evaluated.value.lightCue,
   });
 }

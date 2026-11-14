@@ -93,5 +93,13 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
       data: { test: true },
     });
     expect(badSigWebhook.status()).toBe(401);
+
+    const staffRes = await request.get("/api/monitoring/summary?viewer=staff");
+    expect(staffRes.status()).toBe(200);
+    const staffJson = await staffRes.json();
+    expect(staffJson.demoOnly).toBe(true);
+    expect(staffJson.summary.readingsRedactedForStaff).toBe(true);
+    expect(staffJson.summary.recentWearableDays).toEqual([]);
+    expect(staffJson.summary.recentCameraReadings).toEqual([]);
   });
 });
