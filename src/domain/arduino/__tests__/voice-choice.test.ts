@@ -9,6 +9,9 @@ describe("Arduino Voice Kiosk Choice Parser (src/domain/arduino/voice)", () => {
     expect(parseSpokenChoice("call 112", "phq9")).toEqual({
       kind: "crisis_help",
     });
+    expect(parseSpokenChoice("call one one two", "tap")).toEqual({
+      kind: "crisis_help",
+    });
   });
 
   it("maps not today / skip phrases without penalty", () => {
