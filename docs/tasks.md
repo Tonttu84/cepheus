@@ -56,6 +56,9 @@ Pages currently call `generateSimulatedPersonWeeks()` instead of the real use ca
 - [ ] **P1.3 — Unify UNO Q bedside kiosk onto shared check-in routes (`D43`)**
   - Replace separate bedside storage in `src/app/api/arduino/check-in/route.ts` and `src/server/monitoring/bedside.ts` with calls to the shared check-in use cases (authenticated by device token).
   - Close Trail #44/#54 follow-ups: ignore extra items after completion, allow crisis button while check-in consent is paused, and add an in-process per-patient lock around post-commit `answer-store` updates.
+- [ ] **P1.4 — Default passive monitoring consent switches to off and separate device status (`src/server/monitoring/store.ts`, `src/components/monitoring/consent-section.tsx`)**
+  - Default `ring_rhythm`, `camera_expressivity`, and `home_routine` in `ensureHomeDemoParticipant` to `enabled: false` (Paused) until explicitly opted in, matching `D13` and `INITIAL_CONSENT_STATE`.
+  - Show device connection status (connected / not connected) separately from consent permission on `/monitoring`, and update `monitoring.dbtest.ts` / `e2e/monitoring.spec.ts` accordingly.
 
 ---
 
