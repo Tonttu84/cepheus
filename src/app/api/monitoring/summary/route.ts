@@ -23,11 +23,10 @@ export async function GET(request: Request) {
 
   try {
     const env = getEnv();
-    const viewer = auth.session.kind === "staff" ? "staff" : "patient";
-    const summary = await getMonitoringSummary(viewer);
+    const summary = await getMonitoringSummary(auth.session);
     return NextResponse.json({
       ok: true,
-      demoOnly: true,
+      demoOnly: summary.demoOnly,
       healthConnectConfigured: env.HEALTH_CONNECT_WEBHOOK_SECRET.length > 0,
       summary,
     });

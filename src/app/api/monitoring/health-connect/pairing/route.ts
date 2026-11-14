@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/server/auth";
 import {
   getHealthConnectPairingStatus,
   provisionOrRotateHealthConnectPairing,
@@ -23,12 +24,21 @@ function forbiddenOriginResponse() {
 }
 
 export async function GET(request: Request) {
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const limit = checkRateLimit(getClientKey(request, "hc-pairing-get"), 60, 60_000);
   if (!limit.allowed) {
     return rateLimitedResponse(limit.retryAfterSec);
   }
 
-  const status = await getHealthConnectPairingStatus(new URL(request.url).origin);
+  const status = await getHealthConnectPairingStatus(
+    new URL(request.url).origin,
+    undefined,
+    auth.session
+  );
   return NextResponse.json({ ok: true, status });
 }
 
@@ -37,12 +47,21 @@ export async function POST(request: Request) {
     return forbiddenOriginResponse();
   }
 
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const limit = checkRateLimit(getClientKey(request, "hc-pairing-post"), 20, 60_000);
   if (!limit.allowed) {
     return rateLimitedResponse(limit.retryAfterSec);
   }
 
-  const result = await provisionOrRotateHealthConnectPairing(new URL(request.url).origin);
+  const result = await provisionOrRotateHealthConnectPairing(
+    new URL(request.url).origin,
+    undefined,
+    auth.session
+  );
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: result.error }, { status: result.status });
   }
@@ -59,11 +78,20 @@ export async function DELETE(request: Request) {
     return forbiddenOriginResponse();
   }
 
+  const auth = requireApiSession(request, "patient");
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const limit = checkRateLimit(getClientKey(request, "hc-pairing-delete"), 20, 60_000);
   if (!limit.allowed) {
     return rateLimitedResponse(limit.retryAfterSec);
   }
 
-  const status = await revokeHealthConnectPairing(new URL(request.url).origin);
+  const status = await revokeHealthConnectPairing(
+    new URL(request.url).origin,
+    undefined,
+    auth.session
+  );
   return NextResponse.json({ ok: true, status });
 }

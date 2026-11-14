@@ -86,6 +86,7 @@ export async function POST(request: Request) {
     const saved = await saveWearableDaysAndComputeRhythm(simDays, {
       isSimulated: true,
       sourceLabel: "simulated_fitbit",
+      session: auth.session,
     });
 
     if (!saved.ok) {
@@ -120,7 +121,11 @@ export async function POST(request: Request) {
   const rawToken = cookieStore.get(FITBIT_TOKEN_COOKIE)?.value;
   const session = unsealJson<FitbitSealedSession>(rawToken);
 
-  if (!session) {
+  if (
+    !session ||
+    (session.participantCode &&
+      session.participantCode !== auth.session.participantCode)
+  ) {
     return NextResponse.json(
       { ok: false, error: "Fitbit account is not connected." },
       { status: 401 }
@@ -137,6 +142,7 @@ export async function POST(request: Request) {
     const saved = await saveWearableDaysAndComputeRhythm(days, {
       isSimulated: false,
       sourceLabel: "fitbit",
+      session: auth.session,
     });
 
     if (!saved.ok) {
@@ -160,7 +166,10 @@ export async function POST(request: Request) {
     if (updatedSession.accessToken !== session.accessToken) {
       response.cookies.set(
         FITBIT_TOKEN_COOKIE,
-        sealJson(updatedSession, 30 * 24 * 60 * 60_000),
+        sealJson(
+          { ...updatedSession, participantCode: auth.session.participantCode },
+          30 * 24 * 60 * 60_000
+        ),
         {
           httpOnly: true,
           sameSite: "lax",

@@ -57,9 +57,9 @@ Works with **Fitbit, Oura, Garmin, Samsung Health, Gadgetbridge, or Apple Watch*
 3. Open `/monitoring` → click **Connect Fitbit (PKCE)** → click **Sync last 7 days (Fitbit)**.
 4. Without Fitbit credentials, use **Simulate 7-day Fitbit sync** on `/monitoring` (records are marked `isSimulated: true`).
 
-## Demo-Only Scoping Notice
+## Session-Scoped Participant Binding
 
-Currently, `/monitoring`, `/api/monitoring/summary`, `/api/fitbit/*`, `/api/arduino/ingest`, and `/api/webhooks/health-connect` bind to a single pseudonymous demo participant (`demo-home-node-01`, no real patient data) pending Step 6 (`Better Auth` patient & clinic sessions). Once sign-in lands, device credentials and wearable webhooks will bind to the authenticated `session.patientId`, and every read/write already passes through `decideAccess()` in `src/domain/access` (redacting raw numbers for `staff` viewers per Decision `D8`).
+Authenticated `/monitoring`, `/api/monitoring/summary`, `/api/fitbit/*`, and `/api/monitoring/health-connect/pairing` bind per-patient to the signed-in `PatientAuthSession` (isolating `MeasurementConsent`, `WebhookCredential`, `RingDay`, and `RhythmWindow` per participant, with D8 redaction of raw sensor numbers for `staff` sessions). Headless hardware or environment-secret ingests without a user session or `?token=` (such as `/api/arduino/ingest` or env-secret `/api/webhooks/health-connect`) fall back to `demo-home-node-01`, and every read/write passes through `decideAccess()` in `src/domain/access`.
 
 ## Arduino UNO Q Setup
 

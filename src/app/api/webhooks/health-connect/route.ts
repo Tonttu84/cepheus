@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { mapHealthConnectPayloadToRingDays } from "@/domain/health-connect";
+import type { PatientAuthSession } from "@/lib/auth-types";
+import { readSessionFromRequest } from "@/server/auth";
 import { getEnv } from "@/server/env";
 import { saveWearableDaysAndComputeRhythm } from "@/server/monitoring";
 import {
@@ -125,7 +127,15 @@ function unauthorizedResponse() {
 
 async function processAuthorizedWebhook(
   data: z.infer<typeof HealthConnectWebhookSchema>,
-  auth: { ok: true; credentialId: string | null; lastSequence: number | null } | { ok: false }
+  auth:
+    | {
+        ok: true;
+        credentialId: string | null;
+        participantId: string | null;
+        lastSequence: number | null;
+      }
+    | { ok: false },
+  patientSession?: PatientAuthSession
 ) {
   if (data.test === true) {
     await recordHealthConnectWebhookDelivery({
@@ -157,16 +167,30 @@ async function processAuthorizedWebhook(
     return NextResponse.json({ ok: true, savedDays: 0, rhythmComputed: false });
   }
 
-  const isSimulated = Boolean(data.isSimulated);
-  const sourceLabel = isSimulated
-    ? "simulated_health_connect"
-    : data.source === "healthkit_ios"
-      ? "healthkit_ios"
-      : "health_connect";
+  return persistMappedWebhookDays({ data, mappedDays, auth, patientSession });
+}
 
-  const saved = await saveWearableDaysAndComputeRhythm(mappedDays, {
+function resolveWebhookSourceLabel(isSimulated: boolean, source?: string): string {
+  if (isSimulated) return "simulated_health_connect";
+  return source === "healthkit_ios" ? "healthkit_ios" : "health_connect";
+}
+
+async function persistMappedWebhookDays(ctx: {
+  data: z.infer<typeof HealthConnectWebhookSchema>;
+  mappedDays: ReturnType<typeof mapHealthConnectPayloadToRingDays>;
+  auth:
+    | { ok: true; credentialId: string | null; participantId: string | null; lastSequence: number | null }
+    | { ok: false };
+  patientSession?: PatientAuthSession;
+}) {
+  const isSimulated = Boolean(ctx.data.isSimulated);
+  const sourceLabel = resolveWebhookSourceLabel(isSimulated, ctx.data.source);
+  const participantId = ctx.auth.ok ? ctx.auth.participantId : null;
+  const saved = await saveWearableDaysAndComputeRhythm(ctx.mappedDays, {
     isSimulated,
     sourceLabel,
+    ...(participantId ? { participantId } : {}),
+    ...(!participantId && ctx.patientSession ? { session: ctx.patientSession } : {}),
   });
 
   if (!saved.ok) {
@@ -174,9 +198,9 @@ async function processAuthorizedWebhook(
   }
 
   await recordHealthConnectWebhookDelivery({
-    credentialId: auth.ok ? auth.credentialId : null,
+    credentialId: ctx.auth.ok ? ctx.auth.credentialId : null,
     isTestPing: false,
-    sequence: data.sequence,
+    sequence: ctx.data.sequence,
   });
 
   return NextResponse.json({
@@ -256,5 +280,10 @@ export async function POST(request: Request) {
     return unauthorizedResponse();
   }
 
-  return processAuthorizedWebhook(parsed.data, auth);
+  const reqSession =
+    !auth.ok && request.headers.get("cookie")
+      ? readSessionFromRequest(request)
+      : null;
+  const patientSession = reqSession?.kind === "patient" ? reqSession : undefined;
+  return processAuthorizedWebhook(parsed.data, auth, patientSession);
 }

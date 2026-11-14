@@ -47,7 +47,12 @@ export async function GET(request: Request) {
   const redirectUri = resolveFitbitRedirectUri();
 
   const sealedState = sealJson(
-    { state, codeVerifier, redirectUri },
+    {
+      state,
+      codeVerifier,
+      redirectUri,
+      participantCode: auth.session.participantCode,
+    },
     10 * 60_000
   );
 

@@ -127,6 +127,7 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     page,
     request,
   }) => {
+    await signInAsPatient(page);
     await page.goto("/monitoring");
 
     await expect(page.getByTestId("hc-pair-button")).toBeVisible();
@@ -157,6 +158,24 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     expect(pingRes.status()).toBe(204);
 
     await page.getByTestId("hc-refresh-status").click();
+    await expect(page.getByTestId("hc-status-badge")).toContainText(
+      "Phone verified"
+    );
+
+    // While P-SIM-001 is paired & verified, switching to P-SIM-ANX-01 shows isolated unpaired state
+    const switchToB = await page.request.post("/api/auth/sign-in", {
+      headers: { origin: "http://127.0.0.1:3100" },
+      data: { mode: "patient_eid", participantCode: "P-SIM-ANX-01" },
+    });
+    expect(switchToB.status()).toBe(200);
+    await page.goto("/monitoring");
+    await expect(page.getByTestId("hc-status-badge")).toContainText(
+      "Not paired yet"
+    );
+
+    // Switch back to P-SIM-001 -> still Phone verified -> disconnect -> 401
+    await signInAsPatient(page);
+    await page.goto("/monitoring");
     await expect(page.getByTestId("hc-status-badge")).toContainText(
       "Phone verified"
     );

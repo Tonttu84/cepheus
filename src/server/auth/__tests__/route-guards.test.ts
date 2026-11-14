@@ -10,6 +10,11 @@ import { GET as getFitbitStatus } from "@/app/api/fitbit/status/route";
 import { POST as postFitbitSync } from "@/app/api/fitbit/sync/route";
 import { POST as postMonitoringConsent } from "@/app/api/monitoring/consent/route";
 import {
+  DELETE as deleteHcPairing,
+  GET as getHcPairing,
+  POST as postHcPairing,
+} from "@/app/api/monitoring/health-connect/pairing/route";
+import {
   GET as getMonitoringSummary,
   POST as postMonitoringSummary,
 } from "@/app/api/monitoring/summary/route";
@@ -50,7 +55,7 @@ function makeRequest(
 ): NextRequest {
   const headers = new Headers(init.headers);
   headers.set("host", "localhost:3000");
-  if (init.method === "POST" && !headers.has("origin")) {
+  if ((init.method === "POST" || init.method === "DELETE") && !headers.has("origin")) {
     headers.set("origin", "http://localhost:3000");
   }
   if (session) {
@@ -149,6 +154,21 @@ describe("API session guards and logged-out route matrix", () => {
           method: "POST",
         })
       ),
+      getHcPairing(
+        makeRequest("http://localhost:3000/api/monitoring/health-connect/pairing")
+      ),
+      postHcPairing(
+        makeRequest(
+          "http://localhost:3000/api/monitoring/health-connect/pairing",
+          { method: "POST" }
+        )
+      ),
+      deleteHcPairing(
+        makeRequest(
+          "http://localhost:3000/api/monitoring/health-connect/pairing",
+          { method: "DELETE" }
+        )
+      ),
     ]);
 
     for (const res of responses) {
@@ -216,6 +236,27 @@ describe("API session guards and logged-out route matrix", () => {
         makeRequest(
           "http://localhost:3000/api/fitbit/disconnect",
           { method: "POST" },
+          STAFF_SESSION
+        )
+      ),
+      getHcPairing(
+        makeRequest(
+          "http://localhost:3000/api/monitoring/health-connect/pairing",
+          {},
+          STAFF_SESSION
+        )
+      ),
+      postHcPairing(
+        makeRequest(
+          "http://localhost:3000/api/monitoring/health-connect/pairing",
+          { method: "POST" },
+          STAFF_SESSION
+        )
+      ),
+      deleteHcPairing(
+        makeRequest(
+          "http://localhost:3000/api/monitoring/health-connect/pairing",
+          { method: "DELETE" },
           STAFF_SESSION
         )
       ),

@@ -59,7 +59,9 @@ export async function POST(request: Request) {
   try {
     const updated = await updateMethodConsent(
       parsed.data.method,
-      parsed.data.enabled
+      parsed.data.enabled,
+      undefined,
+      auth.session
     );
     return NextResponse.json({ ok: true, consent: updated });
   } catch {

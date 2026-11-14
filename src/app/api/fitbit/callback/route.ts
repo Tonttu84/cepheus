@@ -22,6 +22,7 @@ interface SealedOAuthState {
   state: string;
   codeVerifier: string;
   redirectUri: string;
+  participantCode?: string;
 }
 
 export async function GET(request: Request) {
@@ -66,7 +67,9 @@ export async function GET(request: Request) {
     !sealedState ||
     !code ||
     !returnedState ||
-    !timingSafeEqualString(returnedState, sealedState.state)
+    !timingSafeEqualString(returnedState, sealedState.state) ||
+    (sealedState.participantCode &&
+      sealedState.participantCode !== auth.session.participantCode)
   ) {
     monitoringUrl.searchParams.set("fitbit", "state_error");
     const badResp = NextResponse.redirect(monitoringUrl);
@@ -81,7 +84,10 @@ export async function GET(request: Request) {
       redirectUri: sealedState.redirectUri,
     });
 
-    const sealedSession = sealJson(session, 30 * 24 * 60 * 60_000);
+    const sealedSession = sealJson(
+      { ...session, participantCode: auth.session.participantCode },
+      30 * 24 * 60 * 60_000
+    );
     monitoringUrl.searchParams.set("fitbit", "connected");
     const okResp = NextResponse.redirect(monitoringUrl);
     okResp.cookies.delete(FITBIT_STATE_COOKIE);

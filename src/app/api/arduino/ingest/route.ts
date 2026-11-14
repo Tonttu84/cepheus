@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { evaluateArduinoEdgePayload, type EvaluatedArduinoEdgeIngest } from "@/domain/arduino";
+import { readSessionFromRequest } from "@/server/auth";
 import { getEnv } from "@/server/env";
 import { saveArduinoEdgeIngest } from "@/server/monitoring";
 import {
@@ -112,7 +113,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
 
-  const persisted = await saveArduinoEdgeIngest(evaluated.value);
+  const reqSession = request.headers.get("cookie")
+    ? readSessionFromRequest(request)
+    : null;
+  const patientSession = reqSession?.kind === "patient" ? reqSession : undefined;
+  const persisted = patientSession
+    ? await saveArduinoEdgeIngest(evaluated.value, undefined, { session: patientSession })
+    : await saveArduinoEdgeIngest(evaluated.value);
   if (!persisted.ok) {
     return NextResponse.json(
       { ok: false, error: persisted.error },

@@ -20,12 +20,17 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const rawToken = cookieStore.get(FITBIT_TOKEN_COOKIE)?.value;
   const session = unsealJson<FitbitSealedSession>(rawToken);
+  const connected = Boolean(
+    session &&
+      (!session.participantCode ||
+        session.participantCode === auth.session.participantCode)
+  );
 
   return NextResponse.json({
     ok: true,
     configured,
-    connected: Boolean(session),
-    scope: session?.scope ?? null,
-    expiresAtMs: session?.expiresAtMs ?? null,
+    connected,
+    scope: connected ? (session?.scope ?? null) : null,
+    expiresAtMs: connected ? (session?.expiresAtMs ?? null) : null,
   });
 }

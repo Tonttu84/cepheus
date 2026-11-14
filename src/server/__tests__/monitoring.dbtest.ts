@@ -4,6 +4,7 @@ import type { PrismaClient } from "@prisma/client";
 import { POST as healthConnectWebhook } from "@/app/api/webhooks/health-connect/route";
 import { evaluateArduinoEdgePayload } from "@/domain/arduino";
 import { mapHealthConnectPayloadToRingDays } from "@/domain/health-connect";
+import type { PatientAuthSession } from "@/lib/auth-types";
 import { getPrisma } from "@/lib/db";
 import { InMemoryAnswerStore } from "@/server/db/answer-store";
 import { PHQ9_COLUMNS } from "@/server/db/phq9-columns";
@@ -31,15 +32,28 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
 
   afterAll(async () => {
     try {
-      const p = await prisma.participant.findUnique({
-        where: { externalId: HOME_DEMO_EXTERNAL_ID },
+      const participants = await prisma.participant.findMany({
+        where: {
+          OR: [
+            { externalId: { in: [HOME_DEMO_EXTERNAL_ID, "sim-sample-anxiety-01"] } },
+            { participantCode: { in: ["P-SIM-001", "P-SIM-ANX-01"] } },
+          ],
+        },
         select: { id: true },
       });
-      if (p) {
-        await prisma.webhookCredential.deleteMany({ where: { participantId: p.id } });
+      const ids = participants.map((p) => p.id);
+      if (ids.length > 0) {
+        await prisma.webhookCredential.deleteMany({
+          where: { participantId: { in: ids } },
+        });
       }
       await prisma.participant.deleteMany({
-        where: { externalId: HOME_DEMO_EXTERNAL_ID },
+        where: {
+          OR: [
+            { externalId: { in: [HOME_DEMO_EXTERNAL_ID, "sim-sample-anxiety-01"] } },
+            { participantCode: "P-SIM-ANX-01" },
+          ],
+        },
       });
     } catch {
       // Ignore cleanup errors
@@ -514,5 +528,113 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
       })
     );
     expect(unknownRes.status).toBe(401);
+  });
+
+  it("isolates monitoring consents, Health Connect pairing, and webhook RingDays per authenticated patient session", async () => {
+    _resetRateLimits();
+    const origin = "http://localhost:3000";
+
+    const sessionA: PatientAuthSession = {
+      kind: "patient",
+      actor: { kind: "patient", patientId: "p-sim-001", clinicId: "c-1" },
+      participantCode: "P-SIM-001",
+      label: "Patient A",
+      avatarInitials: "PA",
+      authMethod: "simulated_finnish_eid",
+      isSimulated: true,
+      signedInAt: "2026-11-14T20:00:00.000Z",
+    };
+
+    const sessionB: PatientAuthSession = {
+      kind: "patient",
+      actor: { kind: "patient", patientId: "p-sim-anx-01", clinicId: "c-1" },
+      participantCode: "P-SIM-ANX-01",
+      label: "Patient B",
+      avatarInitials: "PB",
+      authMethod: "simulated_finnish_eid",
+      isSimulated: true,
+      signedInAt: "2026-11-14T20:00:00.000Z",
+    };
+
+    const pairA = await provisionOrRotateHealthConnectPairing(origin, prisma, sessionA);
+    const pairB = await provisionOrRotateHealthConnectPairing(origin, prisma, sessionB);
+    expect(pairA.ok).toBe(true);
+    expect(pairB.ok).toBe(true);
+    if (!pairA.ok || !pairB.ok) return;
+
+    expect(pairA.pairing.tokenId).not.toBe(pairB.pairing.tokenId);
+
+    const payloadBody = JSON.stringify({
+      sequence: 1,
+      source: "health_connect",
+      daily_totals: [{ date: "2026-11-14", steps: 8123 }],
+    });
+
+    const hookBRes = await healthConnectWebhook(
+      new Request(pairB.pairing.webhookUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": pairB.pairing.secret,
+        },
+        body: payloadBody,
+      })
+    );
+    expect(hookBRes.status).toBe(200);
+
+    const summaryB = await getMonitoringSummary(sessionB, prisma);
+    const summaryA = await getMonitoringSummary(sessionA, prisma);
+    expect(summaryB.recentWearableDays.some((d) => d.steps === 8123)).toBe(true);
+    expect(summaryA.recentWearableDays.some((d) => d.steps === 8123)).toBe(false);
+
+    await updateMethodConsent("ring_rhythm", false, prisma, sessionB);
+
+    const participantB = await prisma.participant.findUnique({
+      where: { participantCode: "P-SIM-ANX-01" },
+      select: { id: true },
+    });
+    expect(participantB).toBeTruthy();
+    if (participantB) {
+      const consentEvents = await prisma.consentEvent.findMany({
+        where: {
+          participantId: participantB.id,
+          layer: "method",
+          method: "ring_rhythm",
+        },
+      });
+      expect(consentEvents.length).toBeGreaterThan(0);
+    }
+
+    const blockedBRes = await healthConnectWebhook(
+      new Request(pairB.pairing.webhookUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": pairB.pairing.secret,
+        },
+        body: JSON.stringify({
+          sequence: 2,
+          source: "health_connect",
+          daily_totals: [{ date: "2026-11-15", steps: 4000 }],
+        }),
+      })
+    );
+    expect(blockedBRes.status).toBe(403);
+
+    const allowedARes = await healthConnectWebhook(
+      new Request(pairA.pairing.webhookUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": pairA.pairing.secret,
+        },
+        body: JSON.stringify({
+          sequence: 1,
+          source: "health_connect",
+          daily_totals: [{ date: "2026-11-15", steps: 5000 }],
+        }),
+      })
+    );
+    expect(allowedARes.status).toBe(200);
   });
 });

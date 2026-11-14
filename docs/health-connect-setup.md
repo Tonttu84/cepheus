@@ -97,10 +97,12 @@ npm install && npm run db:setup && npm run dev
 ### Supported authentication modes
 
 1. **Per-participant interactive pairing** via `/monitoring` (`POST /api/monitoring/health-connect/pairing`):
+   - Bound to the signed-in `PatientAuthSession` (isolating `WebhookCredential` and incoming `RingDay`/`RhythmWindow` rows per participant).
    - Stores an AES-256-GCM sealed `WebhookCredential` in PostgreSQL.
    - Requires `APP_SESSION_SECRET` (32+ characters) in `.env` in production.
 2. **Server environment secret** (`HEALTH_CONNECT_WEBHOOK_SECRET`, 16+ characters in `.env`):
    - Accepts `X-Signature: sha256=<HMAC-SHA256>`, `Authorization: Bearer <secret>`, `X-Webhook-Token: <secret>`, or `X-API-Key: <secret>`.
+   - Without a `?token=` query parameter, headless env-secret ingests fall back to `demo-home-node-01`.
 
 ### Verification with `curl`
 
