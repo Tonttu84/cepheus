@@ -256,9 +256,14 @@ Everything above is a proposal. These are the points where an answer is needed m
    misuse of the questionnaire, such as careless or random answers. Points on the other
    side: the standard questionnaires are validated with fixed wording; careless
    answering can also be caught by simple rules (answers given too fast, the same
-   answer to everything); people answer machines honestly but stick with a programme
-   better when a person is involved; and an AI must never stand between a person in
-   crisis and a human. Two limits hold whatever is chosen: an AI neither triggers nor
+   answer to everything); and an AI must never stand between a person in crisis and a
+   human. Two further points were written here as fact before they were checked. That
+   people answer a machine more honestly is only partly supported: people are sometimes
+   more willing to report sensitive things to a computer than to an interviewer, mainly
+   when they are alone, and meta-analyses differ on whether the effect is more than
+   small (Gnambs and Kaspar 2015, abstract read; Richman and others 1999, Dodou and de
+   Winter 2014, search summaries only). That people stick with a programme better when
+   a person is involved is not checked. Two limits hold whatever is chosen: an AI neither triggers nor
    holds back a warning, and a spoken answer is never used to read mood from the
    voice. Starting point: fixed questions answered by tapping, with reading aloud as an
    option, and an AI only where it is shown to help.
