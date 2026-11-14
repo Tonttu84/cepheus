@@ -10,7 +10,7 @@ export const EN_DICTIONARY: Dictionary = {
   "layout.meta.description":
     "Post-TMS home wellbeing check-in companion supporting patient self-care and clinic follow-up.",
   "layout.footer.disclaimer":
-    "Wellbeing check-in prototype for post-TMS follow-up. Not a diagnostic or medical device; makes no treatment or relapse-prediction claims.",
+    "Wellbeing check-in prototype for post-TMS follow-up. The product supports follow-up by the clinic and makes no diagnosis and no treatment claim.",
   "layout.footer.privacy":
     "Camera & microphone inputs stay on-device; only derived numbers are stored.",
 

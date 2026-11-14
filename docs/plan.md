@@ -126,9 +126,10 @@ Why both simple things and re-treatment, in steps:
 2. The recipient sets the complexity. A patient who is unwell gets one simple thing. The
    healthcare system can take detail.
 3. Measure cheaply first, and spend more effort only when the cheap signals are unclear.
-4. Aim and claim differ. We build for real detection. We say only that the system
-   supports the clinic's judgment about when to act, since a claim to detect or predict
-   relapse makes software a medical device and the evidence for any one signal is early.
+4. Aim and claim differ. The product raises a flag for possible relapse risk and
+   passes it to a nurse or doctor, who makes the judgement. It makes no diagnosis
+   and no treatment claim, and it never tells the patient that it has detected or
+   predicted a relapse.
 5. Safety: a crisis path to a person and to emergency help, with nothing automated in
    between, wherever mood or self-harm is asked about; the patient knows and agrees to
    what the clinic sees; no real patient data; simulated data is labelled as simulated.

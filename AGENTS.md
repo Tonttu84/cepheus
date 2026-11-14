@@ -113,15 +113,19 @@ stays green. A reviewer asks for a reason when one is exceeded.
 
 These hold whatever is built.
 
-- The product makes no treatment or diagnostic claims, and never says it detects or
-  predicts relapse. Sensing is described as a wellbeing check-in. Never claim brain
+- The product raises a flag for possible relapse risk and passes it to a nurse
+  or doctor, who makes the judgement. It makes no diagnosis and no treatment
+  claim, and it never tells the patient that it has detected or predicted a
+  relapse. Sensing is described as a wellbeing check-in. Never claim brain
   measurement or brain stimulation at home.
 - A general AI model may turn numbers into a plain summary. It must not read mood from
   a face or a voice, and it must not decide when to alert a clinician.
 - Anything that asks about mood or self-harm shows a crisis path: a route to a person
   and to emergency help, with nothing automated in between.
 - Anything asked of a person who is unwell costs almost no effort. No streaks, no
-  scores, and a missed answer is recorded as missed, never punished.
+  scores, and a missed answer is recorded as missed, never punished. The counts in
+  D38 (walks) and D42 (answered rounds), which can each be switched off, are the
+  only exceptions.
 - Personality is never shown to the user as a label.
 - No real patient data. Use open datasets or simulated data, and label simulated data
   as simulated wherever it is shown.
