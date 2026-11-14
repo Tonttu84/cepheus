@@ -1,6 +1,6 @@
 # Work plan: what is done, what is taken, what is free
 
-Updated against `main` (`b024592`) on 15 Nov 2026, about 01:30. This is the one list
+Updated against `main` (`d37b27a`) on 15 Nov 2026, about 01:45. This is the one list
 of open work for people and agents. Before you start anything, read it, fetch, and
 check the open trails: two of us built the same sign-in protection in parallel on
 14 Nov because neither list showed the other's work.
@@ -27,6 +27,12 @@ How to use it:
 - Sign-in and protection: sealed session cookie, simulated e-ID for patients, staff
   sign-in, role-scoped navigation, protected pages and API routes, and their tests
   (P0.1 to P0.4 of the earlier list; trails 53 and 57).
+- Sign-in follow-up (package H): one-click simulated sign-in for patients and staff,
+  the staff code as a setting (default 123456; real time-based codes when
+  `STAFF_TOTP_SECRET` is set), input length limits, the same error for a wrong email
+  and a wrong password, a test that fails when an API route is added without a
+  guard, the Fitbit link tied to the signed-in patient and cleared on sign-out, and
+  44 px touch targets in the header.
 - The Verda Gemma nurse brief (off by default, D44), the bedside unit's scripts and
   enclosure, the browser camera check.
 - The bedside unit's voice check-in (trail 56): Bluetooth headphone audio, spoken
@@ -90,7 +96,7 @@ branches and goes up as trails as each passes the full gate and a cold review.
 | # | Package | Covers | Needs | State |
 | --- | --- | --- | --- | --- |
 | A | **Core loop, one combined trail**: check-in and clinic API routes on the use cases; the seed with a clinic, a nurse and three simulated patients; `/check-in` and `/clinic` on the API; clinic routes for crisis alerts and nurse calls; the bedside unit's route on the shared use cases (D43) | P1.1 (check-in), P1.2 (storage and routes), P1.3 | main | Taken: `feat/wire-routes-v3`, `feat/functional-flow`, `feat/clinic-alerts-api`, `feat/kiosk-shared-routes`; rebased onto main, fixes in progress |
-| H | **Sign-in follow-up**: staff code as a setting (default 123456, real time-based codes when a secret is set), input length limits, generic errors, one-click simulated sign-in, landing on the right page after sign-in, a test that fails when a route is added without a guard, 44 px touch targets (the Fitbit link is left to trail 60) | Review findings on trail 57 | main | Taken: `feat/sign-in-follow-up` |
+| H | **Sign-in follow-up**: staff code as a setting (default 123456, real time-based codes when a secret is set), input length limits, generic errors, one-click simulated sign-in, landing on the right page after sign-in, a test that fails when a route is added without a guard, 44 px touch targets, and the Fitbit link tied to the signed-in patient (trail 60 touches the same Fitbit routes: when it merges, keep this handling) | Review findings on trail 57 | main | **Done, on main** |
 | B | **Rounds close and the warning rule runs without an answer**: when staff read their flags, the server first closes elapsed rounds and runs the rule for that clinic's patients. Today the rule runs only when a patient answers, so a silent patient never raises a warning | Not in the earlier list | A (routes) | Taken: `feat/rule-on-clinic-read` |
 | C | **Clinic screen wiring**: the card's buttons record a nurse call through the API; unacknowledged crisis alerts are shown and can be acknowledged; the nurse brief panel gets the flag's real numbers and accepts every warning kind (it accepts two of six today) | Rest of P1.2 | A | Free once A is published |
 | D1 | **Patient page on storage**: the suggestion comes from storage, the card's two buttons save the choice, the consent switches write consent events | Rest of P1.1 | A | Free once A is published |
