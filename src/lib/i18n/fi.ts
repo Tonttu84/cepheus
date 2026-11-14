@@ -20,7 +20,7 @@ export const FI_DICTIONARY: PartialDictionary = {
     reviewed: false,
   },
   "layout.footer.disclaimer": {
-    text: "Vointikyselyn prototyyppi TMS-hoidon jälkeiseen seurantaan. Ei diagnostinen tai lääkinnällinen laite; ei tee hoito- tai uusiutumisen ennusteväitteitä.",
+    text: "Vointikyselyn prototyyppi TMS-hoidon jälkeiseen seurantaan. Tuote tukee klinikan seurantaa eikä tee diagnoosia tai hoitoväitettä.",
     reviewed: false,
   },
   "layout.footer.privacy": {
