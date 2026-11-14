@@ -31,8 +31,9 @@ This file is for coding agents and for people. It holds the rules of this reposi
      and the web address that `entire trail show <number>` prints. If nothing is open,
      say nothing.
   4. Run `npm run requests` (or `node scripts/check-requests.mjs`). It fetches, reads
-     `docs/requests.md` on `main` and on every branch, and prints each open request
-     that this machine has not shown before. Pass on whatever it prints at once.
+     `docs/requests.md` on `main` and every published branch, so a request on a
+     branch that was never published is not seen, and prints each open request that
+     this machine has not shown before. Pass on whatever it prints at once.
   Only read: do not comment, approve, add findings or merge unless your user asks. If
   `entire` is missing or not signed in, say so in one line and carry on (see Quirks).
 - Requests pop up without being asked for. Repeat steps 1 and 4 every time you fetch

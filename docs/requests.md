@@ -15,8 +15,9 @@ them. A row is removed or marked done in the trail that carries the request out.
 ## Making it pop up by itself
 
 `npm run requests` (or `node scripts/check-requests.mjs`) fetches, reads this file on
-`main` and on every branch, and prints only the open requests this machine has not shown
-before; `--all` prints every open request again. It remembers what it has shown in
+`main` and every published branch, so a request on a branch that was never published
+is not seen, and prints only the open requests this machine has not shown before; `--all`
+prints every open request again. It remembers what it has shown in
 `.git/requests-seen.json`. An agent harness that supports hooks can call it at session
 start and before each prompt, so that its output lands in the agent's context without
 anyone asking.
