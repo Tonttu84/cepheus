@@ -4,6 +4,7 @@ export {
   FakePatientRepository,
   FakeRoundRepository,
   FakePhq9Repository,
+  FakeGad7Repository,
   FakeCallRepository,
   FakeWarningRepository,
   FakeSmallDipRepository,

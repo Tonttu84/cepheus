@@ -241,6 +241,11 @@ export interface SubmitNotTodayResult {
   readonly ruleRunNeeded: boolean;
 }
 
+export interface SubmitGad7AnswerResult {
+  readonly isComplete: boolean;
+  readonly ruleRunNeeded: boolean;
+}
+
 export interface SubmitPhq9AnswerResult {
   readonly showCrisisPath: boolean;
   readonly progress: Phq9Progress;

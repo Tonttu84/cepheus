@@ -4,5 +4,6 @@ export { submitTaps, type SubmitTapsInput } from './submit-taps';
 export { submitNotToday, type SubmitNotTodayInput } from './submit-not-today';
 export { submitPhq9Answer, type SubmitPhq9AnswerInput } from './submit-phq9-answer';
 export { submitExtraAnswer, type SubmitExtraAnswerInput } from './submit-extra-answer';
+export { submitGad7Answer, type SubmitGad7AnswerInput } from './submit-gad7-answer';
 export { closeElapsedRounds, type CloseElapsedRoundsInput } from './close-elapsed-rounds';
 export type * from './ports';

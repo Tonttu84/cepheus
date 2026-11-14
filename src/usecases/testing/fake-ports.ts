@@ -6,6 +6,8 @@ import type {
   RoundRepository,
   StoredPhq9,
   Phq9Repository,
+  StoredGad7,
+  Gad7Repository,
   StoredCall,
   CallRepository,
   StoredWarning,
@@ -41,6 +43,7 @@ interface FakeStorageState {
   patients: Record<string, PatientRecord>;
   rounds: Record<string, StoredRound[]>;
   phq9: Record<string, StoredPhq9[]>;
+  gad7: Record<string, StoredGad7[]>;
   calls: Record<string, StoredCall[]>;
   warnings: Record<string, StoredWarning[]>;
   smallDips: Record<string, StoredSmallDip[]>;
@@ -55,6 +58,7 @@ function createEmptyState(): FakeStorageState {
     patients: {},
     rounds: {},
     phq9: {},
+    gad7: {},
     calls: {},
     warnings: {},
     smallDips: {},
@@ -154,6 +158,31 @@ export class FakePhq9Repository implements Phq9Repository {
     }
     const list = this.ctx.state.phq9[assessment.patientId];
     const idx = list.findIndex((p) => p.roundNumber === assessment.roundNumber);
+    if (idx >= 0) {
+      list[idx] = structuredClone(assessment);
+    } else {
+      list.push(structuredClone(assessment));
+    }
+  }
+}
+
+export class FakeGad7Repository implements Gad7Repository {
+  public beforeSave: (() => Promise<void>) | null = null;
+
+  constructor(private ctx: FakeStorageContext) {}
+
+  async getGad7s(patientId: string): Promise<readonly StoredGad7[]> {
+    const list = this.ctx.state.gad7[patientId] ?? [];
+    return structuredClone(list).sort((a, b) => a.roundNumber - b.roundNumber);
+  }
+
+  async saveGad7(assessment: StoredGad7): Promise<void> {
+    if (this.beforeSave) await this.beforeSave();
+    if (!this.ctx.state.gad7[assessment.patientId]) {
+      this.ctx.state.gad7[assessment.patientId] = [];
+    }
+    const list = this.ctx.state.gad7[assessment.patientId];
+    const idx = list.findIndex((g) => g.roundNumber === assessment.roundNumber);
     if (idx >= 0) {
       list[idx] = structuredClone(assessment);
     } else {
@@ -347,6 +376,7 @@ export function createFakePorts(
     patients: new FakePatientRepository(ctx),
     rounds: new FakeRoundRepository(ctx),
     phq9: new FakePhq9Repository(ctx),
+    gad7: new FakeGad7Repository(ctx),
     calls: new FakeCallRepository(ctx),
     warnings: new FakeWarningRepository(ctx),
     smallDips: new FakeSmallDipRepository(ctx),
