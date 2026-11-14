@@ -9,6 +9,20 @@ test.describe("Cepheus Foundation Shell & Safety Invariants", () => {
     const response = await page.goto("/");
     expect(response?.status()).toBe(200);
 
+    // Security headers (task P2.3)
+    const headers = response?.headers() ?? {};
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["referrer-policy"]).toBe("no-referrer");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["permissions-policy"]).toContain("camera=(self)");
+    expect(headers["permissions-policy"]).toContain("microphone=(self)");
+    const csp = headers["content-security-policy"] ?? "";
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("base-uri 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).not.toContain("'unsafe-eval'");
+
     // Simulated data badge is clearly displayed
     const badges = page.getByTestId("simulated-badge");
     await expect(badges.first()).toBeVisible();
