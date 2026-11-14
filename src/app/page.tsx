@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
+import { getPrisma } from "@/lib/db";
 import {
   BROAD_AREA_LABELS,
   DEMO_MOMENT_LIST,
@@ -166,6 +166,7 @@ export default async function HomePage() {
   ).length;
 
   try {
+    const prisma = getPrisma();
     const dbParticipant = await prisma.participant.findUnique({
       where: { externalId: SIMULATED_PARTICIPANT_EXTERNAL_ID },
       include: {
@@ -203,7 +204,7 @@ export default async function HomePage() {
           <span className="rounded-md bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-700">
             Data source:{" "}
             {dbSeeded
-              ? "SQLite seeded participant (sim-post-tms-01)"
+              ? "PostgreSQL seeded participant (sim-post-tms-01)"
               : "In-memory deterministic simulation"}
           </span>
         </div>

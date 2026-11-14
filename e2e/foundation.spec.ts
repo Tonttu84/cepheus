@@ -91,7 +91,7 @@ test.describe("Cepheus Foundation Shell & Safety Invariants", () => {
     expect(healthRes.status()).toBe(200);
     const healthJson = await healthRes.json();
     expect(healthJson.ok).toBe(true);
-    expect(healthJson.database).toBe("sqlite");
+    expect(healthJson.database).toBe("postgresql");
     expect(typeof healthJson.participantCount).toBe("number");
     expect(healthJson.isSimulated).toBe(true);
 

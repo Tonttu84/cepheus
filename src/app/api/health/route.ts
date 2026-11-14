@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { getPrisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   let participantCount = 0;
   try {
+    const prisma = getPrisma();
     participantCount = await prisma.participant.count();
   } catch {
     participantCount = 0;
@@ -13,7 +14,7 @@ export async function GET() {
 
   return NextResponse.json({
     ok: true,
-    database: "sqlite",
+    database: "postgresql",
     participantCount,
     isSimulated: true,
   });

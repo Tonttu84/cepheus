@@ -1,0 +1,12 @@
+[
+  {
+    "id": "GHSA-6g55-p6wh-862q",
+    "package": "postcss",
+    "reason": "inside Next.js 15's build tooling, which handles only our own stylesheets; fixed in Next.js 16; see the build plan, open point 6"
+  },
+  {
+    "id": "GHSA-r28c-9q8g-f849",
+    "package": "postcss",
+    "reason": "inside Next.js 15's build tooling, which handles only our own stylesheets; fixed in Next.js 16; see the build plan, open point 6"
+  }
+]

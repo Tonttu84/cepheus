@@ -9,6 +9,8 @@ prisma/*.db
 prisma/*.db-journal
 *.db
 *.db-journal
+.pgdata/
+*.pgdata*
 .env
 .env*.local
 !.env.example
