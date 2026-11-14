@@ -73,8 +73,9 @@ Asked twice a week, on two fixed days the patient chooses, at a time the patient
 - The clinic enrols a patient after the treatment course, when it judges that the
   person has responded. That judgment is the clinic's and is what "well" means here.
 - The PHQ-9 baseline is the first complete PHQ-9 after enrolment. If it is 10 or more,
-  the usual cut-off, the system tells the clinic and does not treat the person as being
-  at a well baseline.
+  the usual cut-off, it immediately raises a warning: a flag to the clinic and a nurse
+  calls. The system tells the clinic that the person is not at a well baseline and does
+  not store it as a personal baseline.
 - The baseline for each tap is the median of the person's first eight answered rounds,
   which takes at least four weeks. Rounds with no answer do not count toward the eight.
 
@@ -105,6 +106,8 @@ part in it.
   "Not today" does not delay it. A low round and a skipped round next to each other also
   raise it, so a person cannot slide down unnoticed by answering every other time.
 - The silence rule applies from the first round, also before a baseline exists.
+- A first complete PHQ-9 with a total of 10 or more also raises a warning at once,
+  so a patient whose very first score is high receives a nurse call without waiting.
 - The flag names the area "the check-in" and since when. It never contains the answers
   themselves (`plan.md`, "Who gets the response").
 - A normal round ends a run. After a warning, the rule starts again once the nurse has
