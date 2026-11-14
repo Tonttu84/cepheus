@@ -298,6 +298,27 @@ model AccessLog {
   @@index([targetPatientId, timestamp])
 }
 
+/// Per-participant Health Connect / Apple Health webhook credential.
+/// Stores the HMAC signing secret encrypted with AES-256-GCM (`sealedSecret`)
+/// plus a SHA-256 `bearerHash`, supporting rotation, revocation, test-ping
+/// confirmation, and Life Dashboard `sequence` deduplication.
+model WebhookCredential {
+  id             String    @id @default(cuid())
+  participantId  String    @unique
+  clinicId       String?
+  tokenId        String    @unique
+  sealedSecret   String
+  bearerHash     String
+  lastSequence   Int?
+  lastTestPingAt DateTime?
+  lastSyncAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([clinicId])
+}
+
 /// Daily smart-ring summary plus compact 24h hourly array and 1440-min sleep/wake string
 /// for fast non-parametric circadian rhythm (IS, IV, RA, SRI) calculations.
 model RingDay {

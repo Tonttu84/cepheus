@@ -219,3 +219,128 @@ export async function simulateArduinoPushAction(): Promise<{
     };
   }
 }
+
+export interface HealthConnectPairingStatus {
+  configuredViaEnv: boolean;
+  paired: boolean;
+  tokenId: string | null;
+  webhookUrl: string;
+  lastTestPingAt: string | null;
+  lastSyncAt: string | null;
+  lastSequence: number | null;
+  ringConsentEnabled: boolean;
+}
+
+export interface HealthConnectProvisionedPairing {
+  tokenId: string;
+  secret: string;
+  webhookUrl: string;
+  lifeDashboardUri: string;
+  qrMatrix: boolean[][];
+  bearerHeader: string;
+  apiKeyHeader: string;
+}
+
+export async function fetchHealthConnectPairingStatus(): Promise<HealthConnectPairingStatus | null> {
+  try {
+    const res = await fetch("/api/monitoring/health-connect/pairing", {
+      cache: "no-store",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      ok: boolean;
+      status?: HealthConnectPairingStatus;
+    };
+    return json.ok && json.status ? json.status : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function provisionHealthConnectPairingAction(): Promise<{
+  feedback: Feedback;
+  pairing?: HealthConnectProvisionedPairing;
+  status?: HealthConnectPairingStatus;
+}> {
+  try {
+    const res = await fetch("/api/monitoring/health-connect/pairing", {
+      method: "POST",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    const json = (await res.json()) as {
+      ok: boolean;
+      error?: string;
+      pairing?: HealthConnectProvisionedPairing;
+      status?: HealthConnectPairingStatus;
+    };
+    if (!res.ok || !json.ok || !json.pairing) {
+      return {
+        feedback: {
+          kind: "error",
+          text: json.error ?? "Could not generate Health Connect pairing credentials.",
+        },
+        status: json.status,
+      };
+    }
+    return {
+      pairing: json.pairing,
+      status: json.status,
+      feedback: {
+        kind: "ok",
+        text: "Generated new Health Connect pairing credentials. Scan the QR code or copy the webhook URL.",
+      },
+    };
+  } catch (err) {
+    return {
+      feedback: {
+        kind: "error",
+        text: isTimeoutError(err)
+          ? "Request timed out."
+          : "Could not generate Health Connect pairing credentials.",
+      },
+    };
+  }
+}
+
+export async function revokeHealthConnectPairingAction(): Promise<{
+  feedback: Feedback;
+  status?: HealthConnectPairingStatus;
+}> {
+  try {
+    const res = await fetch("/api/monitoring/health-connect/pairing", {
+      method: "DELETE",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    const json = (await res.json()) as {
+      ok: boolean;
+      error?: string;
+      status?: HealthConnectPairingStatus;
+    };
+    if (!res.ok || !json.ok) {
+      return {
+        feedback: {
+          kind: "error",
+          text: json.error ?? "Could not disconnect Health Connect pairing.",
+        },
+        status: json.status,
+      };
+    }
+    return {
+      status: json.status,
+      feedback: {
+        kind: "ok",
+        text: "Disconnected phone pairing and revoked the webhook token.",
+      },
+    };
+  } catch (err) {
+    return {
+      feedback: {
+        kind: "error",
+        text: isTimeoutError(err)
+          ? "Request timed out."
+          : "Could not disconnect Health Connect pairing.",
+      },
+    };
+  }
+}

@@ -109,4 +109,54 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     expect(staffJson.summary.recentWearableDays).toEqual([]);
     expect(staffJson.summary.recentCameraReadings).toEqual([]);
   });
+
+  test("4. End-user Health Connect QR pairing provisions credentials, verifies phone test ping, and revokes cleanly", async ({
+    page,
+    request,
+  }) => {
+    await page.goto("/monitoring");
+
+    await expect(page.getByTestId("hc-pair-button")).toBeVisible();
+    await page.getByTestId("hc-pair-button").click();
+
+    await expect(page.getByTestId("hc-pairing-card")).toBeVisible();
+    await expect(page.getByTestId("hc-pairing-qr")).toBeVisible();
+
+    const ldHref = await page
+      .getByTestId("hc-lifedashboard-link")
+      .getAttribute("href");
+    expect(ldHref).toMatch(/^lifedashboard:\/\/pair#v=1&url=/);
+
+    const webhookUrl = (
+      await page.getByTestId("hc-webhook-url").textContent()
+    )?.trim();
+    const apiKeyHeaderLine = (
+      await page.getByTestId("hc-webhook-apikey-header").textContent()
+    )?.trim();
+    expect(webhookUrl).toBeTruthy();
+    expect(apiKeyHeaderLine).toMatch(/^X-API-Key:\s+\S+/);
+    const apiKey = apiKeyHeaderLine!.replace(/^X-API-Key:\s+/, "");
+
+    const pingRes = await request.post(webhookUrl!, {
+      headers: { "x-api-key": apiKey },
+      data: { test: true, source: "health_connect" },
+    });
+    expect(pingRes.status()).toBe(204);
+
+    await page.getByTestId("hc-refresh-status").click();
+    await expect(page.getByTestId("hc-status-badge")).toContainText(
+      "Phone verified"
+    );
+
+    await page.getByTestId("hc-disconnect-button").click();
+    await expect(page.getByTestId("hc-status-badge")).not.toContainText(
+      "Phone verified"
+    );
+
+    const revokedRes = await request.post(webhookUrl!, {
+      headers: { "x-api-key": apiKey },
+      data: { test: true },
+    });
+    expect(revokedRes.status()).toBe(401);
+  });
 });

@@ -1,5 +1,7 @@
+import crypto from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "@prisma/client";
+import { POST as healthConnectWebhook } from "@/app/api/webhooks/health-connect/route";
 import { evaluateArduinoEdgePayload } from "@/domain/arduino";
 import { mapHealthConnectPayloadToRingDays } from "@/domain/health-connect";
 import { getPrisma } from "@/lib/db";
@@ -8,13 +10,17 @@ import { PHQ9_COLUMNS } from "@/server/db/phq9-columns";
 import {
   buildSimulatedFitbitWeek,
   buildSimulatedHealthConnectPayload,
+  getHealthConnectPairingStatus,
   getMonitoringSummary,
   HOME_DEMO_EXTERNAL_ID,
+  provisionOrRotateHealthConnectPairing,
+  revokeHealthConnectPairing,
   saveArduinoBedsideCheckIn,
   saveArduinoEdgeIngest,
   saveWearableDaysAndComputeRhythm,
   updateMethodConsent,
 } from "@/server/monitoring";
+import { _resetRateLimits } from "@/server/security/rate-limit";
 
 describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
   let prisma: PrismaClient;
@@ -25,6 +31,13 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
 
   afterAll(async () => {
     try {
+      const p = await prisma.participant.findUnique({
+        where: { externalId: HOME_DEMO_EXTERNAL_ID },
+        select: { id: true },
+      });
+      if (p) {
+        await prisma.webhookCredential.deleteMany({ where: { participantId: p.id } });
+      }
       await prisma.participant.deleteMany({
         where: { externalId: HOME_DEMO_EXTERNAL_ID },
       });
@@ -334,6 +347,7 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     expect(done[0]?.totalScore).toBe(9);
     expect(done[0]?.completedAt).not.toBeNull();
   });
+
   it("keeps bedside PHQ-9 item answers in memory only when item answers are off", async () => {
     const participantFilter = { participant: { externalId: HOME_DEMO_EXTERNAL_ID } };
     await prisma.phq9Assessment.deleteMany({ where: participantFilter });
@@ -407,5 +421,98 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     expect(after).toHaveLength(1);
     expect(after[0]).toMatchObject({ status: "completed", totalScore: 9, completedAt: before.completedAt });
     expect(memory.size()).toBe(0);
+  });
+
+  it("provisions Health Connect pairing, tracks test ping, deduplicates sequence, and revokes cleanly", async () => {
+    _resetRateLimits();
+    await updateMethodConsent("ring_rhythm", true, prisma);
+    const origin = "http://localhost:3000";
+
+    const provisioned = await provisionOrRotateHealthConnectPairing(origin, prisma);
+    expect(provisioned.ok).toBe(true);
+    if (!provisioned.ok) return;
+
+    const { pairing } = provisioned;
+    expect(pairing.lifeDashboardUri.startsWith("lifedashboard://")).toBe(true);
+    expect(pairing.qrMatrix.length).toBeGreaterThan(0);
+
+    const sign = (raw: string) =>
+      crypto.createHmac("sha256", pairing.secret).update(raw).digest("hex");
+
+    const pingBody = JSON.stringify({ test: true });
+    const pingRes = await healthConnectWebhook(
+      new Request(pairing.webhookUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-signature": sign(pingBody),
+        },
+        body: pingBody,
+      })
+    );
+    expect(pingRes.status).toBe(204);
+
+    const afterPing = await getHealthConnectPairingStatus(origin, prisma);
+    expect(afterPing.paired).toBe(true);
+    expect(afterPing.lastTestPingAt).not.toBeNull();
+
+    const payloadBody = JSON.stringify({
+      sequence: 42,
+      daily_totals: [{ date: "2026-11-14", steps: 5500 }],
+    });
+    const firstRes = await healthConnectWebhook(
+      new Request(pairing.webhookUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-signature": sign(payloadBody),
+        },
+        body: payloadBody,
+      })
+    );
+    expect(firstRes.status).toBe(200);
+    expect((await firstRes.json()).savedDays).toBe(1);
+
+    const dupRes = await healthConnectWebhook(
+      new Request(pairing.webhookUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-signature": sign(payloadBody),
+        },
+        body: payloadBody,
+      })
+    );
+    expect(dupRes.status).toBe(200);
+    const dupJson = await dupRes.json();
+    expect(dupJson.duplicateSequence).toBe(true);
+    expect(dupJson.savedDays).toBe(0);
+
+    const revokedStatus = await revokeHealthConnectPairing(origin, prisma);
+    expect(revokedStatus.paired).toBe(false);
+
+    const afterRevokeRes = await healthConnectWebhook(
+      new Request(pairing.webhookUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-signature": sign(payloadBody),
+        },
+        body: payloadBody,
+      })
+    );
+    expect(afterRevokeRes.status).toBe(401);
+
+    const unknownRes = await healthConnectWebhook(
+      new Request(`${origin}/api/webhooks/health-connect?token=nonexistent`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-signature": sign(payloadBody),
+        },
+        body: payloadBody,
+      })
+    );
+    expect(unknownRes.status).toBe(401);
   });
 });

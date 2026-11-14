@@ -1,3 +1,7 @@
+import {
+  HealthConnectPanel,
+  type HealthConnectPanelProps,
+} from "@/components/monitoring/health-connect-panel";
 import type { MonitoringSummaryPayload } from "@/server/monitoring/store";
 
 export interface FitbitStatus {
@@ -9,12 +13,11 @@ export interface FitbitStatus {
 
 interface WearableSectionProps {
   fitbitStatus: FitbitStatus | null;
-  hcConfigured: boolean;
+  healthConnect: HealthConnectPanelProps;
   latestRhythmWindow: MonitoringSummaryPayload["latestRhythmWindow"];
   busyAction: string | null;
   onFitbitSync: (mode: "live" | "simulated") => void;
   onFitbitDisconnect: () => void;
-  onSimulateHealthConnect: () => void;
 }
 
 const PRIMARY_BTN =
@@ -24,12 +27,11 @@ const SECONDARY_BTN =
 
 export function WearableSection({
   fitbitStatus,
-  hcConfigured,
+  healthConnect,
   latestRhythmWindow,
   busyAction,
   onFitbitSync,
   onFitbitDisconnect,
-  onSimulateHealthConnect,
 }: WearableSectionProps) {
   return (
     <section
@@ -67,39 +69,7 @@ export function WearableSection({
         </div>
       </div>
 
-      <div className="space-y-3 rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="font-display text-base font-semibold text-ink-primary">
-              Android Health Connect &amp; Apple Health Webhook
-            </h3>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-ink-secondary">
-              Supports <strong>Health Connect to Webhook</strong> (Google Play)
-              and <strong>Life Dashboard Companion</strong> (Android &amp; iOS,
-              HMAC-SHA256 <code>X-Signature</code>) so Fitbit, Oura, Garmin, or
-              Samsung watches push sleep stages, steps, HR, and HRV directly to{" "}
-              <code>POST /api/webhooks/health-connect</code>.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-border-hairline bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-ink-secondary">
-              {hcConfigured
-                ? "Webhook secret configured"
-                : "Set HEALTH_CONNECT_WEBHOOK_SECRET for live phone sync"}
-            </span>
-            <button
-              type="button"
-              data-testid="health-connect-simulate"
-              disabled={busyAction !== null}
-              onClick={onSimulateHealthConnect}
-              className={SECONDARY_BTN}
-            >
-              Simulate Health Connect webhook push
-            </button>
-          </div>
-        </div>
-      </div>
+      <HealthConnectPanel {...healthConnect} />
 
       <RhythmWindowPanel latestRhythmWindow={latestRhythmWindow} />
     </section>
