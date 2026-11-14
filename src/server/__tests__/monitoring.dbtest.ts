@@ -195,5 +195,32 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     if (crisisRes.ok) {
       expect(crisisRes.showCrisisPath).toBe(true);
     }
+
+    // When check_in consent is paused in DB, decideAccess refuses storing taps
+    await updateMethodConsent("check_in", false, prisma);
+    const blockedRes = await saveArduinoBedsideCheckIn(
+      {
+        deviceId: "unoq-dbtest",
+        date: "2026-11-16",
+        isSimulated: true,
+        kind: "taps",
+        mood: 2,
+        interest: 2,
+      },
+      prisma
+    );
+    expect(blockedRes.ok).toBe(false);
+    if (!blockedRes.ok) {
+      expect(blockedRes.status).toBe(403);
+    }
+    const refusedRow = await prisma.checkInRound.findFirst({
+      where: {
+        participant: { externalId: HOME_DEMO_EXTERNAL_ID },
+        date: "2026-11-16",
+      },
+    });
+    expect(refusedRow).toBeNull();
+
+    await updateMethodConsent("check_in", true, prisma);
   });
 });

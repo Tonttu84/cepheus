@@ -18,7 +18,7 @@ describe("Arduino Voice Kiosk Choice Parser (src/domain/arduino/voice)", () => {
     expect(parseSpokenChoice("skip", "phq9")).toEqual({ kind: "not_today" });
   });
 
-  it("maps tap choices 0..4 from phrases or numbers and rejects out-of-range PHQ-9 numbers", () => {
+  it("maps valid tap 0..4 and PHQ-9 0..3 labels and digits", () => {
     expect(parseSpokenChoice("very good", "tap")).toEqual({
       kind: "score",
       value: 4,
@@ -26,6 +26,14 @@ describe("Arduino Voice Kiosk Choice Parser (src/domain/arduino/voice)", () => {
     expect(parseSpokenChoice("okay", "tap")).toEqual({
       kind: "score",
       value: 2,
+    });
+    expect(parseSpokenChoice("not at all", "tap")).toEqual({
+      kind: "score",
+      value: 0,
+    });
+    expect(parseSpokenChoice("not at all", "phq9")).toEqual({
+      kind: "score",
+      value: 0,
     });
     expect(parseSpokenChoice("four", "tap")).toEqual({
       kind: "score",
@@ -42,6 +50,18 @@ describe("Arduino Voice Kiosk Choice Parser (src/domain/arduino/voice)", () => {
       kind: "score",
       value: 1,
     });
+  });
+
+  it("returns unclear for negated or mixed/ambiguous answers", () => {
+    expect(parseSpokenChoice("not good", "tap")).toEqual({ kind: "unclear" });
+    expect(parseSpokenChoice("not very good", "tap")).toEqual({ kind: "unclear" });
+    expect(parseSpokenChoice("not three", "tap")).toEqual({ kind: "unclear" });
+    expect(parseSpokenChoice("no, four", "tap")).toEqual({ kind: "unclear" });
+    expect(parseSpokenChoice("ei hyvä", "tap")).toEqual({ kind: "unclear" });
+    expect(parseSpokenChoice("two or three", "tap")).toEqual({ kind: "unclear" });
+    expect(parseSpokenChoice("low or good", "tap")).toEqual({ kind: "unclear" });
+    expect(parseSpokenChoice("not at all good", "tap")).toEqual({ kind: "unclear" });
+    expect(parseSpokenChoice("0 or 1", "phq9")).toEqual({ kind: "unclear" });
   });
 
   it("returns unclear for empty or unrelated speech without guessing", () => {

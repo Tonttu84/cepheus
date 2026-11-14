@@ -5,6 +5,8 @@
  * Rules enforced:
  * - Maps spoken choice text strictly to fixed item scores (0..4 taps, 0..3 PHQ-9),
  *   "not_today", or immediate "crisis_help".
+ * - Rejects negated ("not good", "not three") or mixed ("two or three") answers
+ *   as "unclear" rather than recording a wrong score.
  * - Never infers mood, emotion, or prosody from voice.
  * - Zero external imports outside src/domain/.
  */
@@ -36,6 +38,23 @@ const NOT_TODAY_PHRASES = [
   "later",
   "no thanks",
 ];
+
+const NEGATION_WORDS = new Set([
+  "not",
+  "no",
+  "never",
+  "neither",
+  "nor",
+  "dont",
+  "didnt",
+  "isnt",
+  "arent",
+  "cant",
+  "wont",
+  "ei",
+  "en",
+  "et",
+]);
 
 const NUMBER_WORDS: Record<string, number> = {
   "0": 0,
@@ -77,14 +96,43 @@ const PHQ9_LABELS: ReadonlyArray<{ phrase: string; score: number }> = [
 function normalizeTranscript(raw: string): string {
   return raw
     .toLowerCase()
+    .replace(/['’]/g, "")
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
+function collectMatchedScores(norm: string, mode: VoiceChoiceMode): Set<number> {
+  const maxScore = mode === "tap" ? 4 : 3;
+  const labels = mode === "tap" ? TAP_LABELS : PHQ9_LABELS;
+  const sortedLabels = [...labels].sort((a, b) => b.phrase.length - a.phrase.length);
+
+  const matched = new Set<number>();
+  let remaining = ` ${norm} `;
+
+  for (const item of sortedLabels) {
+    const paddedPhrase = ` ${item.phrase} `;
+    if (remaining.includes(paddedPhrase)) {
+      matched.add(item.score);
+      remaining = remaining.split(paddedPhrase).join(" ");
+    }
+  }
+
+  for (const tok of remaining.trim().split(/\s+/)) {
+    if (tok && Object.prototype.hasOwnProperty.call(NUMBER_WORDS, tok)) {
+      const val = NUMBER_WORDS[tok];
+      if (val >= 0 && val <= maxScore) {
+        matched.add(val);
+      }
+    }
+  }
+
+  return matched;
+}
+
 /**
  * Deterministically maps a local STT transcript string to a fixed score or action.
- * Any transcript containing a crisis/help keyword always resolves to `crisis_help` first.
+ * Crisis keywords take priority; negated or mixed/ambiguous transcripts return `unclear`.
  */
 export function parseSpokenChoice(
   transcript: string,
@@ -107,27 +155,21 @@ export function parseSpokenChoice(
     }
   }
 
-  const maxScore = mode === "tap" ? 4 : 3;
-  const labels = mode === "tap" ? TAP_LABELS : PHQ9_LABELS;
-
-  // Match exact phrase labels first (longest match wins, e.g. "very good" before "good")
-  const sortedLabels = [...labels].sort((a, b) => b.phrase.length - a.phrase.length);
-  for (const item of sortedLabels) {
-    if (norm === item.phrase || norm.includes(item.phrase)) {
-      return { kind: "score", value: item.score };
-    }
+  // "not at all" is an explicit option label for 0; treat standalone "not at all" cleanly
+  // while rejecting any other negation word ("not good", "not three", "no, four").
+  const withoutNotAtAll = ` ${norm} `.split(" not at all ").join(" ").trim();
+  const hasNegation = withoutNotAtAll
+    .split(/\s+/)
+    .some((tok) => tok.length > 0 && NEGATION_WORDS.has(tok));
+  if (hasNegation) {
+    return { kind: "unclear" };
   }
 
-  // Match spoken digits or number words
-  const tokens = norm.split(" ");
-  for (const tok of tokens) {
-    if (Object.prototype.hasOwnProperty.call(NUMBER_WORDS, tok)) {
-      const val = NUMBER_WORDS[tok];
-      if (val >= 0 && val <= maxScore) {
-        return { kind: "score", value: val };
-      }
-    }
+  const matchedScores = collectMatchedScores(norm, mode);
+  if (matchedScores.size !== 1) {
+    return { kind: "unclear" };
   }
 
-  return { kind: "unclear" };
+  const [onlyScore] = [...matchedScores];
+  return { kind: "score", value: onlyScore };
 }

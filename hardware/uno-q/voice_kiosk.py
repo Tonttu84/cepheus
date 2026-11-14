@@ -3,11 +3,13 @@ Cepheus — Arduino UNO Q (2 GB RAM) Sequential Bedside Voice + Camera Kiosk (Tr
 
 Runs sequentially so Piper TTS, Vosk/Whisper STT, and Python MediaPipe never
 stay resident in the 2 GB RAM simultaneously:
-  1. Speak exact check-in wording via Piper TTS (or espeak-ng fallback) -> exit TTS
+  1. Speak the always-available crisis route + exact check-in wording via Piper TTS
+     (or espeak-ng fallback) -> exit TTS
   2. Capture 4s mic audio strictly in RAM (zero .wav files written), transcribe
      with local Vosk or whisper.cpp -> map strictly to 0..4 / not_today / crisis_help
-     -> zero buffer & unload STT model
-  3. Post derived numeric check-in to POST /api/arduino/check-in
+     (negated or mixed replies become 'unclear') -> zero buffer & unload STT model
+  3. Post derived numeric check-in to POST /api/arduino/check-in and honor
+     `showCrisisPath: true` from the server response immediately
   4. Run sequential 640x480 @ 10fps camera check via edge_monitor.py -> post
      derived movement/daylight numbers to POST /api/arduino/ingest
   5. Forward LED / light-cue / crisis status to STM32U585 MCU over serial if attached.
@@ -27,10 +29,6 @@ import subprocess
 import time
 from typing import Any
 
-import requests
-
-from edge_monitor import post_derived_metrics, run_edge_window
-
 CRISIS_SPOKEN_MESSAGE = (
     "If you need someone right now: call emergency 112, "
     "or call the MIELI Crisis Helpline 24/7 at 09 2525 0111, "
@@ -48,6 +46,9 @@ CRISIS_PHRASES = (
     "nurse",
 )
 NOT_TODAY_PHRASES = ("not today", "skip", "skip today", "pass", "later", "no thanks")
+NEGATION_WORDS = frozenset(
+    ("not", "no", "never", "neither", "nor", "dont", "didnt", "isnt", "arent", "cant", "wont", "ei", "en", "et")
+)
 NUMBER_WORDS = {"0": 0, "zero": 0, "1": 1, "one": 1, "2": 2, "two": 2, "3": 3, "three": 3, "4": 4, "four": 4}
 TAP_LABELS = (
     ("very good", 4),
@@ -66,8 +67,12 @@ TAP_LABELS = (
 
 
 def parse_spoken_tap_choice(transcript: str) -> tuple[str, int | None]:
-    """Deterministic mirror of src/domain/arduino/voice.ts parseSpokenChoice(..., 'tap')."""
-    norm = re.sub(r"\s+", " ", re.sub(r"[^a-z0-9\s]", " ", transcript.lower())).strip()
+    """
+    Deterministic mirror of src/domain/arduino/voice.ts parseSpokenChoice(..., 'tap').
+    Rejects negated ('not good', 'not three') or mixed ('two or three') replies as 'unclear'.
+    """
+    cleaned = re.sub(r"['’]", "", transcript.lower())
+    norm = re.sub(r"\s+", " ", re.sub(r"[^a-z0-9\s]", " ", cleaned)).strip()
     if not norm:
         return ("unclear", None)
     for phrase in CRISIS_PHRASES:
@@ -76,13 +81,26 @@ def parse_spoken_tap_choice(transcript: str) -> tuple[str, int | None]:
     for phrase in NOT_TODAY_PHRASES:
         if phrase in norm:
             return ("not_today", None)
-    for phrase, score in TAP_LABELS:
-        if phrase in norm:
-            return ("score", score)
-    for tok in norm.split(" "):
+
+    without_not_at_all = f" {norm} ".replace(" not at all ", " ").strip()
+    if any(tok in NEGATION_WORDS for tok in without_not_at_all.split()):
+        return ("unclear", None)
+
+    matched_scores: set[int] = set()
+    remaining = f" {norm} "
+    for phrase, score in sorted(TAP_LABELS, key=lambda x: len(x[0]), reverse=True):
+        padded = f" {phrase} "
+        if padded in remaining:
+            matched_scores.add(score)
+            remaining = remaining.replace(padded, " ")
+
+    for tok in remaining.strip().split():
         if tok in NUMBER_WORDS:
-            return ("score", NUMBER_WORDS[tok])
-    return ("unclear", None)
+            matched_scores.add(NUMBER_WORDS[tok])
+
+    if len(matched_scores) != 1:
+        return ("unclear", None)
+    return ("score", next(iter(matched_scores)))
 
 
 def speak_text_on_device(text: str) -> None:
@@ -124,7 +142,6 @@ def capture_and_transcribe_once_in_ram(seconds: int = 4) -> str:
     arecord = shutil.which("arecord")
     vosk_model_path = os.environ.get("VOSK_MODEL_PATH", "")
     if not arecord or not vosk_model_path or not os.path.exists(vosk_model_path):
-        # Interactive console fallback for dry-run / testing without mic hardware
         return input("[Mic dry-run — type spoken reply (0-4 / not today / help)]: ")
 
     import json
@@ -143,7 +160,6 @@ def capture_and_transcribe_once_in_ram(seconds: int = 4) -> str:
     res = json.loads(rec.FinalResult())
     transcript = str(res.get("text", ""))
 
-    # Zero audio buffer in RAM and unload model before next step
     for i in range(len(audio_buf)):
         audio_buf[i] = 0
     del audio_buf, rec, model
@@ -157,7 +173,7 @@ def send_mcu_command(cmd: str) -> None:
     if not port:
         return
     try:
-        import serial  # optional pyserial
+        import serial
 
         with serial.Serial(port, 115200, timeout=1) as ser:
             ser.write(f"{cmd}\n".encode("ascii"))
@@ -166,6 +182,8 @@ def send_mcu_command(cmd: str) -> None:
 
 
 def post_checkin_result(payload: dict[str, Any]) -> dict[str, Any]:
+    import requests
+
     base_url = os.environ.get("CEPHEUS_BASE_URL", "http://localhost:3000").rstrip("/")
     token = os.environ.get("ARDUINO_INGEST_TOKEN", "").strip()
     headers = {"Content-Type": "application/json"}
@@ -176,10 +194,18 @@ def post_checkin_result(payload: dict[str, Any]) -> dict[str, Any]:
     return resp.json()
 
 
+def trigger_crisis_response() -> None:
+    send_mcu_command("CRISIS")
+    speak_text_on_device(CRISIS_SPOKEN_MESSAGE)
+
+
 def run_sequential_bedside_cycle() -> None:
     device_id = os.environ.get("CEPHEUS_DEVICE_ID", "unoq-home-01")
     today = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
     send_mcu_command("ACTIVE")
+
+    # Rule compliance: anything asking about mood always exposes the crisis path.
+    speak_text_on_device(f"Wellbeing check-in. {CRISIS_SPOKEN_MESSAGE}")
 
     questions = [
         ("mood", "How is your mood right now? Say zero for very low up to four for very good, or say not today."),
@@ -193,8 +219,7 @@ def run_sequential_bedside_cycle() -> None:
         kind, val = parse_spoken_tap_choice(transcript)
 
         if kind == "crisis_help":
-            send_mcu_command("CRISIS")
-            speak_text_on_device(CRISIS_SPOKEN_MESSAGE)
+            trigger_crisis_response()
             post_checkin_result({
                 "deviceId": device_id,
                 "date": today,
@@ -205,13 +230,16 @@ def run_sequential_bedside_cycle() -> None:
             return
 
         if kind == "not_today":
-            post_checkin_result({
+            resp = post_checkin_result({
                 "deviceId": device_id,
                 "date": today,
                 "timestampMs": int(time.time() * 1000),
                 "nonce": secrets.token_hex(16),
                 "kind": "not_today",
             })
+            if resp.get("showCrisisPath"):
+                trigger_crisis_response()
+                return
             speak_text_on_device("Okay, skipped for today with no penalty.")
             send_mcu_command("IDLE")
             return
@@ -219,11 +247,11 @@ def run_sequential_bedside_cycle() -> None:
         if kind == "score" and val is not None:
             scores[key] = val
         else:
-            speak_text_on_device("Sorry, I did not catch that. Moving on with no penalty.")
+            speak_text_on_device("Sorry, I did not catch a clear single answer. Moving on with no penalty.")
             send_mcu_command("IDLE")
             return
 
-    post_checkin_result({
+    resp = post_checkin_result({
         "deviceId": device_id,
         "date": today,
         "timestampMs": int(time.time() * 1000),
@@ -232,10 +260,15 @@ def run_sequential_bedside_cycle() -> None:
         "mood": scores["mood"],
         "interest": scores["interest"],
     })
+    if resp.get("showCrisisPath"):
+        trigger_crisis_response()
+        return
+
     speak_text_on_device("Thank you. Your check-in is saved.")
 
-    # Step 4: Run camera/immobility check sequentially only after voice models are freed
     if os.environ.get("RUN_CAMERA_AFTER_VOICE", "true").lower() == "true":
+        from edge_monitor import post_derived_metrics, run_edge_window
+
         model_path = os.environ.get("MEDIAPIPE_FACE_MODEL", "face_landmarker.task")
         cam_idx = int(os.environ.get("CAMERA_INDEX", "0"))
         summary = run_edge_window(

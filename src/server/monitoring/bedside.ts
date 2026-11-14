@@ -3,7 +3,11 @@ import { decideAccess } from "@/domain/access";
 import { isCrisis } from "@/domain/crisis";
 import { CRISIS_RESOURCES } from "@/lib/constants";
 import { getPrisma } from "@/lib/db";
-import { DEMO_CLINIC_ID, ensureHomeDemoParticipant } from "./store";
+import {
+  DEMO_CLINIC_ID,
+  ensureHomeDemoParticipant,
+  loadConsentContext,
+} from "./store";
 
 export type BedsideCheckInInput =
   | {
@@ -62,15 +66,42 @@ async function resolveRoundNumber(
   return (latest?.roundNumber ?? 0) + 1;
 }
 
+function checkStoredCheckInConsent(
+  input: BedsideCheckInInput,
+  patientId: string,
+  consentCtx: Awaited<ReturnType<typeof loadConsentContext>>
+): boolean {
+  const takingPartForKind =
+    input.kind === "phq9_item"
+      ? consentCtx.methodFlags.phq9
+      : consentCtx.methodFlags.check_in;
+
+  const access = decideAccess({
+    actor: { kind: "patient", patientId, clinicId: DEMO_CLINIC_ID },
+    action: "write",
+    target: { kind: "answers", patientId, clinicId: DEMO_CLINIC_ID },
+    purpose: "self_access",
+    consent: {
+      ...consentCtx.consentState,
+      taking_part: takingPartForKind,
+    },
+  });
+
+  return access.ok && access.value.allowed;
+}
+
 /**
  * Persists a derived bedside check-in (voice two-tap, Not today, PHQ-9 item,
- * or physical STM32 crisis button) for the demo home node after enforcing `decideAccess`.
- * Never stores raw audio or transcripts.
+ * or physical STM32 crisis button) after checking the participant's stored
+ * MeasurementConsent via `decideAccess`.
  */
 export async function saveArduinoBedsideCheckIn(
   input: BedsideCheckInInput,
   prisma: PrismaClient = getPrisma()
-): Promise<BedsideCheckInOutcome | { ok: false; status: 403; error: string }> {
+): Promise<
+  | BedsideCheckInOutcome
+  | { ok: false; status: 403; error: string; showCrisisPath: boolean; crisisResources: typeof CRISIS_RESOURCES | null }
+> {
   const crisisFromItem =
     input.kind === "phq9_item"
       ? isCrisis({ id: input.itemId, value: input.value })
@@ -80,16 +111,20 @@ export async function saveArduinoBedsideCheckIn(
     (crisisFromItem.ok && crisisFromItem.value === true);
 
   const participant = await ensureHomeDemoParticipant(prisma);
-  const access = decideAccess({
-    actor: { kind: "patient", patientId: participant.id, clinicId: DEMO_CLINIC_ID },
-    action: "write",
-    target: { kind: "answers", patientId: participant.id, clinicId: DEMO_CLINIC_ID },
-    purpose: "self_access",
-    consent: { taking_part: true, methods: { ring: true, camera: true }, rule_check: false },
-  });
+  const consentCtx = await loadConsentContext(participant.id, prisma);
 
-  if (!access.ok || !access.value.allowed) {
-    return { ok: false, status: 403, error: "Check-in access is not permitted." };
+  // Crisis button always surfaces human help immediately even if check-in storage is paused.
+  if (input.kind !== "crisis_button") {
+    const allowed = checkStoredCheckInConsent(input, participant.id, consentCtx);
+    if (!allowed) {
+      return {
+        ok: false,
+        status: 403,
+        error: "Check-in consent is currently paused.",
+        showCrisisPath,
+        crisisResources: showCrisisPath ? CRISIS_RESOURCES : null,
+      };
+    }
   }
 
   const source = input.isSimulated ? "simulated_uno_q_voice" : "arduino_uno_q_voice";

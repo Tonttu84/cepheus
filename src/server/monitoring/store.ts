@@ -17,7 +17,14 @@ export const HOME_DEMO_EXTERNAL_ID = "demo-home-node-01";
 export const DEMO_CLINIC_ID = "demo-clinic";
 
 const MONITORED_METHODS = ["ring_rhythm", "camera_expressivity", "home_routine"] as const;
-export type MonitoredMethodKey = (typeof MONITORED_METHODS)[number];
+const ALL_CONSENT_METHODS = [
+  "check_in",
+  "phq9",
+  "ring_rhythm",
+  "camera_expressivity",
+  "home_routine",
+] as const;
+export type MonitoredMethodKey = (typeof ALL_CONSENT_METHODS)[number];
 
 export interface WearableDayInput {
   readonly date: string;
@@ -103,7 +110,7 @@ export interface MonitoringSummaryPayload {
   }>;
 }
 
-interface LoadedConsentContext {
+export interface LoadedConsentContext {
   consentState: ConsentState;
   methodFlags: Record<MonitoredMethodKey, boolean>;
 }
@@ -121,32 +128,36 @@ function makeStaffActor(): Actor {
   };
 }
 
-async function loadConsentContext(
+export async function loadConsentContext(
   participantId: string,
   prisma: PrismaClient
 ): Promise<LoadedConsentContext> {
   const rows = await prisma.measurementConsent.findMany({
     where: {
       participantId,
-      method: { in: [...MONITORED_METHODS] },
+      method: { in: [...ALL_CONSENT_METHODS] },
     },
   });
 
   const flagOf = (key: MonitoredMethodKey): boolean =>
     Boolean(rows.find((r) => r.method === key)?.enabled);
 
+  const checkIn = flagOf("check_in");
+  const phq9 = flagOf("phq9");
   const ring = flagOf("ring_rhythm");
   const camera = flagOf("camera_expressivity");
   const routine = flagOf("home_routine");
 
   return {
     methodFlags: {
+      check_in: checkIn,
+      phq9,
       ring_rhythm: ring,
       camera_expressivity: camera,
       home_routine: routine,
     },
     consentState: {
-      taking_part: true,
+      taking_part: checkIn || phq9,
       methods: {
         ring,
         camera: camera || routine,
@@ -206,7 +217,7 @@ export async function ensureHomeDemoParticipant(prisma: PrismaClient = getPrisma
     });
   }
 
-  for (const methodKey of MONITORED_METHODS) {
+  for (const methodKey of ALL_CONSENT_METHODS) {
     const meta = MEASUREMENT_METHODS.find((m) => m.method === methodKey);
     await prisma.measurementConsent.upsert({
       where: {

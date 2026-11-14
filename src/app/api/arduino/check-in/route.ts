@@ -128,9 +128,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
 
-  const outcome = await saveArduinoBedsideCheckIn(parsed.data);
+    const outcome = await saveArduinoBedsideCheckIn(parsed.data);
   if (!outcome.ok) {
-    return NextResponse.json({ ok: false, error: outcome.error }, { status: outcome.status });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: outcome.error,
+        showCrisisPath: outcome.showCrisisPath,
+        crisisResources: outcome.crisisResources,
+      },
+      { status: outcome.status }
+    );
   }
 
   return NextResponse.json(outcome);
