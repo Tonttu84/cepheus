@@ -76,4 +76,90 @@ describe("Health Connect Domain Mapper (src/domain/health-connect)", () => {
     expect(day.avgHrBpm).toBe(58);
     expect(day.avgHrvRmssdMs).toBe(48);
   });
+
+  it("maps Life Dashboard Companion payload with IANA timezone, calories, HRV millis, and resting HR", () => {
+    const days = mapHealthConnectPayloadToRingDays({
+      source: "health_connect",
+      timezone: "Europe/Helsinki", // UTC+2 in November
+      sequence: 42,
+      steps: [
+        {
+          // 2026-11-14T22:30:00Z = 2026-11-15T00:30:00+02:00 (Helsinki)
+          start_time: "2026-11-14T22:30:00Z",
+          count: 350,
+        },
+      ],
+      active_calories: [
+        {
+          start_time: "2026-11-15T06:00:00Z",
+          calories: 145.5,
+        },
+      ],
+      resting_heart_rate: [
+        {
+          time: "2026-11-15T05:00:00Z",
+          bpm: 56,
+        },
+      ],
+      heart_rate_variability: [
+        {
+          time: "2026-11-15T05:15:00Z",
+          heart_rate_variability_millis: 41.2,
+        },
+      ],
+      daily_totals: [
+        {
+          date: "2026-11-15",
+          steps: 4200,
+          active_calories: 380.4,
+        },
+      ],
+    });
+
+    expect(days).toHaveLength(1);
+    const day = days[0];
+    expect(day.date).toBe("2026-11-15");
+    expect(day.hourlyActivity[0]).toBe(350);
+    expect(day.steps).toBe(4200);
+    expect(day.activeCaloriesKcal).toBe(380.4);
+    expect(day.lowestHrBpm).toBe(56);
+    expect(day.avgHrBpm).toBe(56);
+    expect(day.avgHrvRmssdMs).toBe(41.2);
+  });
+
+  it("maps HC Webhook payload with metadata.start_zone_offset_seconds and multi-hour step splitting", () => {
+    const days = mapHealthConnectPayloadToRingDays({
+      source: "health_connect",
+      steps: [
+        {
+          // 08:30 -> 10:30 (+02:00): 30m in hour 8 (25%), 60m in hour 9 (50%), 30m in hour 10 (25%)
+          start_time: "2026-11-14T06:30:00Z",
+          end_time: "2026-11-14T08:30:00Z",
+          count: 1000,
+          metadata: {
+            id: "hc-step-1",
+            start_zone_offset_seconds: 7200,
+          },
+        },
+      ],
+      active_calories: [
+        {
+          start_time: "2026-11-14T06:30:00Z",
+          calories: 210,
+          metadata: {
+            zone_offset_seconds: 7200,
+          },
+        },
+      ],
+    });
+
+    expect(days).toHaveLength(1);
+    const day = days[0];
+    expect(day.date).toBe("2026-11-14");
+    expect(day.hourlyActivity[8]).toBe(250);
+    expect(day.hourlyActivity[9]).toBe(500);
+    expect(day.hourlyActivity[10]).toBe(250);
+    expect(day.steps).toBe(1000);
+    expect(day.activeCaloriesKcal).toBe(210);
+  });
 });
