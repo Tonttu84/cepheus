@@ -10,9 +10,9 @@ export function CameraPermissionDeniedView({ onRetry }: ProblemViewProps) {
     <section
       data-testid="permission-denied-state"
       aria-label="Camera permission refused"
-      className="rounded-2xl border border-amber-200 bg-amber-50/70 p-6 sm:p-8 shadow-xs"
+      className="rounded-2xl border border-amber-200 bg-amber-50/70 p-6 shadow-xs sm:p-8"
     >
-      <h2 className="text-lg font-semibold text-amber-950">
+      <h2 className="font-display text-lg font-semibold text-amber-950">
         Camera access permission was not granted
       </h2>
       <p className="mt-2 text-sm text-amber-900">
@@ -24,7 +24,7 @@ export function CameraPermissionDeniedView({ onRetry }: ProblemViewProps) {
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2 transition-colors cursor-pointer"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2"
         >
           Try again
         </button>
@@ -38,9 +38,9 @@ export function CameraNotFoundView({ onRetry }: ProblemViewProps) {
     <section
       data-testid="no-camera-state"
       aria-label="No camera detected"
-      className="rounded-2xl border border-amber-200 bg-amber-50/70 p-6 sm:p-8 shadow-xs"
+      className="rounded-2xl border border-amber-200 bg-amber-50/70 p-6 shadow-xs sm:p-8"
     >
-      <h2 className="text-lg font-semibold text-amber-950">
+      <h2 className="font-display text-lg font-semibold text-amber-950">
         No camera was found on this device
       </h2>
       <p className="mt-2 text-sm text-amber-900">
@@ -51,7 +51,7 @@ export function CameraNotFoundView({ onRetry }: ProblemViewProps) {
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2 transition-colors cursor-pointer"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2"
         >
           Try again
         </button>
@@ -68,9 +68,9 @@ export function CameraModelErrorView({
     <section
       data-testid="model-error-state"
       aria-label="Model loading failure"
-      className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6 sm:p-8 shadow-xs"
+      className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6 shadow-xs sm:p-8"
     >
-      <h2 className="text-lg font-semibold text-rose-950">
+      <h2 className="font-display text-lg font-semibold text-rose-950">
         Analysis tools could not be loaded
       </h2>
       <p className="mt-2 text-sm text-rose-900">
@@ -84,7 +84,7 @@ export function CameraModelErrorView({
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-xl bg-rose-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2 transition-colors cursor-pointer"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-rose-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
         >
           Try again
         </button>
@@ -98,12 +98,12 @@ export function CameraNoFaceFoundView({ onRetry }: ProblemViewProps) {
     <section
       data-testid="no-face-found-state"
       aria-label="No face detected"
-      className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-xs"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-8"
     >
-      <h2 className="text-lg font-semibold text-stone-900">
+      <h2 className="font-display text-lg font-semibold text-ink-primary">
         No face detected for most of the check-in
       </h2>
-      <p className="mt-2 text-sm text-stone-600">
+      <p className="mt-2 text-sm text-ink-secondary">
         A face was not visible for enough of the 20-second session to produce
         reliable movement measurements. Please make sure your camera is pointed
         at your face with frontal lighting and try again.
@@ -113,7 +113,7 @@ export function CameraNoFaceFoundView({ onRetry }: ProblemViewProps) {
           type="button"
           data-testid="try-again-button"
           onClick={onRetry}
-          className="rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-stone-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-stone-600 focus-visible:ring-offset-2 transition-colors cursor-pointer"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent-sage px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-sage-hover focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-sage focus-visible:ring-offset-2"
         >
           Try again
         </button>
@@ -130,9 +130,9 @@ export function CameraGenericErrorView({
     <section
       data-testid="generic-error-state"
       aria-label="Error state"
-      className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6 sm:p-8 shadow-xs"
+      className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6 shadow-xs sm:p-8"
     >
-      <h2 className="text-lg font-semibold text-rose-950">
+      <h2 className="font-display text-lg font-semibold text-rose-950">
         Check-in could not finish
       </h2>
       <p className="mt-2 text-sm text-rose-900">
@@ -143,7 +143,7 @@ export function CameraGenericErrorView({
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-xl bg-rose-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2 transition-colors cursor-pointer"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-rose-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
         >
           Try again
         </button>

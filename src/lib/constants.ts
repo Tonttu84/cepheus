@@ -29,27 +29,27 @@ export const DEMO_MOMENTS: Record<DemoMomentKey, DemoMomentMeta> = {
     key: "well",
     dayIndex: 18,
     weekNumber: 3,
-    title: "Week 3: Steady Baseline",
+    title: "Week 3: Steady baseline",
     subtitle:
-      "Twice-weekly wellbeing check-in takes ~20 seconds while sleep and daytime rhythm stay close to personal baseline.",
+      "Twice-weekly check-ins take about 20 seconds, and sleep and daytime rhythm stay close to the person's own first weeks.",
     recipient: "none",
   },
   small_dip: {
     key: "small_dip",
     dayIndex: 29,
     weekNumber: 5,
-    title: "Week 5: Small Dip",
+    title: "Week 5: Small dip",
     subtitle:
-      "A mild one-round dip below personal baseline surfaces one low-effort suggestion on the patient phone — no graphs or risk scores.",
+      "One heavier check-in brings up a single small step on the patient's phone, without graphs or risk scores.",
     recipient: "patient",
   },
   sustained_drift: {
     key: "sustained_drift",
     dayIndex: 56,
     weekNumber: 8,
-    title: "Week 8: Sustained Drift & Silence",
+    title: "Week 8: Sustained drift and silence",
     subtitle:
-      "Two consecutive lowered check-ins followed by unanswered rounds while the ring remains worn raise a broad-area flag for a nurse call.",
+      "Two lower check-ins followed by unanswered rounds while the ring stays worn raise a flag for a nurse call.",
     recipient: "clinic",
   },
 };
@@ -107,7 +107,7 @@ export const MEASUREMENT_METHODS: MeasurementMethodDescriptor[] = [
     defaultEnabled: true,
     isPersonalSignDefault: true,
     recordedDescription:
-      "Records your 1–5 tap answers twice a week and whether a scheduled check-in was skipped or missed. Missed rounds are never scored as zero.",
+      "Saves your 1 to 5 tap answers twice a week, or notes that a round was skipped or missed. Missed rounds are never scored as zero.",
   },
   {
     method: "phq9",
@@ -117,7 +117,7 @@ export const MEASUREMENT_METHODS: MeasurementMethodDescriptor[] = [
     defaultEnabled: true,
     isPersonalSignDefault: true,
     recordedDescription:
-      "Records your 9 standard fortnightly wellbeing answers (0–3 each). Any answer on item 9 shows direct human and emergency support immediately.",
+      "Saves your 9 fortnightly PHQ-9 answers (0 to 3 each). Any answer above 0 on question 9 opens direct phone links to a person and emergency help right away.",
   },
   {
     method: "ring_rhythm",
@@ -127,7 +127,7 @@ export const MEASUREMENT_METHODS: MeasurementMethodDescriptor[] = [
     defaultEnabled: true,
     isPersonalSignDefault: true,
     recordedDescription:
-      "Records daily sleep timing, sleep regularity, and 24-hour activity rhythm summaries compared against your own initial weeks.",
+      "Saves daily sleep timing, sleep regularity, and 24-hour activity summaries, compared against your own first weeks after treatment.",
   },
   {
     method: "camera_expressivity",
@@ -137,7 +137,7 @@ export const MEASUREMENT_METHODS: MeasurementMethodDescriptor[] = [
     defaultEnabled: true,
     isPersonalSignDefault: false,
     recordedDescription:
-      "Processes a short clip inside your browser to store only derived movement and expression summary numbers. Video frames never leave your device.",
+      "Runs in your browser during a short check-in and saves only two summary numbers for face and head movement. Video frames never leave your device.",
   },
   {
     method: "speech_rate",

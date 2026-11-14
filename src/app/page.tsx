@@ -15,11 +15,98 @@ import {
 } from "@/lib/simulation";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import {
+  ForestCanopyArtwork,
+  ForestDivider,
+} from "@/components/forest-divider";
+import {
   DemoTimelinePreview,
   type DemoMomentSummary,
 } from "@/components/demo-timeline-preview";
 
 export const dynamic = "force-dynamic";
+
+function getMomentButtonLabel(key: DemoMomentMeta["key"]): string {
+  if (key === "well") return "Day 18 · Well";
+  if (key === "small_dip") return "Day 29 · Small dip";
+  return "Day 56 · Sustained drift & silence";
+}
+
+function formatLatestRoundStatus(
+  latestRound: SimulatedPersonDataset["checkInRounds"][number] | null
+): string {
+  if (!latestRound) return "No rounds scheduled yet";
+  if (latestRound.status === "completed") {
+    return `Completed on ${latestRound.date} (Week ${latestRound.weekNumber})`;
+  }
+  if (latestRound.status === "not_today") {
+    return `Skipped ("Not today") on ${latestRound.date}`;
+  }
+  return `Unanswered round on ${latestRound.date} (recorded as missed, never scored as zero)`;
+}
+
+function getPatientViewSummary(
+  key: DemoMomentMeta["key"],
+  latestSuggestion: SimulatedPersonDataset["patientSuggestions"][number] | null
+) {
+  if (key === "small_dip" && latestSuggestion) {
+    return {
+      headline: "One small step for today",
+      actionTitle: latestSuggestion.actionTitle,
+      actionDetail: latestSuggestion.actionDetail,
+      note: "Shown on a mild dip: one optional button, with no graphs or scores.",
+    };
+  }
+  if (key === "well") {
+    return {
+      headline: "Steady week, nothing extra asked today",
+      actionTitle: null,
+      actionDetail: null,
+      note: "When check-ins stay steady, the app stays quiet.",
+    };
+  }
+  return {
+    headline: "Human check-in from the clinic",
+    actionTitle: "Your care team nurse can check in with you by phone",
+    actionDetail:
+      "Missed rounds are never penalised. Direct crisis and clinic nurse lines stay at the top of the screen.",
+    note: "After a longer drift and unanswered rounds, follow-up moves to a phone call from a nurse.",
+  };
+}
+
+function getClinicViewSummary(
+  key: DemoMomentMeta["key"],
+  safeFlag: ReturnType<typeof toSafeClinicFlagView> | null
+) {
+  if (!safeFlag) {
+    return {
+      hasOpenFlag: false,
+      sinceDate: null,
+      broadAreaLabels: [],
+      ringActiveDuringSilence: null,
+      recommendedActions: [],
+      note:
+        key === "well"
+          ? "The first weeks set the person's own baseline. No clinic flag is raised."
+          : "A single heavier round is handled quietly on the patient side without alerting the clinic.",
+    };
+  }
+
+  const broadAreaLabels = safeFlag.broadAreas.map(
+    (area: BroadAreaKey) => BROAD_AREA_LABELS[area] ?? area
+  );
+
+  return {
+    hasOpenFlag: true,
+    sinceDate: safeFlag.sinceDate,
+    broadAreaLabels,
+    ringActiveDuringSilence: safeFlag.ringActiveDuringSilence,
+    recommendedActions: [
+      "Request nurse call",
+      "Offer 5-session booster cluster",
+    ],
+    note: "Gives the nurse the broad life areas that shifted and when the change started, without raw sensor numbers.",
+  };
+}
 
 function buildMomentSummary(
   fullDataset: SimulatedPersonDataset,
@@ -34,13 +121,11 @@ function buildMomentSummary(
   );
   const latestRound =
     sliced.checkInRounds[sliced.checkInRounds.length - 1] ?? null;
-
   const latestRingDay = sliced.ringDays[sliced.ringDays.length - 1] ?? null;
-
   const latestSuggestion =
     sliced.patientSuggestions[sliced.patientSuggestions.length - 1] ?? null;
-
   const latestFlag = sliced.clinicFlags[sliced.clinicFlags.length - 1] ?? null;
+
   const safeFlag = latestFlag
     ? toSafeClinicFlagView({
         id: `sim-flag-${latestFlag.dayIndex}`,
@@ -56,103 +141,152 @@ function buildMomentSummary(
       })
     : null;
 
-  const buttonLabel =
-    meta.key === "well"
-      ? "Day 18 · Well"
-      : meta.key === "small_dip"
-        ? "Day 29 · Small dip"
-        : "Day 56 · Sustained drift & silence";
-
-  const latestRoundStatus = latestRound
-    ? latestRound.status === "completed"
-      ? `Completed on ${latestRound.date} (Week ${latestRound.weekNumber})`
-      : latestRound.status === "not_today"
-        ? `Skipped ("Not today") on ${latestRound.date}`
-        : `Unanswered round on ${latestRound.date} (recorded as missed, never scored as zero)`
-    : "No rounds scheduled yet";
-
   const ringWornStatus = latestRingDay?.ringActive
     ? `Smart ring worn (${latestRingDay.wearMinutes} min/day on ${latestRingDay.date})`
     : "Smart ring not active";
 
   const checkInNote =
     meta.key === "well"
-      ? "Twice-weekly check-in and sleep regularity stay steady within personal post-TMS baseline."
+      ? "Twice-weekly check-ins and sleep timing stay close to this person's own first weeks after treatment."
       : meta.key === "small_dip"
-        ? "A mild one-round dip appears in Week 5 while check-ins remain answered."
-        : `${missedOrSkippedRounds.length} unanswered rounds in Week 8 while the smart ring remains actively worn.`;
-
-  const patientViewSummary =
-    meta.key === "small_dip" && latestSuggestion
-      ? {
-          headline: "One small step for today",
-          actionTitle: latestSuggestion.actionTitle,
-          actionDetail: latestSuggestion.actionDetail,
-          note: "Shown on a mild dip — one low-effort action button, with zero graphs, scores, or streaks.",
-        }
-      : meta.key === "well"
-        ? {
-            headline: "Everything steady — nothing asked of you today",
-            actionTitle: null,
-            actionDetail: null,
-            note: "When check-ins are steady, the app stays quiet and asks nothing extra.",
-          }
-        : {
-            headline: "Gentle check-in & human outreach",
-            actionTitle: "Your care team nurse can check in with you by phone",
-            actionDetail:
-              "Missed rounds are never punished; direct crisis & clinic nurse lines stay one tap away.",
-            note: "After sustained drift and unanswered rounds, outreach shifts to a human nurse call.",
-          };
-
-  const broadAreaLabels = safeFlag
-    ? safeFlag.broadAreas.map(
-        (area: BroadAreaKey) => BROAD_AREA_LABELS[area] ?? area
-      )
-    : [];
-
-  const clinicViewSummary = safeFlag
-    ? {
-        hasOpenFlag: true,
-        sinceDate: safeFlag.sinceDate,
-        broadAreaLabels,
-        ringActiveDuringSilence: safeFlag.ringActiveDuringSilence,
-        recommendedActions: [
-          "Request nurse call",
-          "Offer 5-session booster cluster",
-        ],
-        note: "Supporting the clinic's judgment on when to check in — naming broad life areas and since when, never raw sensor traces.",
-      }
-    : {
-        hasOpenFlag: false,
-        sinceDate: null,
-        broadAreaLabels: [],
-        ringActiveDuringSilence: null,
-        recommendedActions: [],
-        note:
-          meta.key === "well"
-            ? "Baseline weeks establish personal reference ranges; no clinic flag is raised."
-            : "A single mild dip is handled gently on the patient side without raising a clinic alert.",
-      };
+        ? "One heavier round shows up in Week 5 while check-ins continue as usual."
+        : `${missedOrSkippedRounds.length} unanswered rounds in Week 8 while the smart ring is still worn every day.`;
 
   return {
     key: meta.key,
-    buttonLabel,
+    buttonLabel: getMomentButtonLabel(meta.key),
     dayIndex: meta.dayIndex,
     weekNumber: meta.weekNumber,
     title: meta.title,
     subtitle: meta.subtitle,
     recipient: meta.recipient,
     checkInSummary: {
-      latestRoundStatus,
+      latestRoundStatus: formatLatestRoundStatus(latestRound),
       completedCount: completedRounds.length,
       missedOrSkippedCount: missedOrSkippedRounds.length,
       ringWornStatus,
       note: checkInNote,
     },
-    patientViewSummary,
-    clinicViewSummary,
+    patientViewSummary: getPatientViewSummary(meta.key, latestSuggestion),
+    clinicViewSummary: getClinicViewSummary(meta.key, safeFlag),
   };
+}
+
+function ExploreViewsGrid() {
+  return (
+    <section aria-label="Workstream modules" className="space-y-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-display text-xl font-semibold text-ink-primary">
+          Explore each view
+        </h2>
+        <span className="text-xs text-ink-muted">
+          All views use simulated data only
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <Link
+          href="/check-in"
+          data-testid="card-check-in"
+          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
+        >
+          <div>
+            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+              Twice-weekly wellbeing check-in
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+              Four quick 1 to 5 tap questions twice a week, or a single tap on
+              &ldquo;Not today&rdquo; when you want to rest. Missed rounds are
+              simply noted as missed, and phone numbers for a real person stay
+              at the top of the page.
+            </p>
+          </div>
+          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
+            Open check-in <span aria-hidden="true">&rarr;</span>
+          </span>
+        </Link>
+
+        <Link
+          href="/camera"
+          data-testid="card-camera"
+          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
+        >
+          <div>
+            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+              On-device camera check
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+              MediaPipe Face Landmarker runs in your browser for 20 seconds and
+              keeps only two summary numbers for face and head movement. No
+              video or images are ever saved.
+            </p>
+          </div>
+          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
+            Open camera check <span aria-hidden="true">&rarr;</span>
+          </span>
+        </Link>
+
+        <Link
+          href="/patient"
+          data-testid="card-patient"
+          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
+        >
+          <div>
+            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+              Patient view: One small step for today
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+              Offers one simple idea (&ldquo;Take a 10-minute walk
+              outside&rdquo;) when a check-in dips below usual, without charts
+              or scores.
+            </p>
+          </div>
+          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
+            Open patient view <span aria-hidden="true">&rarr;</span>
+          </span>
+        </Link>
+
+        <Link
+          href="/clinic"
+          data-testid="card-clinic"
+          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
+        >
+          <div>
+            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+              Clinic view: Follow-up flag for the nurse
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+              Shows the care team which broad life areas shifted and when the
+              change started, with buttons to arrange a nurse call or a
+              5-session booster cluster.
+            </p>
+          </div>
+          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
+            Open clinic overview <span aria-hidden="true">&rarr;</span>
+          </span>
+        </Link>
+
+        <Link
+          href="/monitoring"
+          data-testid="card-monitoring"
+          className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:col-span-2 sm:p-8"
+        >
+          <div>
+            <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+              Monitoring &amp; consent settings
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+              Review which channels are active, adjust your sharing preferences,
+              and see how your own first weeks form a personal baseline.
+            </p>
+          </div>
+          <span className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-accent-sage">
+            Open monitoring &amp; consent <span aria-hidden="true">&rarr;</span>
+          </span>
+        </Link>
+      </div>
+    </section>
+  );
 }
 
 export default async function HomePage() {
@@ -187,7 +321,7 @@ export default async function HomePage() {
       ).length;
     }
   } catch {
-    // Seamless fallback to deterministic generator if SQLite table isn't seeded yet
+    // Seamless fallback to deterministic generator if DB isn't seeded yet
     dbSeeded = false;
   }
 
@@ -196,157 +330,82 @@ export default async function HomePage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12 sm:space-y-16">
       {/* Top Hero Banner */}
-      <section className="rounded-xl border border-stone-200 bg-white p-6 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <SimulatedBadge subtitle="8-week post-TMS synthetic trajectory (Days 1–56)" />
-          <span className="rounded-md bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-700">
+      <section className="relative overflow-hidden rounded-2xl border border-border-hairline bg-surface-card p-8 shadow-xs sm:p-11">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-accent-sage/6 blur-2xl"
+        />
+
+        <div className="relative flex flex-wrap items-center justify-between gap-3">
+          <SimulatedBadge subtitle="8 weeks after TMS (Days 1–56)" />
+          <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
             Data source:{" "}
-            {dbSeeded
-              ? "PostgreSQL seeded participant (sim-post-tms-01)"
-              : "In-memory deterministic simulation"}
+            <strong className="font-semibold text-ink-primary">
+              {dbSeeded
+                ? "PostgreSQL seeded participant (sim-post-tms-01)"
+                : "In-memory simulation"}
+            </strong>
           </span>
         </div>
 
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
-          Cepheus — Staying Well After TMS Treatment
+        <h1 className="font-display relative mt-5 text-3xl font-semibold tracking-tight text-ink-primary sm:text-4xl">
+          Staying well at home after TMS
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700 sm:text-base">
-          A calm home wellbeing check-in companion for the months after
-          Transcranial Magnetic Stimulation (TMS). Cepheus pairs a low-effort
-          twice-weekly check-in and passive smart-ring sleep rhythm with two
-          proportionate loops: a single small step for the patient on a mild
-          dip, and a broad-area flag supporting the clinic&apos;s judgment on
-          when to check in after sustained drift.
+        <p className="relative mt-3 max-w-3xl text-sm leading-relaxed text-ink-secondary sm:text-base">
+          Finishing a course of Transcranial Magnetic Stimulation (TMS) often
+          leaves a gap between clinic visits. Cepheus uses a short twice-weekly
+          check-in and sleep timing from a smart ring to do two things: offer
+          one small step at home when a week feels heavier, and let the clinic
+          nurse know when a longer shift is worth a phone call.
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-3 text-xs text-stone-600">
-          <span className="rounded-md border border-stone-200 bg-stone-50 px-2.5 py-1">
-            Participant: <strong className="text-stone-900">{participantLabel}</strong>
-          </span>
-          <span className="rounded-md border border-stone-200 bg-stone-50 px-2.5 py-1">
-            TMS course completed:{" "}
-            <strong className="text-stone-900">{tmsCompletedDate}</strong>
-          </span>
-          <span className="rounded-md border border-stone-200 bg-stone-50 px-2.5 py-1">
-            Active consented channels:{" "}
-            <strong className="text-stone-900">{activeConsentCount}</strong>
-          </span>
-        </div>
+        <ForestCanopyArtwork className="mt-8 w-full text-accent-sage" />
+
+        <dl className="relative mt-8 grid grid-cols-1 gap-4 border-t border-surface-muted pt-7 sm:grid-cols-3">
+          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
+            <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+              Participant
+            </dt>
+            <dd className="mt-1 text-sm font-semibold text-ink-primary">
+              {participantLabel}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
+            <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+              TMS course finished
+            </dt>
+            <dd className="tabular-nums mt-1 text-sm font-semibold text-ink-primary">
+              {tmsCompletedDate}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
+            <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+              Consented channels
+            </dt>
+            <dd className="tabular-nums mt-1 text-sm font-semibold text-ink-primary">
+              {activeConsentCount} channels
+            </dd>
+          </div>
+        </dl>
       </section>
 
       {/* Interactive 3-Moment Switcher */}
+      <ForestDivider
+        variant="treeline"
+        label="Three moments across eight weeks"
+      />
+
       <DemoTimelinePreview
         moments={momentSummaries}
         initialMoment="small_dip"
       />
 
-      {/* Workstream Entrypoint Cards (Workstreams 2–5) */}
-      <section aria-label="Workstream modules" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-stone-900">
-            Explore Workstreams
-          </h2>
-          <span className="text-xs text-stone-600">
-            All views use simulated data only
-          </span>
-        </div>
+      {/* Views */}
+      <ForestDivider variant="grove" label="Pages in this prototype" />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Link
-            href="/check-in"
-            data-testid="card-check-in"
-            className="group flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-400"
-          >
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Twice-Weekly Check-In &amp; Fortnightly PHQ-9
-              </span>
-              <h3 className="mt-1 text-base font-semibold text-stone-900 group-hover:underline">
-                Low-effort wellbeing check-in
-              </h3>
-              <p className="mt-1.5 text-sm text-stone-600">
-                Four 1–5 tap questions twice a week, explicit &ldquo;Not
-                today&rdquo; skip, missed answers recorded as missed (never
-                punished), and an immediate human crisis path.
-              </p>
-            </div>
-            <span className="mt-4 text-xs font-semibold text-stone-800">
-              Open check-in flow &rarr;
-            </span>
-          </Link>
-
-          <Link
-            href="/camera"
-            data-testid="card-camera"
-            className="group flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-400"
-          >
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                On-Device Sensing
-              </span>
-              <h3 className="mt-1 text-base font-semibold text-stone-900 group-hover:underline">
-                On-device camera wellbeing check
-              </h3>
-              <p className="mt-1.5 text-sm text-stone-600">
-                MediaPipe Face Landmarker runs locally in your browser to
-                compute derived facial expressivity and head movement numbers
-                only — never storing video or images.
-              </p>
-            </div>
-            <span className="mt-4 text-xs font-semibold text-stone-800">
-              Open camera check &rarr;
-            </span>
-          </Link>
-
-          <Link
-            href="/patient"
-            data-testid="card-patient"
-            className="group flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-400"
-          >
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Inner Loop · Day 29 Small Dip
-              </span>
-              <h3 className="mt-1 text-base font-semibold text-stone-900 group-hover:underline">
-                Patient view: One small step for today
-              </h3>
-              <p className="mt-1.5 text-sm text-stone-600">
-                Surfaces one low-effort suggestion (&ldquo;Take a 10-minute walk
-                outside&rdquo;) during a mild dip, with zero scores, zero
-                graphs, and zero risk labels.
-              </p>
-            </div>
-            <span className="mt-4 text-xs font-semibold text-stone-800">
-              Open patient view &rarr;
-            </span>
-          </Link>
-
-          <Link
-            href="/clinic"
-            data-testid="card-clinic"
-            className="group flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-400"
-          >
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Outer Loop · Day 56 Sustained Drift
-              </span>
-              <h3 className="mt-1 text-base font-semibold text-stone-900 group-hover:underline">
-                Clinic view: Broad-area flag &amp; nurse outreach
-              </h3>
-              <p className="mt-1.5 text-sm text-stone-600">
-                Supports the clinic&apos;s judgment on when to check in by
-                showing broad life areas and since when, plus actions to request
-                a nurse call or offer a 5-session booster cluster.
-              </p>
-            </div>
-            <span className="mt-4 text-xs font-semibold text-stone-800">
-              Open clinic overview &rarr;
-            </span>
-          </Link>
-        </div>
-      </section>
+      <ExploreViewsGrid />
     </div>
   );
 }
