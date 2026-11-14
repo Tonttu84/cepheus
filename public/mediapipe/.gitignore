@@ -1,0 +1,3 @@
+# Assets prepared locally by scripts/prepare-face-model.mjs
+wasm/
+face_landmarker.task
