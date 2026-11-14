@@ -43,6 +43,7 @@ export const CheckInSubmissionSchema = z
     isSimulated: z.boolean().default(false),
     source: z.string().default("live"),
   })
+  .strict()
   .superRefine((val, ctx) => {
     const scoreFields = [
       "moodScore",
@@ -162,6 +163,7 @@ export const Phq9SubmissionSchema = z
     isSimulated: z.boolean().default(false),
     source: z.string().default("live"),
   })
+  .strict()
   .superRefine((val, ctx) => {
     const itemFields = [
       "item1Interest",

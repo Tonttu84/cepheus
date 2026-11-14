@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-12T10:00:00.000Z",
+  "title": "Design System: Cepheus",
+  "extensions": {
+    "colorMeta": {
+      "accent-sage": {
+        "role": "primary",
+        "displayName": "Nordic Forest Sage",
+        "canonical": "#1b4d38",
+        "tonalRamp": ["#112821", "#18392f", "#1e483c", "#1b4d38", "#3d7262", "#659385", "#9dbeb4", "#dfeee6"]
+      },
+      "accent-sage-hover": {
+        "role": "primary",
+        "displayName": "Deep Forest Sage",
+        "canonical": "#123828",
+        "tonalRamp": ["#0d201a", "#132e26", "#18392f", "#123828", "#315f51", "#578376", "#8fb3a8", "#e2ede9"]
+      },
+      "accent-sage-soft": {
+        "role": "primary",
+        "displayName": "Soft Sage Mist",
+        "canonical": "#dfeee6",
+        "tonalRamp": ["#162e27", "#23463c", "#356356", "#4f8475", "#76a698", "#a4c8bd", "#cde2db", "#dfeee6"]
+      },
+      "accent-sage-border": {
+        "role": "primary",
+        "displayName": "Sage Mist Border",
+        "canonical": "#bcd6c8",
+        "tonalRamp": ["#162b23", "#244237", "#365f50", "#4f7e6d", "#749e8f", "#9ec0b4", "#bfd6ce", "#bcd6c8"]
+      },
+      "amber-notice-bg": {
+        "role": "secondary",
+        "displayName": "Warm Amber Notice Background",
+        "canonical": "#fffbeb",
+        "tonalRamp": ["#3b2606", "#5e3d0a", "#855710", "#b07619", "#d49a35", "#ebc26d", "#f9e3a8", "#fffbeb"]
+      },
+      "amber-notice-border": {
+        "role": "secondary",
+        "displayName": "Warm Amber Notice Border",
+        "canonical": "#fcd34d",
+        "tonalRamp": ["#3b2705", "#5c3e09", "#82580e", "#ab7614", "#cf9621", "#e6b432", "#f4c842", "#fcd34d"]
+      },
+      "amber-notice-ink": {
+        "role": "secondary",
+        "displayName": "Warm Amber Notice Ink",
+        "canonical": "#451a03",
+        "tonalRamp": ["#240d01", "#331302", "#451a03", "#692c0a", "#914518", "#ba6b3a", "#dca17c", "#f6dfd0"]
+      },
+      "amber-notice-dot": {
+        "role": "secondary",
+        "displayName": "Warm Amber Notice Dot",
+        "canonical": "#b45309",
+        "tonalRamp": ["#2b1302", "#4a2204", "#6e3306", "#914308", "#b45309", "#cf7328", "#e59d5e", "#f7dec6"]
+      },
+      "rose-urgent-bg": {
+        "role": "tertiary",
+        "displayName": "Urgent Rose Background",
+        "canonical": "#fff1f2",
+        "tonalRamp": ["#3b0a12", "#5e111d", "#851829", "#b02339", "#d1475c", "#e87d8d", "#f7bcc5", "#fff1f2"]
+      },
+      "rose-urgent-border": {
+        "role": "tertiary",
+        "displayName": "Urgent Rose Border",
+        "canonical": "#fda4af",
+        "tonalRamp": ["#3b0a12", "#5e111d", "#851829", "#b02339", "#cf4459", "#e6677a", "#f58999", "#fda4af"]
+      },
+      "rose-urgent-ink": {
+        "role": "tertiary",
+        "displayName": "Urgent Rose Ink",
+        "canonical": "#4c0519",
+        "tonalRamp": ["#24020b", "#380312", "#4c0519", "#730f2b", "#9c2244", "#c24c6d", "#e08aa2", "#f6d5de"]
+      },
+      "rose-urgent-dot": {
+        "role": "tertiary",
+        "displayName": "Urgent Rose Dot",
+        "canonical": "#be123c",
+        "tonalRamp": ["#2e040e", "#4f0719", "#730b24", "#990e30", "#be123c", "#d63e63", "#e87893", "#f7cbd6"]
+      },
+      "surface-canvas": {
+        "role": "neutral",
+        "displayName": "Warm Birch Paper",
+        "canonical": "#f1f6f3",
+        "tonalRamp": ["#262420", "#3d3933", "#59544b", "#787166", "#999184", "#bab2a5", "#dbd4c9", "#f1f6f3"]
+      },
+      "surface-card": {
+        "role": "neutral",
+        "displayName": "Crisp Card White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#242424", "#3d3d3d", "#595959", "#787878", "#999999", "#bababa", "#dedede", "#ffffff"]
+      },
+      "surface-subtle": {
+        "role": "neutral",
+        "displayName": "Warm Alabaster",
+        "canonical": "#e8f1ec",
+        "tonalRamp": ["#262523", "#3d3b38", "#595651", "#78746d", "#99948c", "#bab4ab", "#ded9d1", "#e8f1ec"]
+      },
+      "surface-muted": {
+        "role": "neutral",
+        "displayName": "Muted Oat Linen",
+        "canonical": "#dce9e1",
+        "tonalRamp": ["#26231f", "#3d3932", "#595349", "#787063", "#998f80", "#bab0a1", "#dad2c5", "#dce9e1"]
+      },
+      "border-hairline": {
+        "role": "neutral",
+        "displayName": "Warm Stone Hairline",
+        "canonical": "#c8d9cf",
+        "tonalRamp": ["#26231e", "#3d3830", "#595246", "#786e5f", "#998e7c", "#b8ad9b", "#d1c8b9", "#c8d9cf"]
+      },
+      "border-tactile": {
+        "role": "neutral",
+        "displayName": "Tactile Sand Border",
+        "canonical": "#b0c7ba",
+        "tonalRamp": ["#24211d", "#3b3630", "#575047", "#756c60", "#948a7c", "#b0a698", "#c4bbb0", "#b0c7ba"]
+      },
+      "ink-primary": {
+        "role": "neutral",
+        "displayName": "Deep Pine Ink",
+        "canonical": "#11241b",
+        "tonalRamp": ["#0c1210", "#131b19", "#11241b", "#2e3d38", "#485953", "#6b7d77", "#99aba5", "#d9e2df"]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Muted Slate Moss",
+        "canonical": "#2f473c",
+        "tonalRamp": ["#161a18", "#272e2b", "#3b4541", "#2f473c", "#6d7a74", "#8e9c96", "#b5c2bc", "#e1e7e4"]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Quiet Lichen Gray",
+        "canonical": "#3f594d",
+        "tonalRamp": ["#191d1b", "#2c3330", "#424a47", "#57615d", "#3f594d", "#899691", "#b0bcb7", "#dfe5e2"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page titles and primary hero greetings."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Major section headers and view titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles and sub-section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Patient prompts, clinical summaries, and general copy."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Status pills, metadata captions, and form labels."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Derived camera metrics, day indices, and technical identifiers."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-rest",
+        "value": "0 1px 2px 0 rgba(26, 36, 33, 0.05)",
+        "purpose": "Subtle resting lift on primary white cards."
+      },
+      {
+        "name": "control-2xs",
+        "value": "0 1px 1px 0 rgba(26, 36, 33, 0.04)",
+        "purpose": "Whisper-light tactile edge on secondary buttons and scale taps."
+      },
+      {
+        "name": "ambient-canopy",
+        "value": "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(37, 87, 72, 0.06), transparent)",
+        "purpose": "Soft top-of-page sage wash anchoring the header."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-colors",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default gentle transition for button, pill, and scale-tap state changes."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary Nordic Forest Sage CTA for saving check-ins or confirming actions.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Save check-in</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; background-color: #255748; color: #ffffff; border: 1px solid transparent; border-radius: 12px; padding: 10px 18px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background-color: #1c4438; } .ds-btn-primary:focus-visible { outline: 2px solid #255748; outline-offset: 2px; }"
+    },
+    {
+      "name": "Not Today Escape Button",
+      "kind": "button",
+      "refersTo": "button-not-today",
+      "description": "Non-punitive escape hatch allowing patients to skip a check-in without error or streak loss.",
+      "html": "<button class=\"ds-btn-not-today\" type=\"button\">Not today</button>",
+      "css": ".ds-btn-not-today { display: inline-flex; align-items: center; justify-content: center; background-color: #faf8f5; color: #515d58; border: 1px solid #e4ddd2; border-radius: 12px; padding: 10px 16px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-not-today:hover { background-color: #f1ece4; border-color: #d6cfc4; color: #1a2421; } .ds-btn-not-today:focus-visible { outline: 2px solid #255748; outline-offset: 2px; }"
+    },
+    {
+      "name": "Check-In 1-5 Scale Tap Row",
+      "kind": "input",
+      "refersTo": "scale-tap",
+      "description": "40x40px tactile square scale buttons with tabular numerals for low-effort patient self-rating.",
+      "html": "<div class=\"ds-scale-row\" role=\"group\" aria-label=\"Wellbeing scale 1 to 5\"><button class=\"ds-scale-tap\" type=\"button\">1</button><button class=\"ds-scale-tap\" type=\"button\">2</button><button class=\"ds-scale-tap ds-scale-tap-active\" type=\"button\" aria-pressed=\"true\">3</button><button class=\"ds-scale-tap\" type=\"button\">4</button><button class=\"ds-scale-tap\" type=\"button\">5</button></div>",
+      "css": ".ds-scale-row { display: inline-flex; gap: 8px; } .ds-scale-tap { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; background-color: #ffffff; color: #1a2421; border: 1px solid #d6cfc4; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; box-shadow: 0 1px 1px 0 rgba(26, 36, 33, 0.04); cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-scale-tap:hover { background-color: #faf8f5; border-color: #255748; } .ds-scale-tap:focus-visible { outline: 2px solid #255748; outline-offset: 2px; } .ds-scale-tap-active { background-color: #255748; color: #ffffff; border-color: #255748; } .ds-scale-tap-active:hover { background-color: #1c4438; border-color: #1c4438; }"
+    },
+    {
+      "name": "Simulated Data Badge",
+      "kind": "chip",
+      "refersTo": "badge-simulated",
+      "description": "Warm Amber pill clearly labeling simulated or open-dataset figures.",
+      "html": "<span class=\"ds-badge-simulated\">Simulated data</span>",
+      "css": ".ds-badge-simulated { display: inline-flex; align-items: center; background-color: #fffbeb; color: #451a03; border: 1px solid #fcd34d; border-radius: 9999px; padding: 4px 10px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; line-height: 1.2; }"
+    },
+    {
+      "name": "Emergency 112 Crisis Pill",
+      "kind": "chip",
+      "refersTo": "pill-emergency",
+      "description": "Persistent Urgent Rose pill providing immediate access to 112 emergency help.",
+      "html": "<a class=\"ds-pill-emergency\" href=\"tel:112\"><span class=\"ds-pill-emergency-dot\" aria-hidden=\"true\"></span>Emergency 112</a>",
+      "css": ".ds-pill-emergency { display: inline-flex; align-items: center; gap: 6px; background-color: #fff1f2; color: #4c0519; border: 1px solid #fda4af; border-radius: 9999px; padding: 4px 12px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; font-variant-numeric: tabular-nums; text-decoration: none; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-pill-emergency:hover { background-color: #ffe4e6; } .ds-pill-emergency:focus-visible { outline: 2px solid #be123c; outline-offset: 2px; } .ds-pill-emergency-dot { width: 6px; height: 6px; border-radius: 9999px; background-color: #be123c; }"
+    },
+    {
+      "name": "Patient Low-Effort Suggestion Card",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "Primary white card with warm stone hairline and alabaster prompt well for patient check-ins.",
+      "html": "<section class=\"ds-patient-card\"><h2 class=\"ds-patient-card-title\">Evening wellbeing check-in</h2><div class=\"ds-patient-card-well\"><p class=\"ds-patient-card-copy\">How steady did your energy feel today? You can always choose Not today.</p></div></section>",
+      "css": ".ds-patient-card { background-color: #ffffff; color: #1a2421; border: 1px solid #e4ddd2; border-radius: 16px; padding: 24px; box-shadow: 0 1px 2px 0 rgba(26, 36, 33, 0.05); } .ds-patient-card-title { margin: 0 0 12px 0; font-family: \"Iowan Old Style\", \"Palatino Linotype\", \"Book Antiqua\", Georgia, serif; font-size: 1.125rem; font-weight: 600; line-height: 1.35; color: #1a2421; } .ds-patient-card-well { background-color: #faf8f5; border: 1px solid #e4ddd2; border-radius: 12px; padding: 16px; } .ds-patient-card-copy { margin: 0; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif; font-size: 0.875rem; line-height: 1.625; color: #515d58; }"
+    },
+    {
+      "name": "Clinic Broad-Area Flag Chip",
+      "kind": "custom",
+      "refersTo": "badge-simulated",
+      "description": "Signature clinic follow-up indicator surfacing broad-area outer-loop trajectory shifts without diagnostic claims.",
+      "html": "<span class=\"ds-clinic-flag\"><span class=\"ds-clinic-flag-dot\" aria-hidden=\"true\"></span>Day 14 · Broad-area shift</span>",
+      "css": ".ds-clinic-flag { display: inline-flex; align-items: center; gap: 6px; background-color: #fffbeb; color: #451a03; border: 1px solid #fcd34d; border-radius: 9999px; padding: 4px 10px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; font-variant-numeric: tabular-nums; } .ds-clinic-flag-dot { width: 6px; height: 6px; border-radius: 9999px; background-color: #b45309; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Nordic Study",
+    "overview": "Cepheus is a warm, domestic-first clinical design system built for people recovering at home after TMS treatment and the clinic staff who follow their outer-loop trajectories. Rather than sterile hospital telemetry or gamified wellness trackers, every surface rests on a soft Nordic forest-paper canvas (#f1f6f3) paired with crisp white cards, sage-tinted hairlines, calming Nordic pine/spruce SVG section dividers (ForestDivider and ForestCanopyArtwork), and literary old-style serif headings.\n\nThe system is intentionally low-effort and non-punitive. For patients who may be fatigued or unwell, reading columns stay narrow (672px max), touch targets are generous (40px × 40px), vertical spacing is generous (space-y-12 to space-y-16 with p-7 to p-10 card padding), and skipping a check-in (\"Not today\") is treated with quiet neutrality—never red error states, streaks, or scores. For clinic staff, the same calm forest-paper grammar scales to structured three-column overview grids with tabular clinical figures and broad-area trajectory indicators.",
+    "keyCharacteristics": [
+      "Soft Nordic forest-paper ground (#f1f6f3) with crisp white card surfaces (#ffffff) and subtle sage-mist wells (#e8f1ec).",
+      "Deep Nordic Forest Green (#1b4d38) as the sole primary action and consent accent.",
+      "Literary old-style serif headings paired with clean system sans-serif controls and tabular numerals.",
+      "Generous vertical breathing room (space-y-12 to space-y-16, p-7 to p-10) punctuated by calming Nordic pine/spruce SVG dividers (ForestDivider and ForestCanopyArtwork).",
+      "Non-punitive interaction model: missed or skipped check-ins use neutral stone tones, reserving rose strictly for 112 emergency crisis paths and urgent trajectory dots.",
+      "Hybrid hairline-first depth: 1px sage-tinted borders (#c8d9cf) do the structural work, supported by whisper-light resting shadows."
+    ],
+    "rules": [
+      {
+        "name": "The Non-Punitive Palette Rule",
+        "body": "Red/rose is reserved strictly for the 112 emergency crisis pill and trajectory indicator dots. Never use red or error styling for skipped (\"Not today\") or missed check-ins.",
+        "section": "colors"
+      },
+      {
+        "name": "The Warm Paper Ground Rule",
+        "body": "Never use cool hospital blue-grays (#f3f4f6, #64748b) or stark #ffffff as the page background; every screen rests on Warm Birch Paper (--surface-canvas).",
+        "section": "colors"
+      },
+      {
+        "name": "The Editorial Heading, Utility Control Rule",
+        "body": "Literary old-style serif (font-display) belongs on page titles, section headers, and the Cepheus wordmark; interactive controls, pills, and body copy stay in clean system sans-serif.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Clinical Figures Rule",
+        "body": "All dates, day indices, scale numbers (1–5), phone numbers, and derived camera metrics must apply font-variant-numeric: tabular-nums (.tabular-nums).",
+        "section": "typography"
+      },
+      {
+        "name": "The Hairline-First Depth Rule",
+        "body": "Surfaces separate primarily through warm 1px stone borders (--border-hairline) and tonal paper steps; shadows stay subtle (shadow-xs max) and never bloom into heavy floating drop-shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do ground every screen on Warm Birch Paper (#f1f6f3) and separate cards with 1px Sage-Tinted Hairlines (#c8d9cf).",
+      "Do use literary old-style serif (font-display) for page titles, section headers, and the Cepheus wordmark.",
+      "Do apply tabular-nums to all dates, day indices, 1–5 scale buttons, phone numbers, and derived camera metrics.",
+      "Do keep patient check-in flows in a narrow max-w-2xl (672px) column with 40px × 40px touch targets.",
+      "Do label all simulated or open-dataset figures with the Warm Amber Simulated data badge."
+    ],
+    "donts": [
+      "Don't use red or error styling for skipped (\"Not today\") or missed check-ins; reserve rose strictly for 112 emergency crisis pills and urgent trajectory dots.",
+      "Don't use cool hospital blue-grays (#f3f4f6, #64748b) or stark #ffffff as the page background.",
+      "Don't add streaks, scores, gamified badges, or punitive counters anywhere in the interface.",
+      "Don't use heavy floating drop-shadows; keep elevation subtle (shadow-xs max) and hairline-first.",
+      "Don't claim diagnosis, relapse prediction, or brain stimulation in any UI copy or status label."
+    ]
+  }
+}
