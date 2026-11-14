@@ -30,52 +30,80 @@ export function processWarningEvent(
   event: WarningEvent, 
   config: RuleConfig
 ): { ok: true; newState: WarningState; effects: WarningEffect[] } | { ok: false; error: string } {
-  const newState = { ...state };
-  
   if (event.type === 'call_recorded') {
-    return handleCallRecorded(newState);
+    return handleCallRecorded(state);
   }
 
   if (event.type === 'round_closed') {
-    return handleRoundClosed(newState, event, config);
+    return handleRoundClosed(state, event, config);
   }
 
   if (event.type === 'phq9_completed') {
-    return handlePhq9Completed(newState, event, config);
+    return handlePhq9Completed(state, event, config);
   }
 
   return { ok: false, error: 'Unknown event type' };
 }
 
-function handleCallRecorded(state: WarningState) {
-  state.activeWarning = false;
-  state.prevRound = null;
-  return { ok: true as const, newState: state, effects: [] };
+export function handleCallRecorded(state: WarningState) {
+  return {
+    ok: true as const,
+    newState: {
+      ...state,
+      activeWarning: false,
+      prevRound: null,
+    },
+    effects: [],
+  };
 }
 
-function handleRoundClosed(state: WarningState, event: Extract<WarningEvent, { type: 'round_closed' }>, config: RuleConfig) {
+export function handleRoundClosed(
+  state: WarningState, 
+  event: Extract<WarningEvent, { type: 'round_closed' }>, 
+  config: RuleConfig
+) {
   const effects: WarningEffect[] = [];
 
   if (event.kind === 'normal') {
-    state.prevRound = null;
-    return { ok: true as const, newState: state, effects };
+    return {
+      ok: true as const,
+      newState: {
+        ...state,
+        prevRound: null,
+      },
+      effects,
+    };
   }
   
   if (!state.prevRound) {
-    state.prevRound = { kind: event.kind, date: event.date };
     if (event.kind === 'low' && !state.activeWarning) {
       effects.push({ type: 'small_dip', version: config.version });
     }
+    return {
+      ok: true as const,
+      newState: {
+        ...state,
+        prevRound: { kind: event.kind, date: event.date },
+      },
+      effects,
+    };
   } else {
+    let activeWarning = state.activeWarning;
     if (!state.activeWarning) {
-      state.activeWarning = true;
+      activeWarning = true;
       const kind = getWarningKind(state.prevRound.kind, event.kind);
       effects.push({ type: 'warning', kind, since: state.prevRound.date, version: config.version });
     }
-    state.prevRound = null;
+    return {
+      ok: true as const,
+      newState: {
+        ...state,
+        activeWarning,
+        prevRound: null,
+      },
+      effects,
+    };
   }
-
-  return { ok: true as const, newState: state, effects };
 }
 
 function getWarningKind(prev: 'low' | 'no_answer', curr: 'low' | 'no_answer') {
@@ -84,7 +112,11 @@ function getWarningKind(prev: 'low' | 'no_answer', curr: 'low' | 'no_answer') {
   return 'mixed';
 }
 
-function handlePhq9Completed(state: WarningState, event: Extract<WarningEvent, { type: 'phq9_completed' }>, config: RuleConfig) {
+export function handlePhq9Completed(
+  state: WarningState, 
+  event: Extract<WarningEvent, { type: 'phq9_completed' }>, 
+  config: RuleConfig
+) {
   if (typeof event.total !== 'number' || !Number.isInteger(event.total) || event.total < 0 || event.total > 27) {
     return { ok: false as const, error: 'invalid phq9 total' };
   }
@@ -92,36 +124,62 @@ function handlePhq9Completed(state: WarningState, event: Extract<WarningEvent, {
   const effects: WarningEffect[] = [];
 
   if (!state.hasFirstPhq9) {
-    state.hasFirstPhq9 = true;
     const result = calculatePhq9Baseline([event.total], config);
     if (!result.ok) {
       return { ok: false as const, error: result.error };
     }
+
+    let activeWarning = state.activeWarning;
+    let prevRound = state.prevRound;
+    let phq9Baseline = state.phq9Baseline;
+
     if (result.value && result.value.type === 'not_well') {
       effects.push({ type: 'baseline_not_well', version: config.version });
       if (!state.activeWarning) {
-        state.activeWarning = true;
+        activeWarning = true;
         effects.push({ type: 'warning', kind: 'phq9', since: event.date, version: config.version });
-        state.prevRound = null;
+        prevRound = null;
       }
     } else if (result.value && result.value.type === 'baseline') {
-      state.phq9Baseline = result.value.value;
+      phq9Baseline = result.value.value;
     }
-    return { ok: true as const, newState: state, effects };
+
+    return {
+      ok: true as const,
+      newState: {
+        ...state,
+        hasFirstPhq9: true,
+        activeWarning,
+        prevRound,
+        phq9Baseline,
+      },
+      effects,
+    };
   }
+
+  let activeWarning = state.activeWarning;
+  let prevRound = state.prevRound;
 
   if (!state.activeWarning) {
     const isWarning = event.total >= config.phq9WarningCutoff || 
       (state.phq9Baseline !== null && event.total >= state.phq9Baseline + config.phq9WarningRise);
     
     if (isWarning) {
-      state.activeWarning = true;
+      activeWarning = true;
       effects.push({ type: 'warning', kind: 'phq9', since: event.date, version: config.version });
-      state.prevRound = null;
+      prevRound = null;
     }
   }
 
-  return { ok: true as const, newState: state, effects };
+  return {
+    ok: true as const,
+    newState: {
+      ...state,
+      activeWarning,
+      prevRound,
+    },
+    effects,
+  };
 }
 
 export type IndexedEffect = { effect: WarningEffect; index: number };
