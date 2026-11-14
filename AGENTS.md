@@ -112,6 +112,9 @@ stays green. A reviewer asks for a reason when one is exceeded.
 - A function that is mostly control flow, one branch for each case with each branch
   calling something, may be longer. Say so in a comment above it.
 - Tests are exempt from the length limit, not from the others.
+- Only `src/server/db/` talks to the database; other code goes through the use
+  cases and ports; the test `src/__tests__/storage-boundary.test.ts` enforces it
+  and its exception list may only shrink.
 
 ## Rules of the problem
 
