@@ -105,8 +105,9 @@ These hold whatever is built.
 - Anything that asks about mood or self-harm shows a crisis path: a route to a person
   and to emergency help, with nothing automated in between.
 - Anything asked of a person who is unwell costs almost no effort. No streaks, no
-  scores, and a missed answer is recorded as missed, never punished. The count of
-  walks in D38 is the one exception.
+  scores, and a missed answer is recorded as missed, never punished. The counts in
+  D38 (walks) and D42 (answered rounds), which can each be switched off, are the
+  only exceptions.
 - Personality is never shown to the user as a label.
 - No real patient data. Use open datasets or simulated data, and label simulated data
   as simulated wherever it is shown.
