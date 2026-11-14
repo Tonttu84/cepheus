@@ -47,7 +47,9 @@ ring, wearables, and an on-device camera supports the questions rather than repl
   roll), angular velocity paths, and facial expressivity blendshape statistics.
 - Sensor integrations (`src/domain/fitbit`, `src/domain/health-connect`,
   `src/domain/arduino`): Fitbit OAuth2 PKCE client and mapper, Android Health Connect and
-  Apple Health webhook mapper, and Arduino UNO Q edge validation rejecting raw media.
+  Apple Health webhook mapper with per-participant QR / companion-app pairing on
+  `/monitoring` (see [docs/health-connect-setup.md](docs/health-connect-setup.md)), and
+  Arduino UNO Q edge validation rejecting raw media.
 - Security controls (`src/server/security/`): AES-256-GCM encrypted session cookies,
   HMAC-SHA256 webhook verification, proxy-safe rate limiting, and strict input validation.
 - User interfaces (`src/app/`, `src/components/`): an interactive on-device camera check

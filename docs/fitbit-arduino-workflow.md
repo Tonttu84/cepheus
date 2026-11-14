@@ -35,15 +35,12 @@ This document describes the passive home-monitoring pipeline added on top of Cep
 
 ## Health Connect / Apple Health Webhook Setup (Trail #23)
 
-Works with **Fitbit, Oura, Garmin, Samsung Health, Gadgetbridge, or Apple Watch** without vendor developer keys:
+Works with **Fitbit, Oura, Garmin, Samsung Health, Gadgetbridge, or Apple Watch** without vendor developer keys. See **[docs/health-connect-setup.md](health-connect-setup.md)** for the full end-user phone guide, troubleshooting, and developer `curl` verification.
 
-1. Set `HEALTH_CONNECT_WEBHOOK_SECRET` (16+ random chars) in `.env`.
-2. On Android, enable **Health Connect** sync inside the Fitbit / Oura / Garmin app.
-3. Install **Health Connect to Webhook** (`com.hcwebhook.app`, free on Google Play) or **Life Dashboard Companion** (Android/iOS):
-   - **Endpoint URL:** `https://<your-host>/api/webhooks/health-connect`
-   - **Authentication:** either `Authorization: Bearer <HEALTH_CONNECT_WEBHOOK_SECRET>`, `X-Webhook-Token: <HEALTH_CONNECT_WEBHOOK_SECRET>`, or Life Dashboard's `X-Signature: sha256=<HMAC-SHA256>` using that secret.
-4. Initial `{"test": true}` pings return `204 No Content` without writing data; real sync batches upsert `RingDay` (`source: "health_connect"`) and recompute `RhythmWindow`.
-5. Without a phone connected, click **Simulate Health Connect webhook push** on `/monitoring` (records are marked `isSimulated: true`).
+1. **Option 1 — Per-participant QR / 1-tap pairing (recommended):** Open `/monitoring`, click **Pair phone (QR / Companion app)**, and scan the QR code (or tap the `lifedashboard://pair#...` deep link) with **Life Dashboard Companion** (Android/iOS), or copy the `?token=<tokenId>` URL and `Authorization: Bearer <secret>` / `X-API-Key: <secret>` header into **Health Connect to Webhook** (`com.hcwebhook.app`).
+2. **Option 2 — Server environment secret:** Set `HEALTH_CONNECT_WEBHOOK_SECRET` (16+ random chars) in `.env` and send `Authorization: Bearer <secret>`, `X-Webhook-Token: <secret>`, `X-API-Key: <secret>`, or `X-Signature: sha256=<HMAC-SHA256>` to `POST /api/webhooks/health-connect`.
+3. Initial `{"test": true}` pings return `204 No Content` without writing data; real sync batches upsert `RingDay` (`source: "health_connect"`) and recompute `RhythmWindow`.
+4. Without a phone connected, click **Simulate Health Connect webhook push** on `/monitoring` (records are marked `isSimulated: true`).
 
 ## Fitbit Setup (Real OAuth2 PKCE)
 
