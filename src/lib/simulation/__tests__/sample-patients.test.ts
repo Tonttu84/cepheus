@@ -274,6 +274,7 @@ describe('Simulated Sample Patients', () => {
         }
       };
 
+      checkObject(patient.participant);
       for (const s of patient.patientSuggestions) {
         checkObject(s);
       }
