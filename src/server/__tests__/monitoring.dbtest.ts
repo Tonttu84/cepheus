@@ -1,9 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { evaluateArduinoEdgePayload } from "@/domain/arduino";
+import { mapHealthConnectPayloadToRingDays } from "@/domain/health-connect";
 import { getPrisma } from "@/lib/db";
 import {
   buildSimulatedFitbitWeek,
+  buildSimulatedHealthConnectPayload,
   HOME_DEMO_EXTERNAL_ID,
   saveArduinoEdgeIngest,
   saveWearableDaysAndComputeRhythm,
@@ -90,5 +92,33 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     expect(saved.skippedForConsent).toContain("home_routine");
 
     await updateMethodConsent("home_routine", true, prisma);
+  });
+
+  it("persists Health Connect webhook mapped RingDays with HRV into the shared RhythmWindow pipeline", async () => {
+    await updateMethodConsent("ring_rhythm", true, prisma);
+    const payload = buildSimulatedHealthConnectPayload("2026-11-14");
+    const days = mapHealthConnectPayloadToRingDays(payload);
+    expect(days).toHaveLength(7);
+
+    const saved = await saveWearableDaysAndComputeRhythm(
+      days,
+      { isSimulated: true, sourceLabel: "simulated_health_connect" },
+      prisma
+    );
+    expect(saved.ok).toBe(true);
+    if (saved.ok) {
+      expect(saved.savedDays).toBe(7);
+      expect(saved.rhythmComputed).toBe(true);
+    }
+
+    const latestDay = await prisma.ringDay.findFirst({
+      where: {
+        participant: { externalId: HOME_DEMO_EXTERNAL_ID },
+        source: "simulated_health_connect",
+      },
+      orderBy: { date: "desc" },
+    });
+    expect(latestDay).not.toBeNull();
+    expect(latestDay?.avgHrvRmssdMs).toBeGreaterThan(0);
   });
 });

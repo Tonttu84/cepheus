@@ -13,14 +13,16 @@ export default function MonitoringPage() {
         </div>
 
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
-          Passive home sensors &amp; Fitbit rhythm monitoring
+          Passive home sensors &amp; wearable rhythm monitoring
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700">
-          Connect a Fitbit once for effortless sleep regularity and daytime
-          activity tracking, and pair the Arduino UNO Q + external USB camera
-          for on-device facial movement, daytime immobility bouts, and ambient
-          light cues. Home routine signals never raise a clinic alert on their
-          own and always respect your per-method consent switches.
+          Sync sleep regularity and daytime activity from{" "}
+          <strong>Android Health Connect / Apple Health webhooks</strong> (Trail
+          #23) or <strong>Fitbit OAuth2 PKCE</strong>, and pair the{" "}
+          <strong>Arduino UNO Q + external USB camera</strong> for on-device
+          facial movement, daytime immobility bouts, and ambient light cues. Home
+          routine signals never raise a clinic alert on their own and always
+          respect your per-method consent switches.
         </p>
       </section>
 

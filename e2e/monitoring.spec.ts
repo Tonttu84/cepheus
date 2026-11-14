@@ -36,6 +36,11 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     await expect(page.getByText("Relative Amplitude")).toBeVisible();
     await expect(page.getByText("Sleep Reg. (SRI)")).toBeVisible();
 
+    await page.getByTestId("health-connect-simulate").click();
+    await expect(page.getByTestId("monitoring-feedback")).toContainText(
+      "simulated Health Connect days"
+    );
+
     await page.getByTestId("arduino-simulate-push").click();
     await expect(page.getByTestId("monitoring-feedback")).toContainText(
       "0 bytes video"
@@ -75,5 +80,18 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
       data: { mode: "simulated" },
     });
     expect(crossOriginSync.status()).toBe(403);
+
+    const missingAuthWebhook = await request.post("/api/webhooks/health-connect", {
+      data: { test: true },
+    });
+    expect(missingAuthWebhook.status()).toBe(401);
+
+    const badSigWebhook = await request.post("/api/webhooks/health-connect", {
+      headers: {
+        "x-signature": "sha256=0000000000000000000000000000000000000000000000000000000000000000",
+      },
+      data: { test: true },
+    });
+    expect(badSigWebhook.status()).toBe(401);
   });
 });

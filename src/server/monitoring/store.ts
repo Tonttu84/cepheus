@@ -1,9 +1,29 @@
 import type { PrismaClient } from "@prisma/client";
 import type { EvaluatedArduinoEdgeIngest } from "@/domain/arduino";
-import type { FitbitMappedDay } from "@/domain/fitbit";
 import { computeRhythmWindow, type DayWindowInput } from "@/domain/signals";
 import { MEASUREMENT_METHODS } from "@/lib/constants";
 import { getPrisma } from "@/lib/db";
+
+export interface WearableDayInput {
+  readonly date: string;
+  readonly dayIndex: number;
+  readonly ringActive: boolean;
+  readonly wearMinutes: number;
+  readonly steps: number | null;
+  readonly activeCaloriesKcal: number | null;
+  readonly hourlyActivity: readonly (number | null)[];
+  readonly bedtimeStartIso: string | null;
+  readonly bedtimeEndIso: string | null;
+  readonly sleepMidpointMin: number | null;
+  readonly timeInBedMin: number | null;
+  readonly totalSleepMin: number | null;
+  readonly wasoMinutes: number | null;
+  readonly nightActivityBouts: number | null;
+  readonly lowestHrBpm: number | null;
+  readonly avgHrBpm: number | null;
+  readonly avgHrvRmssdMs?: number | null;
+  readonly sleepWakeGrid: string | null;
+}
 
 export const HOME_DEMO_EXTERNAL_ID = "demo-home-node-01";
 
@@ -39,6 +59,7 @@ export interface MonitoringSummaryPayload {
     totalSleepMin: number | null;
     wasoMinutes: number | null;
     avgHrBpm: number | null;
+    avgHrvRmssdMs: number | null;
     source: string;
     isSimulated: boolean;
   }>;
@@ -161,7 +182,7 @@ export async function updateMethodConsent(
  * Enforces `ring_rhythm` consent before writing.
  */
 export async function saveWearableDaysAndComputeRhythm(
-  days: readonly FitbitMappedDay[],
+  days: readonly WearableDayInput[],
   options: { isSimulated: boolean; sourceLabel: string },
   prisma: PrismaClient = getPrisma()
 ): Promise<
@@ -207,6 +228,7 @@ export async function saveWearableDaysAndComputeRhythm(
         nightActivityBouts: day.nightActivityBouts,
         lowestHrBpm: day.lowestHrBpm,
         avgHrBpm: day.avgHrBpm,
+        avgHrvRmssdMs: day.avgHrvRmssdMs ?? null,
         sleepWakeGrid: day.sleepWakeGrid,
         isSimulated: options.isSimulated,
         source: options.sourceLabel,
@@ -229,6 +251,7 @@ export async function saveWearableDaysAndComputeRhythm(
         nightActivityBouts: day.nightActivityBouts,
         lowestHrBpm: day.lowestHrBpm,
         avgHrBpm: day.avgHrBpm,
+        avgHrvRmssdMs: day.avgHrvRmssdMs ?? null,
         sleepWakeGrid: day.sleepWakeGrid,
         isSimulated: options.isSimulated,
         source: options.sourceLabel,
@@ -472,6 +495,7 @@ export async function getMonitoringSummary(
       totalSleepMin: d.totalSleepMin,
       wasoMinutes: d.wasoMinutes,
       avgHrBpm: d.avgHrBpm,
+      avgHrvRmssdMs: d.avgHrvRmssdMs,
       source: d.source,
       isSimulated: d.isSimulated,
     })),
