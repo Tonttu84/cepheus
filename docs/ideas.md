@@ -1,7 +1,16 @@
 # Three ideas for the team: approve, disapprove or comment
 
-Status 14 Nov 2026. Three proposals from the project owner, written up for the team and
-for the Aalto mentors. None is built.
+## Status (14 Nov 2026, evening)
+
+Three proposals from the project owner, written up for the team and for the Aalto mentors.
+These proposals were put to the team and have since been decided:
+- Proposal 1: D37, D38, D42.
+- Proposal 2 step 1, the personal threshold set by the clinic: decided against for now in D36, a future improvement.
+- Proposal 2 step 2, the GAD-7 pilot: D35, built.
+- Proposal 3, the message read by a person and a raise-only AI mark: D26, D27, D33, D39.
+- Varying questions: D25.
+
+`docs/decisions.md` is the source of truth and the sections below are kept as written.
 
 ## What we ask of you
 
@@ -16,7 +25,7 @@ For each proposal, reply on this trail in Entire's web client with one of:
 
 What happens with your answers:
 
-- Nothing is built and `plan.md` does not change until the team has answered.
+- Nothing was built and `plan.md` did not change until the team had answered (per the decision rows, the GAD-7 pilot in D35 is built).
 - A proposal the team approves is put to the Aalto mentors with the questions below,
   and is then written into `plan.md` with a row in `decisions.md`.
 - A proposal that anyone disapproves of stays out of the plan until the objection has
@@ -233,7 +242,7 @@ small:
 ### Why
 
 The baseline is taken straight after the course, when the clinic judges that the
-treatment has worked (`questions.md`, on another open trail). For most patients that
+treatment has worked (`docs/questions.md`, on `main`). For most patients that
 gives a baseline below 10. The warning rule then warns when a complete PHQ-9 totals 10
 or more. Three of its nine questions are about sleep, energy and appetite. Our
 reasoning, not checked against a source: long-term pain, poor sleep or a physical
@@ -306,7 +315,7 @@ ask the right thing.
 ### How it meets our own rules
 
 - **Reversing the question set's rule:** The question set says "No free text in the
-  must-have build" (`questions.md`, on open trail 10). This proposal reverses that line,
+  must-have build" (`docs/questions.md`, on `main`). This proposal reverses that line,
   so if approved it needs a decision row in `decisions.md` that names what it replaces.
 - **Automated decisions and crisis:** `AGENTS.md` rules that no AI decides alerts, and
   nothing automated stands between a person in crisis and a human. This proposal keeps
@@ -400,12 +409,12 @@ These concerns do not block the demo, but must be settled before real use:
 
 ## Points for the question set and the plan
 
-Remarks from the clinician and open proposals that bear on other open trails, recorded
+Remarks from the clinician and open proposals that bear on files on `main`, recorded
 here as points for the team without changing those files:
 
 - **PHQ-9 threshold:** The PHQ-9's severity bands are 5 points wide, so a rise of 5
   moves a person into the next band; the clinician asked whether 5 would be more
-  logical than the rule's 6 (`questions.md`, open trail 10). The 6 comes from research
+  logical than the rule's 6 (`docs/questions.md`, on `main`). The 6 comes from research
   on a reliable change in one person; choosing between 5 and 6 is for the team to
   decide.
 - **Baseline definition:** The baseline is not easy to define, a known problem even in
@@ -420,7 +429,7 @@ here as points for the team without changing those files:
   it, but the neuromodulation clinic itself is unlikely to make follow-up calls. Who
   makes the nurse's call is an open point for the plan.
 - **Free text:** Proposal 3 would change the question set's line on free text ("No free
-  text in the must-have build", `questions.md`, open trail 10) by letting a patient send
+  text in the must-have build", `docs/questions.md`, on `main`) by letting a patient send
   a short message read only by clinic staff.
 
 ## A first literature check, not verified
