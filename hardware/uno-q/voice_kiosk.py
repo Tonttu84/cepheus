@@ -669,6 +669,13 @@ def run_simultaneous_bedside_cycle(
                 _handle_not_today(camera, active_route, device_id, today)
                 return
             if kind != "score" or val is None:
+                # Backend limitation: The server route (src/app/api/arduino/check-in/route.ts)
+                # validates check-in payloads against bedsideCheckInSchema, which for
+                # kind="taps" strictly requires both `mood` and `interest` integer scores (0-4).
+                # The schema accepts no partial taps (single-item taps are rejected with 400),
+                # and project rules forbid recording or inventing an answer the person did not
+                # give. If the second answer is unclear or times out, we post nothing new to the
+                # server, reassure the user with no penalty, and finalize camera ingest.
                 speak_text_on_device("No problem, moving on with no penalty.", route=active_route)
                 _finish_camera_and_ingest(camera)
                 return

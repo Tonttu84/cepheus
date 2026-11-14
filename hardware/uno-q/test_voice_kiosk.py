@@ -500,6 +500,67 @@ class BluetoothAndSimultaneousVoiceCameraTests(unittest.TestCase):
         self.assertTrue(stalled_proc.terminated)
         self.assertLess(elapsed, 1.5)
 
+    def test_unclear_second_answer_posts_no_partial_checkin_and_no_penalty(self) -> None:
+        camera_stopped = {"called": False}
+
+        class FakeCameraWorker:
+            error = None
+
+            def __init__(self, cfg: object = None) -> None:
+                self.cfg = cfg
+
+            def start(self) -> None:
+                pass
+
+            def stop(self, abort: bool = False) -> dict[str, object] | None:
+                camera_stopped["called"] = True
+                return {"deviceId": "unoq-home-01", "ok": True}
+
+        bt_route = bluetooth_audio.AudioRoute(
+            bt_connected=True,
+            bt_sink_ready=True,
+            bt_device_name="Headphones",
+            output_backend="pulse",
+            output_sink="bluez_output.AA_BB.1",
+            input_backend="pulse",
+            input_source="bluez_input.AA_BB.0",
+        )
+        spoken: list[str] = []
+        # First question (mood) is answered with 3; second question (interest) is unclear
+        question_replies = iter([("score", 3), ("unclear", None)])
+
+        with (
+            mock.patch.object(voice_kiosk, "ConcurrentEdgeCamera", FakeCameraWorker),
+            mock.patch.object(
+                voice_kiosk,
+                "_ask_single_voice_question",
+                side_effect=lambda *args, **kwargs: next(question_replies),
+            ),
+            mock.patch.object(
+                voice_kiosk,
+                "speak_text_on_device",
+                side_effect=lambda txt, route=None: spoken.append(txt),
+            ),
+            mock.patch.object(voice_kiosk, "post_checkin_result") as mock_checkin,
+            mock.patch.object(
+                voice_kiosk,
+                "post_derived_metrics",
+                return_value={"ok": True, "lightCue": {"activateRingLightCue": False}},
+            ) as mock_ingest,
+            mock.patch.object(voice_kiosk, "poll_mcu_button_event", return_value=None),
+            mock.patch.object(voice_kiosk, "send_mcu_command"),
+        ):
+            voice_kiosk.run_simultaneous_bedside_cycle(
+                route=bt_route, vosk_model=object()
+            )
+
+        # Because the server schema accepts no partial taps and we must not invent
+        # values, post_checkin_result must NOT be called.
+        mock_checkin.assert_not_called()
+        self.assertTrue(camera_stopped["called"])
+        mock_ingest.assert_called_once()
+        self.assertTrue(any("No problem, moving on with no penalty." in s for s in spoken))
+
 
 if __name__ == "__main__":
     unittest.main()
