@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { SAFE_ACTION_KEYS } from "@/domain/ai-support";
+import { getEnv } from "@/server/env";
 import { generateTailoredPatientStep } from "@/server/verda/client";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +62,17 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, error: "Rate limit exceeded." },
       { status: 429 }
+    );
+  }
+
+  if (!getEnv().VERDA_PATIENT_STEP_ENABLED) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "Patient-facing AI step tailoring is disabled (pending team approval; off by default).",
+      },
+      { status: 403 }
     );
   }
 

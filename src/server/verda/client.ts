@@ -53,6 +53,25 @@ export function isVerdaConfigured(): boolean {
   );
 }
 
+class VerdaHttpError extends Error {
+  readonly status: number;
+  constructor(status: number) {
+    super(`Verda Inference API returned HTTP ${status}`);
+    this.name = "VerdaHttpError";
+    this.status = status;
+  }
+}
+
+function logVerdaFallback(details: {
+  operation: "nurse_brief" | "patient_step";
+  errorKind: string;
+  status?: number;
+  reason: string;
+}): void {
+  // Never log patient identifiers, prompts, or secrets.
+  console.warn("[verda] Inference fallback triggered:", details);
+}
+
 function extractJsonObject(rawText: string): unknown {
   const cleaned = rawText
     .replace(/^```(?:json)?\s*/i, "")
@@ -87,7 +106,7 @@ async function callVerdaGemmaJson(
   });
 
   if (!res.ok) {
-    throw new Error(`Verda Inference API returned status ${res.status}`);
+    throw new VerdaHttpError(res.status);
   }
 
   const data = (await res.json()) as {
@@ -104,14 +123,14 @@ const PATIENT_STEP_SYSTEM_PROMPT = [
   "You are supporting a calm post-TMS wellbeing check-in.",
   "Select ONE actionKey from: short_walk, breathing_space, bright_light, social_contact.",
   "Return strict JSON: {\"actionKey\": \"...\", \"message\": \"...\"}.",
-  "Rules: never mention scores, streaks, diagnosis, relapse, depression labels, happy memories, sad music, or cold water.",
+  "Rules: never include any digits or numbers, scores, streaks, diagnosis, relapse, depression labels, happy memories, sad music, or cold water.",
   "Keep message under 220 characters, warm, low-effort, and zero-guilt.",
 ].join(" ");
 
 const NURSE_BRIEF_SYSTEM_PROMPT = [
-  "You turn pseudonymous wellbeing summary numbers into a plain-English nurse pre-call brief.",
+  "You turn anonymous derived summary numbers into a plain-English nurse pre-call brief.",
   "Return strict JSON: {\"summary\": \"...\", \"conversationOpeners\": [\"...\", \"...\"]}.",
-  "Rules: quote ONLY numbers present in the input JSON; never invent numbers; never diagnose, predict relapse, or recommend medication doses.",
+  "Rules: quote ONLY numbers present in the input JSON; never invent numbers; never include any patient ID; never diagnose, predict relapse, or judge severity/triage/treatment.",
   "Keep summary <= 3 sentences and openers gentle and practical.",
 ].join(" ");
 
@@ -138,9 +157,19 @@ function makeFallback<T>(
   };
 }
 
+function classifyError(err: unknown): { errorKind: string; status?: number } {
+  if (err instanceof VerdaHttpError) {
+    return { errorKind: "http_error", status: err.status };
+  }
+  if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
+    return { errorKind: "timeout" };
+  }
+  return { errorKind: err instanceof Error ? err.name : "unknown_error" };
+}
+
 /**
- * Generates a tailored, low-effort patient step via EU-hosted Gemma on Verda,
- * falling back deterministically if Verda is unconfigured, fails, or fails safety checks.
+ * Generates a tailored, low-effort patient step via EU-hosted Gemma on Verda.
+ * Strips participantCode before leaving the server and blocks any digits in output.
  */
 export async function generateTailoredPatientStep(
   input: PatientStepInput,
@@ -155,10 +184,27 @@ export async function generateTailoredPatientStep(
   }
 
   const env = getEnv();
+  // Strip participantCode before sending to Verda
+  const sanitizedInput = {
+    broadAreasShifted: input.broadAreasShifted,
+    lowDaylight: input.lowDaylight,
+    highStationaryBout: input.highStationaryBout,
+    pastActionOutcomes: input.pastActionOutcomes,
+  };
+
   try {
-    const rawJson = await callVerdaGemmaJson(PATIENT_STEP_SYSTEM_PROMPT, input, fetchImpl);
+    const rawJson = await callVerdaGemmaJson(
+      PATIENT_STEP_SYSTEM_PROMPT,
+      sanitizedInput,
+      fetchImpl
+    );
     const parsed = gemmaStepSchema.safeParse(rawJson);
     if (!parsed.success) {
+      logVerdaFallback({
+        operation: "patient_step",
+        errorKind: "schema_validation",
+        reason: "Gemma output failed schema validation.",
+      });
       return makeFallback(
         fallback,
         "Gemma output failed schema validation.",
@@ -167,8 +213,15 @@ export async function generateTailoredPatientStep(
       );
     }
 
-    const faith = verifyOutputFaithfulness(parsed.data.message, [JSON.stringify(input)]);
+    const faith = verifyOutputFaithfulness(parsed.data.message, [], {
+      forbidAllDigits: true,
+    });
     if (!faith.ok) {
+      logVerdaFallback({
+        operation: "patient_step",
+        errorKind: "faithfulness_refusal",
+        reason: faith.reason ?? "Faithfulness check failed.",
+      });
       return makeFallback(
         fallback,
         faith.reason ?? "Faithfulness check failed.",
@@ -188,7 +241,14 @@ export async function generateTailoredPatientStep(
         message: parsed.data.message.trim(),
       },
     };
-  } catch {
+  } catch (err) {
+    const info = classifyError(err);
+    logVerdaFallback({
+      operation: "patient_step",
+      errorKind: info.errorKind,
+      status: info.status,
+      reason: "Verda Inference API request failed or timed out.",
+    });
     return makeFallback(
       fallback,
       "Verda Inference API request failed or timed out.",
@@ -198,8 +258,9 @@ export async function generateTailoredPatientStep(
 }
 
 /**
- * Generates a non-diagnostic nurse pre-call brief via EU-hosted Gemma on Verda,
- * strictly enforcing grounded numbers and falling back deterministically on any issue.
+ * Generates a non-diagnostic nurse pre-call brief via EU-hosted Gemma on Verda.
+ * Strips participantCode before leaving the server and prepends it locally only
+ * after strict number-grounding & clinical-safety verification passes.
  */
 export async function generateNursePreCallBrief(
   input: NurseBriefInput,
@@ -214,17 +275,33 @@ export async function generateNursePreCallBrief(
   }
 
   const env = getEnv();
+  // Strip participantCode completely from the external payload and allowedSources
+  const sanitizedInput = {
+    sinceDate: input.sinceDate,
+    triggerKind: input.triggerKind,
+    broadAreas: input.broadAreas,
+    ringActiveDuringSilence: input.ringActiveDuringSilence,
+    metrics: input.metrics,
+  };
   const allowedSources = [
-    input.participantCode,
     input.sinceDate,
     ...input.broadAreas,
     ...input.metrics.map((m) => `${m.label} ${m.valueText}`),
   ];
 
   try {
-    const rawJson = await callVerdaGemmaJson(NURSE_BRIEF_SYSTEM_PROMPT, input, fetchImpl);
+    const rawJson = await callVerdaGemmaJson(
+      NURSE_BRIEF_SYSTEM_PROMPT,
+      sanitizedInput,
+      fetchImpl
+    );
     const parsed = gemmaBriefSchema.safeParse(rawJson);
     if (!parsed.success) {
+      logVerdaFallback({
+        operation: "nurse_brief",
+        errorKind: "schema_validation",
+        reason: "Gemma output failed schema validation.",
+      });
       return makeFallback(
         fallback,
         "Gemma output failed schema validation.",
@@ -241,25 +318,35 @@ export async function generateNursePreCallBrief(
       allowedSources
     );
     if (!summaryFaith.ok || !openersFaith.ok) {
-      return makeFallback(
-        fallback,
-        summaryFaith.reason ?? openersFaith.reason ?? "Faithfulness check failed.",
-        env.VERDA_GEMMA_MODEL,
-        false
-      );
+      const reason =
+        summaryFaith.reason ?? openersFaith.reason ?? "Faithfulness check failed.";
+      logVerdaFallback({
+        operation: "nurse_brief",
+        errorKind: "faithfulness_refusal",
+        reason,
+      });
+      return makeFallback(fallback, reason, env.VERDA_GEMMA_MODEL, false);
     }
 
+    const prefixedSummary = `Participant ${input.participantCode}: ${parsed.data.summary.trim()}`;
     return {
       provider: "verda-gemma",
       model: env.VERDA_GEMMA_MODEL,
       fallbackUsed: false,
       faithfulnessVerified: true,
       result: {
-        summary: parsed.data.summary.trim(),
+        summary: prefixedSummary,
         conversationOpeners: parsed.data.conversationOpeners.map((s) => s.trim()),
       },
     };
-  } catch {
+  } catch (err) {
+    const info = classifyError(err);
+    logVerdaFallback({
+      operation: "nurse_brief",
+      errorKind: info.errorKind,
+      status: info.status,
+      reason: "Verda Inference API request failed or timed out.",
+    });
     return makeFallback(
       fallback,
       "Verda Inference API request failed or timed out.",

@@ -19,6 +19,7 @@ export interface AppEnv {
   HEALTH_CONNECT_WEBHOOK_SECRET: string;
   TRUST_PROXY_HEADERS: boolean;
   VERDA_AI_ENABLED: boolean;
+  VERDA_PATIENT_STEP_ENABLED: boolean;
   VERDA_INFERENCE_URL: string;
   VERDA_API_KEY: string;
   VERDA_GEMMA_MODEL: string;
@@ -191,6 +192,7 @@ const rawEnvSchema = z
     HEALTH_CONNECT_WEBHOOK_SECRET: optionalTrimmedString,
     TRUST_PROXY_HEADERS: optionalTrimmedString,
     VERDA_AI_ENABLED: optionalTrimmedString,
+    VERDA_PATIENT_STEP_ENABLED: optionalTrimmedString,
     VERDA_INFERENCE_URL: optionalTrimmedString,
     VERDA_API_KEY: optionalTrimmedString,
     VERDA_GEMMA_MODEL: optionalTrimmedString,
@@ -250,6 +252,8 @@ export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
     HEALTH_CONNECT_WEBHOOK_SECRET: result.data.HEALTH_CONNECT_WEBHOOK_SECRET,
     TRUST_PROXY_HEADERS: result.data.TRUST_PROXY_HEADERS.toLowerCase() === "true",
     VERDA_AI_ENABLED: result.data.VERDA_AI_ENABLED.toLowerCase() === "true",
+    VERDA_PATIENT_STEP_ENABLED:
+      result.data.VERDA_PATIENT_STEP_ENABLED.toLowerCase() === "true",
     VERDA_INFERENCE_URL: result.data.VERDA_INFERENCE_URL,
     VERDA_API_KEY: result.data.VERDA_API_KEY,
     VERDA_GEMMA_MODEL: result.data.VERDA_GEMMA_MODEL || "google/gemma-3-27b-it",

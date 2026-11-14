@@ -29,7 +29,10 @@ export function extractNumericTokens(text: string): string[] {
 export function verifyOutputFaithfulness(
   outputText: string,
   allowedSourceTexts: readonly string[],
-  options: { enforceStrictNumberGrounding?: boolean } = {}
+  options: {
+    enforceStrictNumberGrounding?: boolean;
+    forbidAllDigits?: boolean;
+  } = {}
 ): FaithfulnessCheckResult {
   const trimmed = outputText.trim();
   if (trimmed.length === 0) {
@@ -43,6 +46,13 @@ export function verifyOutputFaithfulness(
         reason: `Refused output containing forbidden ${rule.label}.`,
       };
     }
+  }
+
+  if (options.forbidAllDigits && /\d/.test(trimmed)) {
+    return {
+      ok: false,
+      reason: "Refused patient-facing message containing digits.",
+    };
   }
 
   if (options.enforceStrictNumberGrounding) {

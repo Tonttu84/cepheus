@@ -31,6 +31,21 @@ describe("AI Support Domain Guardrails & Templates (src/domain/ai-support)", () 
       verifyOutputFaithfulness("Take a 10-minute walk outside when ready.", allowed)
         .ok
     ).toBe(true);
+
+    expect(
+      verifyOutputFaithfulness(
+        "Your score is 4 today, try a short walk.",
+        allowed,
+        { forbidAllDigits: true }
+      ).ok
+    ).toBe(false);
+    expect(
+      verifyOutputFaithfulness(
+        "Step outside for a short daylight walk when ready.",
+        allowed,
+        { forbidAllDigits: true }
+      ).ok
+    ).toBe(true);
   });
 
   it("rejects ungrounded numbers invented in nurse briefs", () => {
