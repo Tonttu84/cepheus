@@ -3,8 +3,14 @@ import { decideAccess, type Actor, type Purpose } from "@/domain/access";
 import type { ConsentState } from "@/domain/consent";
 import { computeRhythmWindow, type DayWindowInput } from "@/domain/signals";
 import type { EvaluatedArduinoEdgeIngest } from "@/domain/arduino";
+import type {
+  AuthSession,
+  PatientAuthSession,
+  StaffAuthSession,
+} from "@/lib/auth-types";
 import { MEASUREMENT_METHODS } from "@/lib/constants";
 import { getPrisma } from "@/lib/db";
+import { resolveMonitoringTarget } from "./session-scope";
 
 /**
  * DEMO-ONLY PARTICIPANT SCOPING:
@@ -17,7 +23,7 @@ export const HOME_DEMO_EXTERNAL_ID = "demo-home-node-01";
 export const DEMO_CLINIC_ID = "demo-clinic";
 
 const MONITORED_METHODS = ["ring_rhythm", "camera_expressivity", "home_routine"] as const;
-const ALL_CONSENT_METHODS = [
+export const ALL_CONSENT_METHODS = [
   "check_in",
   "phq9",
   "ring_rhythm",
@@ -56,7 +62,7 @@ export interface MonitoringConsentSummary {
 }
 
 export interface MonitoringSummaryPayload {
-  demoOnly: true;
+  demoOnly: boolean;
   participantExternalId: string;
   viewerKind: "patient" | "staff";
   readingsRedactedForStaff: boolean;
@@ -115,15 +121,15 @@ export interface LoadedConsentContext {
   methodFlags: Record<MonitoredMethodKey, boolean>;
 }
 
-function makePatientActor(patientId: string): Actor {
-  return { kind: "patient", patientId, clinicId: DEMO_CLINIC_ID };
+function makePatientActor(patientId: string, clinicId: string = DEMO_CLINIC_ID): Actor {
+  return { kind: "patient", patientId, clinicId };
 }
 
-function makeStaffActor(): Actor {
+function makeStaffActor(clinicId: string = DEMO_CLINIC_ID): Actor {
   return {
     kind: "staff",
     staffId: "demo-nurse-01",
-    clinicId: DEMO_CLINIC_ID,
+    clinicId,
     role: "nurse",
   };
 }
@@ -172,6 +178,7 @@ function assertDomainAccess(params: {
   action: "read" | "write";
   kind: "readings" | "consent" | "flags";
   patientId: string;
+  clinicId?: string;
   purpose: Purpose;
   consent: ConsentState;
   method?: "ring" | "camera";
@@ -182,7 +189,7 @@ function assertDomainAccess(params: {
     target: {
       kind: params.kind,
       patientId: params.patientId,
-      clinicId: DEMO_CLINIC_ID,
+      clinicId: params.clinicId ?? DEMO_CLINIC_ID,
       method: params.method,
     },
     purpose: params.purpose,
@@ -254,21 +261,37 @@ export async function ensureHomeDemoParticipant(prisma: PrismaClient = getPrisma
 export async function updateMethodConsent(
   method: MonitoredMethodKey,
   enabled: boolean,
-  prisma: PrismaClient = getPrisma()
+  prisma: PrismaClient = getPrisma(),
+  session?: PatientAuthSession
 ): Promise<MonitoringConsentSummary> {
-  const participant = await ensureHomeDemoParticipant(prisma);
+  const target = await resolveMonitoringTarget({ session }, prisma);
+  if (!target) {
+    throw new Error("Participant record unavailable.");
+  }
+  const { participant, clinicCode } = target;
+  const effectiveClinicId = participant.clinicId ?? clinicCode;
   const { consentState } = await loadConsentContext(participant.id, prisma);
   const access = assertDomainAccess({
-    actor: makePatientActor(participant.id),
+    actor: makePatientActor(participant.id, effectiveClinicId),
     action: "write",
     kind: "consent",
     patientId: participant.id,
+    clinicId: effectiveClinicId,
     purpose: "self_access",
     consent: consentState,
   });
   if (!access.allowed) {
     throw new Error(`Access denied updating consent: ${access.reason}`);
   }
+
+  const existing = await prisma.measurementConsent.findUnique({
+    where: {
+      participantId_method: {
+        participantId: participant.id,
+        method,
+      },
+    },
+  });
 
   const updated = await prisma.measurementConsent.update({
     where: {
@@ -283,6 +306,20 @@ export async function updateMethodConsent(
       revokedAt: enabled ? null : new Date(),
     },
   });
+
+  if (existing && existing.enabled !== enabled) {
+    await prisma.consentEvent.create({
+      data: {
+        participantId: participant.id,
+        clinicId: participant.clinicId,
+        layer: "method",
+        method,
+        enabled,
+        noticeVersion: "v1",
+      },
+    });
+  }
+
   const meta = MEASUREMENT_METHODS.find((m) => m.method === method);
   return {
     method: updated.method,
@@ -295,12 +332,14 @@ export async function updateMethodConsent(
 
 async function upsertRingDays(
   participantId: string,
+  clinicId: string | null,
   days: readonly WearableDayInput[],
   options: { isSimulated: boolean; sourceLabel: string },
   prisma: PrismaClient
 ): Promise<void> {
   for (const day of days) {
     const shared = {
+      clinicId,
       dayIndex: day.dayIndex,
       ringActive: day.ringActive,
       wearMinutes: day.wearMinutes,
@@ -332,6 +371,7 @@ async function upsertRingDays(
 
 async function recomputeAndSaveRhythmWindow(
   participantId: string,
+  clinicId: string | null,
   isSimulated: boolean,
   prisma: PrismaClient
 ): Promise<{ computed: boolean; error?: string }> {
@@ -367,6 +407,7 @@ async function recomputeAndSaveRhythmWindow(
 
   const rw = rhythmRes.value;
   const fields = {
+    clinicId,
     dayIndex: rw.dayIndex,
     validDays: rw.validDays,
     m10: rw.m10,
@@ -407,20 +448,38 @@ async function recomputeAndSaveRhythmWindow(
  */
 export async function saveWearableDaysAndComputeRhythm(
   days: readonly WearableDayInput[],
-  options: { isSimulated: boolean; sourceLabel: string },
+  options: {
+    isSimulated: boolean;
+    sourceLabel: string;
+    session?: PatientAuthSession;
+    participantId?: string | null;
+  },
   prisma: PrismaClient = getPrisma()
 ): Promise<
   | { ok: true; savedDays: number; rhythmComputed: boolean; rhythmError?: string }
   | { ok: false; status: 403; error: string }
 > {
-  const participant = await ensureHomeDemoParticipant(prisma);
+  const target = await resolveMonitoringTarget(
+    { session: options.session, participantId: options.participantId },
+    prisma
+  );
+  if (!target) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Participant record unavailable.",
+    };
+  }
+  const { participant, clinicCode } = target;
+  const effectiveClinicId = participant.clinicId ?? clinicCode;
   const { consentState } = await loadConsentContext(participant.id, prisma);
 
   const access = assertDomainAccess({
-    actor: makePatientActor(participant.id),
+    actor: makePatientActor(participant.id, effectiveClinicId),
     action: "write",
     kind: "readings",
     patientId: participant.id,
+    clinicId: effectiveClinicId,
     purpose: "method:ring",
     consent: consentState,
     method: "ring",
@@ -433,9 +492,10 @@ export async function saveWearableDaysAndComputeRhythm(
     };
   }
 
-  await upsertRingDays(participant.id, days, options, prisma);
+  await upsertRingDays(participant.id, participant.clinicId, days, options, prisma);
   const rhythm = await recomputeAndSaveRhythmWindow(
     participant.id,
+    participant.clinicId,
     options.isSimulated,
     prisma
   );
@@ -454,7 +514,8 @@ export async function saveWearableDaysAndComputeRhythm(
  */
 export async function saveArduinoEdgeIngest(
   ingest: EvaluatedArduinoEdgeIngest,
-  prisma: PrismaClient = getPrisma()
+  prisma: PrismaClient = getPrisma(),
+  options?: { session?: PatientAuthSession }
 ): Promise<
   | {
       ok: true;
@@ -464,14 +525,24 @@ export async function saveArduinoEdgeIngest(
     }
   | { ok: false; status: 403; error: string }
 > {
-  const participant = await ensureHomeDemoParticipant(prisma);
+  const target = await resolveMonitoringTarget({ session: options?.session }, prisma);
+  if (!target) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Participant record unavailable.",
+    };
+  }
+  const { participant, clinicCode } = target;
+  const effectiveClinicId = participant.clinicId ?? clinicCode;
   const { consentState, methodFlags } = await loadConsentContext(participant.id, prisma);
 
   const access = assertDomainAccess({
-    actor: makePatientActor(participant.id),
+    actor: makePatientActor(participant.id, effectiveClinicId),
     action: "write",
     kind: "readings",
     patientId: participant.id,
+    clinicId: effectiveClinicId,
     purpose: "method:camera",
     consent: consentState,
     method: "camera",
@@ -496,6 +567,7 @@ export async function saveArduinoEdgeIngest(
       await prisma.cameraReading.create({
         data: {
           participantId: participant.id,
+          clinicId: participant.clinicId,
           date: ingest.date,
           taskId: c.taskId,
           durationSec: c.durationSec,
@@ -523,6 +595,7 @@ export async function saveArduinoEdgeIngest(
       await prisma.routineSignalReading.createMany({
         data: ingest.routineReadings.map((r) => ({
           participantId: participant.id,
+          clinicId: participant.clinicId,
           periodStartDate: ingest.date,
           periodEndDate: ingest.date,
           channel: r.channel,
@@ -556,35 +629,81 @@ function formatConsentSummaries(
   });
 }
 
-async function loadStaffRedactedSummary(
-  participantId: string,
-  actor: Actor,
-  consentState: ConsentState,
-  consents: MonitoringConsentSummary[],
+async function loadStaffSummary(
+  session: StaffAuthSession | null,
   prisma: PrismaClient
 ): Promise<MonitoringSummaryPayload> {
+  if (!session) {
+    const participant = await ensureHomeDemoParticipant(prisma);
+    const { consentState } = await loadConsentContext(participant.id, prisma);
+    const clinicId = participant.clinicId ?? DEMO_CLINIC_ID;
+    const actor = makeStaffActor(clinicId);
+    const flagsAccess = assertDomainAccess({
+      actor,
+      action: "read",
+      kind: "flags",
+      patientId: participant.id,
+      clinicId,
+      purpose: "care",
+      consent: consentState,
+    });
+    const consentsRows = await prisma.measurementConsent.findMany({
+      where: { participantId: participant.id, method: { in: [...MONITORED_METHODS] } },
+    });
+    const flags = flagsAccess.allowed
+      ? await prisma.clinicFlag.findMany({
+          where: { participantId: participant.id },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        })
+      : [];
+    return {
+      demoOnly: true,
+      participantExternalId: HOME_DEMO_EXTERNAL_ID,
+      viewerKind: "staff",
+      readingsRedactedForStaff: true,
+      consents: formatConsentSummaries(consentsRows),
+      latestRhythmWindow: null,
+      recentWearableDays: [],
+      recentCameraReadings: [],
+      recentRoutineReadings: [],
+      staffBroadAreaFlags: flags.map((f) => ({
+        sinceDate: f.sinceDate,
+        primaryArea: f.primaryArea,
+        status: f.status,
+      })),
+    };
+  }
+
+  const clinic =
+    (await prisma.clinic.findUnique({ where: { id: session.actor.clinicId } })) ??
+    (await prisma.clinic.findUnique({ where: { code: "sim-clinic-01" } }));
+  const resolvedClinicId = clinic?.id ?? session.actor.clinicId;
+  const actor: Actor = { ...session.actor, clinicId: resolvedClinicId };
   const flagsAccess = assertDomainAccess({
     actor,
     action: "read",
     kind: "flags",
-    patientId: participantId,
+    patientId: resolvedClinicId,
+    clinicId: resolvedClinicId,
     purpose: "care",
-    consent: consentState,
+    consent: { taking_part: true, methods: { ring: false, camera: false }, rule_check: false },
   });
-  const flags = flagsAccess.allowed
-    ? await prisma.clinicFlag.findMany({
-        where: { participantId },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      })
-    : [];
+  const flags =
+    flagsAccess.allowed && clinic
+      ? await prisma.clinicFlag.findMany({
+          where: { clinicId: clinic.id },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        })
+      : [];
 
   return {
-    demoOnly: true,
-    participantExternalId: HOME_DEMO_EXTERNAL_ID,
+    demoOnly: session.isSimulated,
+    participantExternalId: clinic?.code ?? "sim-clinic-01",
     viewerKind: "staff",
     readingsRedactedForStaff: true,
-    consents,
+    consents: formatConsentSummaries([]),
     latestRhythmWindow: null,
     recentWearableDays: [],
     recentCameraReadings: [],
@@ -598,20 +717,31 @@ async function loadStaffRedactedSummary(
 }
 
 /**
- * Reads the demo participant's monitoring summary after checking `decideAccess`.
- * When `viewerKind === "staff"`, `decideAccess` refuses raw clinical readings (D8),
- * returning only broad-area flags with all sensor numbers redacted.
+ * Reads the participant's monitoring summary after checking `decideAccess`.
+ * When `viewerOrSession` is `"staff"` or a `StaffAuthSession`, `decideAccess` refuses
+ * raw clinical readings (D8), returning only broad-area flags with all sensor numbers redacted.
  */
 export async function getMonitoringSummary(
-  viewerKind: "patient" | "staff" = "patient",
+  viewerOrSession: "patient" | "staff" | AuthSession = "patient",
   prisma: PrismaClient = getPrisma()
 ): Promise<MonitoringSummaryPayload> {
-  const participant = await ensureHomeDemoParticipant(prisma);
-  const { consentState } = await loadConsentContext(participant.id, prisma);
+  if (viewerOrSession === "staff") {
+    return loadStaffSummary(null, prisma);
+  }
+  if (typeof viewerOrSession === "object" && viewerOrSession.kind === "staff") {
+    return loadStaffSummary(viewerOrSession, prisma);
+  }
 
-  const actor =
-    viewerKind === "staff" ? makeStaffActor() : makePatientActor(participant.id);
-  const purpose = viewerKind === "staff" ? "care" : "self_access";
+  const patientSession =
+    typeof viewerOrSession === "object" ? viewerOrSession : undefined;
+  const target = await resolveMonitoringTarget({ session: patientSession }, prisma);
+  if (!target) {
+    throw new Error("Participant record unavailable.");
+  }
+  const { participant, clinicCode } = target;
+  const effectiveClinicId = participant.clinicId ?? clinicCode;
+  const { consentState } = await loadConsentContext(participant.id, prisma);
+  const actor = makePatientActor(participant.id, effectiveClinicId);
 
   const ringRead = assertDomainAccess({
     actor,
@@ -619,7 +749,8 @@ export async function getMonitoringSummary(
     kind: "readings",
     method: "ring",
     patientId: participant.id,
-    purpose,
+    clinicId: effectiveClinicId,
+    purpose: "self_access",
     consent: consentState,
   });
   const cameraRead = assertDomainAccess({
@@ -628,7 +759,8 @@ export async function getMonitoringSummary(
     kind: "readings",
     method: "camera",
     patientId: participant.id,
-    purpose,
+    clinicId: effectiveClinicId,
+    purpose: "self_access",
     consent: consentState,
   });
 
@@ -636,16 +768,6 @@ export async function getMonitoringSummary(
     where: { participantId: participant.id, method: { in: [...MONITORED_METHODS] } },
   });
   const consents = formatConsentSummaries(consentsRows);
-
-  if (!ringRead.allowed && !cameraRead.allowed) {
-    return loadStaffRedactedSummary(
-      participant.id,
-      actor,
-      consentState,
-      consents,
-      prisma
-    );
-  }
 
   const [rhythmWindow, ringDays, cameraReadings, routineReadings] = await Promise.all([
     ringRead.allowed
@@ -678,9 +800,12 @@ export async function getMonitoringSummary(
   ]);
 
   return {
-    demoOnly: true,
-    participantExternalId: participant.externalId ?? HOME_DEMO_EXTERNAL_ID,
-    viewerKind,
+    demoOnly: Boolean(
+      participant.isSimulated || participant.externalId === HOME_DEMO_EXTERNAL_ID
+    ),
+    participantExternalId:
+      participant.participantCode ?? participant.externalId ?? HOME_DEMO_EXTERNAL_ID,
+    viewerKind: "patient",
     readingsRedactedForStaff: false,
     consents,
     latestRhythmWindow: rhythmWindow

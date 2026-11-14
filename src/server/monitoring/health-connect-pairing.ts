@@ -6,6 +6,7 @@ import {
   buildLifeDashboardPairingUri,
   encodeQrMatrix,
 } from "@/domain/health-connect";
+import type { PatientAuthSession } from "@/lib/auth-types";
 import { getPrisma } from "@/lib/db";
 import { getEnv } from "@/server/env";
 import {
@@ -15,8 +16,8 @@ import {
   unsealJson,
   verifyHmacSha256Signature,
 } from "@/server/security";
+import { resolveMonitoringTarget } from "./session-scope";
 import {
-  DEMO_CLINIC_ID,
   ensureHomeDemoParticipant,
   loadConsentContext,
 } from "./store";
@@ -80,10 +81,15 @@ function verifyCredentialAuth(
 
 export async function getHealthConnectPairingStatus(
   requestOrigin: string,
-  prisma: PrismaClient = getPrisma()
+  prisma: PrismaClient = getPrisma(),
+  session?: PatientAuthSession
 ): Promise<HealthConnectPairingStatus> {
   const origin = resolveOrigin(requestOrigin);
-  const participant = await ensureHomeDemoParticipant(prisma);
+  const target = await resolveMonitoringTarget({ session }, prisma);
+  if (!target) {
+    throw new Error("Participant record unavailable.");
+  }
+  const { participant } = target;
   const { consentState } = await loadConsentContext(participant.id, prisma);
   const cred = await prisma.webhookCredential.findUnique({
     where: { participantId: participant.id },
@@ -141,9 +147,25 @@ async function upsertParticipantCredential(
   return { tokenId, secret };
 }
 
+function canWriteRingForParticipant(
+  participantId: string,
+  clinicId: string,
+  consentState: Awaited<ReturnType<typeof loadConsentContext>>["consentState"]
+): boolean {
+  const access = decideAccess({
+    actor: { kind: "patient", patientId: participantId, clinicId },
+    action: "write",
+    target: { kind: "readings", patientId: participantId, clinicId, method: "ring" },
+    purpose: "method:ring",
+    consent: consentState,
+  });
+  return Boolean(access.ok && access.value.allowed && consentState.methods.ring);
+}
+
 export async function provisionOrRotateHealthConnectPairing(
   requestOrigin: string,
-  prisma: PrismaClient = getPrisma()
+  prisma: PrismaClient = getPrisma(),
+  session?: PatientAuthSession
 ): Promise<
   | {
       ok: true;
@@ -153,23 +175,13 @@ export async function provisionOrRotateHealthConnectPairing(
   | { ok: false; status: 403; error: string }
 > {
   const origin = resolveOrigin(requestOrigin);
-  const participant = await ensureHomeDemoParticipant(prisma);
+  const target = await resolveMonitoringTarget({ session }, prisma);
+  if (!target) {
+    return { ok: false, status: 403, error: "Participant record unavailable." };
+  }
+  const { participant, clinicCode } = target;
   const { consentState } = await loadConsentContext(participant.id, prisma);
-
-  const access = decideAccess({
-    actor: { kind: "patient", patientId: participant.id, clinicId: DEMO_CLINIC_ID },
-    action: "write",
-    target: {
-      kind: "readings",
-      patientId: participant.id,
-      clinicId: DEMO_CLINIC_ID,
-      method: "ring",
-    },
-    purpose: "method:ring",
-    consent: consentState,
-  });
-
-  if (!access.ok || !access.value.allowed || !consentState.methods.ring) {
+  if (!canWriteRingForParticipant(participant.id, participant.clinicId ?? clinicCode, consentState)) {
     return {
       ok: false,
       status: 403,
@@ -182,7 +194,7 @@ export async function provisionOrRotateHealthConnectPairing(
   const lifeDashboardUri = buildLifeDashboardPairingUri({ webhookUrl, secret });
   const qrMatrix = encodeQrMatrix(lifeDashboardUri);
   const { bearerHeader, apiKeyHeader } = buildHcWebhookAuthHeaders(secret);
-  const status = await getHealthConnectPairingStatus(origin, prisma);
+  const status = await getHealthConnectPairingStatus(origin, prisma, session);
 
   return {
     ok: true,
@@ -201,10 +213,15 @@ export async function provisionOrRotateHealthConnectPairing(
 
 export async function revokeHealthConnectPairing(
   requestOrigin: string,
-  prisma: PrismaClient = getPrisma()
+  prisma: PrismaClient = getPrisma(),
+  session?: PatientAuthSession
 ): Promise<HealthConnectPairingStatus> {
   const origin = resolveOrigin(requestOrigin);
-  const participant = await ensureHomeDemoParticipant(prisma);
+  const target = await resolveMonitoringTarget({ session }, prisma);
+  if (!target) {
+    throw new Error("Participant record unavailable.");
+  }
+  const { participant } = target;
   const existing = await prisma.webhookCredential.findUnique({
     where: { participantId: participant.id },
     select: { id: true, revokedAt: true },
@@ -217,11 +234,16 @@ export async function revokeHealthConnectPairing(
     });
   }
 
-  return getHealthConnectPairingStatus(origin, prisma);
+  return getHealthConnectPairingStatus(origin, prisma, session);
 }
 
 type WebhookAuthResult =
-  | { ok: true; credentialId: string | null; lastSequence: number | null }
+  | {
+      ok: true;
+      credentialId: string | null;
+      participantId: string | null;
+      lastSequence: number | null;
+    }
   | { ok: false };
 
 function matchCredential(
@@ -238,7 +260,12 @@ function matchCredential(
     presentedToken,
   });
   return valid
-    ? { ok: true, credentialId: cred.id, lastSequence: cred.lastSequence }
+    ? {
+        ok: true,
+        credentialId: cred.id,
+        participantId: cred.participantId,
+        lastSequence: cred.lastSequence,
+      }
     : { ok: false };
 }
 
@@ -278,7 +305,7 @@ export async function verifyAndResolveHealthConnectWebhook(
     const envToken =
       presentedToken !== null && timingSafeEqualString(presentedToken, envSecret);
     if (envHmac || envToken) {
-      return { ok: true, credentialId: null, lastSequence: null };
+      return { ok: true, credentialId: null, participantId: null, lastSequence: null };
     }
   }
 
