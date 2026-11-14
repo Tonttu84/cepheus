@@ -46,7 +46,11 @@ const gemmaBriefSchema = z.object({
 
 export function isVerdaConfigured(): boolean {
   const env = getEnv();
-  return env.VERDA_INFERENCE_URL.length > 0 && env.VERDA_API_KEY.length > 0;
+  return (
+    env.VERDA_AI_ENABLED &&
+    env.VERDA_INFERENCE_URL.length > 0 &&
+    env.VERDA_API_KEY.length > 0
+  );
 }
 
 function extractJsonObject(rawText: string): unknown {
@@ -144,7 +148,10 @@ export async function generateTailoredPatientStep(
 ): Promise<VerdaStepResponse> {
   const fallback = selectDeterministicPatientStep(input);
   if (!isVerdaConfigured()) {
-    return makeFallback(fallback, "VERDA_INFERENCE_URL / VERDA_API_KEY not configured.");
+    return makeFallback(
+      fallback,
+      "VERDA_AI_ENABLED is off (default) or Verda credentials are not configured."
+    );
   }
 
   const env = getEnv();
@@ -200,7 +207,10 @@ export async function generateNursePreCallBrief(
 ): Promise<VerdaBriefResponse> {
   const fallback = buildDeterministicNurseBrief(input);
   if (!isVerdaConfigured()) {
-    return makeFallback(fallback, "VERDA_INFERENCE_URL / VERDA_API_KEY not configured.");
+    return makeFallback(
+      fallback,
+      "VERDA_AI_ENABLED is off (default) or Verda credentials are not configured."
+    );
   }
 
   const env = getEnv();

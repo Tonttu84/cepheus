@@ -6,6 +6,7 @@ const FORBIDDEN_PATTERNS: ReadonlyArray<{ label: string; regex: RegExp }> = [
   { label: "clinical depression label", regex: /\bmajor\s+depress(?:ion|ive)\b/i },
   { label: "depressed label", regex: /\bis\s+depressed\b/i },
   { label: "prediction claim", regex: /\bpredict(?:ed|s|ing|ion)?\b/i },
+  { label: "severity or triage judgment", regex: /\b(?:severity|risk\s+level|triage|recommend(?:ed|s|ing|ation)?)\b/i },
   { label: "prescription advice", regex: /\b(?:prescrib\w*|medication\s+dose|dosage)\b/i },
   { label: "self-harm text", regex: /\bsuicid\w*\b/i },
   { label: "backfire happy memory", regex: /\bhappy\s+memor(?:y|ies)\b/i },

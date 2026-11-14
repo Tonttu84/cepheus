@@ -30,8 +30,22 @@ This file is for coding agents and for people. It holds the rules of this reposi
   3. Report one line per trail: its title, whether it is your user's or a teammate's,
      and the web address that `entire trail show <number>` prints. If nothing is open,
      say nothing.
+  4. Run `npm run requests` (or `node scripts/check-requests.mjs`). It fetches, reads
+     `docs/requests.md` on `main` and every published branch, so a request on a
+     branch that was never published is not seen, and prints each open request that
+     this machine has not shown before. Pass on whatever it prints at once.
   Only read: do not comment, approve, add findings or merge unless your user asks. If
   `entire` is missing or not signed in, say so in one line and carry on (see Quirks).
+- Requests pop up without being asked for. Repeat steps 1 and 4 every time you fetch
+  from the remote during a session: before starting a new piece of work and after
+  finishing one. Tell your user at once, in a line each and before carrying on with
+  your own work, about every request addressed to them or to the team that you have
+  not told them about in this session. A request is urgent by default: do not hold it
+  back until the end of a task. When your user answers one, mark it in
+  `docs/requests.md` through a trail, or do what it asks and say so; some things, such
+  as approving a trail in the web client, only a person can do.
+- To ask something of a teammate, add a row to `docs/requests.md` through a trail and
+  put the request in the trail's title, so that other agents pass it on.
 - The author fixes what the review finds. A fix that goes beyond a finding is reviewed
   again.
 - Commit messages follow Conventional Commits: `type(scope): imperative summary`, at
@@ -118,6 +132,7 @@ These hold whatever is built.
 | `docs/plan.md` | The team plan: what we build, how often we ask, scope, workstreams and the open questions |
 | `docs/doctor-notes.md` | A doctor's remarks, anonymous, with what a literature check found |
 | `docs/research/` | The evidence check and the numbered research reports, with sources |
+| `docs/questions.md` | The question set: which questionnaires, the two taps, the baseline, the warning rule and the crisis rule |
 | `docs/side-challenges.md` | The side challenge we entered (Entire), what it still needs from us, and a map of the others |
 | `docs/decisions.md` | Decisions, one row each |
 

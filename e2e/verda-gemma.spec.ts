@@ -25,6 +25,8 @@ test.describe("Verda EU Gemma Patient Step & Nurse Pre-Call Brief (Trail #31)", 
     const briefCard = page.getByTestId("verda-nurse-brief-result");
     await expect(briefCard).toBeVisible();
     await expect(briefCard).toContainText("Faithfulness checked");
+    await expect(page.getByTestId("verda-source-metrics")).toContainText("-18%");
+    await expect(page.getByTestId("verda-nurse-confirm")).toBeVisible();
     await expect(briefCard).toContainText("Gentle call-opener suggestions");
   });
 

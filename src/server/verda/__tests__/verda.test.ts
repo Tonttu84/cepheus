@@ -7,12 +7,15 @@ import {
 
 describe("Verda EU Gemma Client & Safety Fallback (src/server/verda)", () => {
   const savedDb = process.env.DATABASE_URL;
+  const savedEnabled = process.env.VERDA_AI_ENABLED;
   const savedUrl = process.env.VERDA_INFERENCE_URL;
   const savedKey = process.env.VERDA_API_KEY;
   const savedModel = process.env.VERDA_GEMMA_MODEL;
 
   afterEach(() => {
     if (savedDb !== undefined) process.env.DATABASE_URL = savedDb;
+    if (savedEnabled !== undefined) process.env.VERDA_AI_ENABLED = savedEnabled;
+    else delete process.env.VERDA_AI_ENABLED;
     if (savedUrl !== undefined) process.env.VERDA_INFERENCE_URL = savedUrl;
     else delete process.env.VERDA_INFERENCE_URL;
     if (savedKey !== undefined) process.env.VERDA_API_KEY = savedKey;
@@ -22,11 +25,12 @@ describe("Verda EU Gemma Client & Safety Fallback (src/server/verda)", () => {
     _resetEnv();
   });
 
-  it("falls back deterministically when Verda is not configured", async () => {
+  it("stays off by default when VERDA_AI_ENABLED is false even if URL/key exist, and falls back deterministically", async () => {
     process.env.DATABASE_URL =
       "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus";
-    delete process.env.VERDA_INFERENCE_URL;
-    delete process.env.VERDA_API_KEY;
+    delete process.env.VERDA_AI_ENABLED;
+    process.env.VERDA_INFERENCE_URL = "https://inference.verda.example/v1/chat/completions";
+    process.env.VERDA_API_KEY = "verda-test-key";
     _resetEnv();
 
     const stepRes = await generateTailoredPatientStep({
@@ -43,9 +47,10 @@ describe("Verda EU Gemma Client & Safety Fallback (src/server/verda)", () => {
     expect(stepRes.result.actionKey).toBe("bright_light");
   });
 
-  it("uses EU Verda Gemma output when valid and rejects hallucinated numbers or clinical claims", async () => {
+  it("uses EU Verda Gemma output when VERDA_AI_ENABLED=true and rejects hallucinated numbers or clinical claims", async () => {
     process.env.DATABASE_URL =
       "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus";
+    process.env.VERDA_AI_ENABLED = "true";
     process.env.VERDA_INFERENCE_URL = "https://inference.verda.example/v1/chat/completions";
     process.env.VERDA_API_KEY = "verda-test-key";
     process.env.VERDA_GEMMA_MODEL = "google/gemma-3-27b-it";

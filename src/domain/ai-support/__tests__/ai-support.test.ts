@@ -21,6 +21,13 @@ describe("AI Support Domain Guardrails & Templates (src/domain/ai-support)", () 
     ).toBe(false);
 
     expect(
+      verifyOutputFaithfulness(
+        "High severity risk level: recommend triage for booster TMS.",
+        allowed
+      ).ok
+    ).toBe(false);
+
+    expect(
       verifyOutputFaithfulness("Take a 10-minute walk outside when ready.", allowed)
         .ok
     ).toBe(true);
