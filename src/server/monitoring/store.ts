@@ -202,20 +202,16 @@ function assertDomainAccess(params: {
  * consent rows exist in PostgreSQL. Never stores real names or PII.
  */
 export async function ensureHomeDemoParticipant(prisma: PrismaClient = getPrisma()) {
-  let participant = await prisma.participant.findUnique({
+  const participant = await prisma.participant.upsert({
     where: { externalId: HOME_DEMO_EXTERNAL_ID },
+    update: {},
+    create: {
+      externalId: HOME_DEMO_EXTERNAL_ID,
+      label: "Home Demo Node (Arduino UNO Q & Wearable)",
+      source: "live",
+      isSimulated: false,
+    },
   });
-
-  if (!participant) {
-    participant = await prisma.participant.create({
-      data: {
-        externalId: HOME_DEMO_EXTERNAL_ID,
-        label: "Home Demo Node (Arduino UNO Q & Wearable)",
-        source: "live",
-        isSimulated: false,
-      },
-    });
-  }
 
   for (const methodKey of ALL_CONSENT_METHODS) {
     const meta = MEASUREMENT_METHODS.find((m) => m.method === methodKey);

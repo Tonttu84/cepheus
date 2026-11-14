@@ -75,38 +75,67 @@ function authenticateDevice(
   return { ok: true };
 }
 
-export async function POST(request: Request) {
+async function parseAndValidateBedsideBody(
+  request: Request
+): Promise<
+  | { ok: true; data: z.infer<typeof bedsideCheckInSchema> }
+  | { ok: false; response: NextResponse }
+> {
   let rawText: string;
   try {
     rawText = await request.text();
   } catch {
-    return NextResponse.json({ ok: false, error: "Unable to read body." }, { status: 400 });
+    return {
+      ok: false,
+      response: NextResponse.json({ ok: false, error: "Unable to read body." }, { status: 400 }),
+    };
   }
   if (Buffer.byteLength(rawText, "utf8") > MAX_BYTES) {
-    return NextResponse.json({ ok: false, error: "Payload exceeds 8 KB limit." }, { status: 413 });
+    return {
+      ok: false,
+      response: NextResponse.json({ ok: false, error: "Payload exceeds 8 KB limit." }, { status: 413 }),
+    };
   }
 
   let body: unknown;
   try {
     body = JSON.parse(rawText);
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON." }, { status: 400 });
+    return {
+      ok: false,
+      response: NextResponse.json({ ok: false, error: "Invalid JSON." }, { status: 400 }),
+    };
   }
 
   const rawMediaKey = containsRawMediaFields(body);
   if (rawMediaKey) {
-    return NextResponse.json(
-      { ok: false, error: `Refused raw media field "${rawMediaKey}".` },
-      { status: 400 }
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { ok: false, error: `Refused raw media field "${rawMediaKey}".` },
+        { status: 400 }
+      ),
+    };
   }
 
   const parsed = bedsideCheckInSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { ok: false, error: "Invalid bedside check-in payload." },
-      { status: 400 }
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { ok: false, error: "Invalid bedside check-in payload." },
+        { status: 400 }
+      ),
+    };
+  }
+
+  return { ok: true, data: parsed.data };
+}
+
+export async function POST(request: Request) {
+  const parsed = await parseAndValidateBedsideBody(request);
+  if (!parsed.ok) {
+    return parsed.response;
   }
 
   const rate = checkRateLimit(getClientKey(request, "arduino-checkin"), 60, 60_000);

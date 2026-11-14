@@ -26,6 +26,7 @@ import re
 import secrets
 import shutil
 import subprocess
+import sys
 import time
 from typing import Any
 
@@ -146,7 +147,12 @@ def capture_and_transcribe_once_in_ram(seconds: int = 4) -> str:
     arecord = shutil.which("arecord")
     vosk_model_path = os.environ.get("VOSK_MODEL_PATH", "")
     if not arecord or not vosk_model_path or not os.path.exists(vosk_model_path):
-        return input("[Mic dry-run — type spoken reply (0-4 / not today / help)]: ")
+        if sys.stdin is not None and sys.stdin.isatty():
+            try:
+                return input("[Mic dry-run — type spoken reply (0-4 / not today / help)]: ")
+            except EOFError:
+                return ""
+        return ""
 
     import json
     from vosk import KaldiRecognizer, Model
@@ -183,6 +189,24 @@ def send_mcu_command(cmd: str) -> None:
             ser.write(f"{cmd}\n".encode("ascii"))
     except Exception:
         pass
+
+
+def poll_mcu_button_event() -> str | None:
+    """Reads a pending BTN_CRISIS or BTN_NOT_TODAY line from the STM32U585 MCU if present."""
+    port = os.environ.get("UNOQ_MCU_SERIAL", "").strip()
+    if not port:
+        return None
+    try:
+        import serial
+
+        with serial.Serial(port, 115200, timeout=0.05) as ser:
+            while ser.in_waiting > 0:
+                line = ser.readline().decode("ascii", errors="ignore").strip()
+                if line in ("BTN_CRISIS", "BTN_NOT_TODAY"):
+                    return line
+    except Exception:
+        pass
+    return None
 
 
 def post_checkin_result(payload: dict[str, Any]) -> dict[str, Any]:
@@ -224,9 +248,15 @@ def run_sequential_bedside_cycle() -> None:
     scores: dict[str, int] = {}
 
     for key, prompt in questions:
-        speak_text_on_device(prompt)
-        transcript = capture_and_transcribe_once_in_ram(seconds=4)
-        kind, val = parse_spoken_tap_choice(transcript)
+        mcu_btn = poll_mcu_button_event()
+        if mcu_btn == "BTN_CRISIS":
+            kind, val = ("crisis_help", None)
+        elif mcu_btn == "BTN_NOT_TODAY":
+            kind, val = ("not_today", None)
+        else:
+            speak_text_on_device(prompt)
+            transcript = capture_and_transcribe_once_in_ram(seconds=4)
+            kind, val = parse_spoken_tap_choice(transcript)
 
         if kind == "crisis_help":
             trigger_crisis_response()

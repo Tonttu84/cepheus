@@ -90,6 +90,45 @@ function checkStoredCheckInConsent(
   return access.ok && access.value.allowed;
 }
 
+function isCrisisBedsideInput(input: BedsideCheckInInput): boolean {
+  if (input.kind === "crisis_button") return true;
+  if (input.kind !== "phq9_item") return false;
+  const res = isCrisis({ id: input.itemId, value: input.value });
+  return res.ok && res.value === true;
+}
+
+async function upsertBedsideRound(
+  participantId: string,
+  input: Extract<BedsideCheckInInput, { kind: "taps" | "not_today" }>,
+  source: string,
+  prisma: PrismaClient
+): Promise<number> {
+  const roundNumber = await resolveRoundNumber(participantId, input.date, prisma);
+  const now = new Date();
+  const isTaps = input.kind === "taps";
+  const data = {
+    scheduledAt: now,
+    respondedAt: isTaps ? now : null,
+    date: input.date,
+    dayIndex: roundNumber * 3,
+    weekNumber: Math.max(1, Math.ceil(roundNumber / 2)),
+    status: isTaps ? "completed" : "not_today",
+    moodScore: isTaps ? input.mood : null,
+    interestScore: isTaps ? input.interest : null,
+    selfHarmTriggered: false,
+    crisisPathShown: false,
+    isSimulated: input.isSimulated,
+    source,
+  };
+
+  await prisma.checkInRound.upsert({
+    where: { participantId_roundNumber: { participantId, roundNumber } },
+    update: data,
+    create: { participantId, roundNumber, ...data },
+  });
+  return roundNumber;
+}
+
 /**
  * Persists a derived bedside check-in (voice two-tap, Not today, PHQ-9 item,
  * or physical STM32 crisis button) after checking the participant's stored
@@ -102,14 +141,7 @@ export async function saveArduinoBedsideCheckIn(
   | BedsideCheckInOutcome
   | { ok: false; status: 403; error: string; showCrisisPath: boolean; crisisResources: typeof CRISIS_RESOURCES | null }
 > {
-  const crisisFromItem =
-    input.kind === "phq9_item"
-      ? isCrisis({ id: input.itemId, value: input.value })
-      : { ok: true as const, value: false };
-  const showCrisisPath =
-    input.kind === "crisis_button" ||
-    (crisisFromItem.ok && crisisFromItem.value === true);
-
+  const showCrisisPath = isCrisisBedsideInput(input);
   const participant = await ensureHomeDemoParticipant(prisma);
   const consentCtx = await loadConsentContext(participant.id, prisma);
 
@@ -128,33 +160,10 @@ export async function saveArduinoBedsideCheckIn(
   }
 
   const source = input.isSimulated ? "simulated_uno_q_voice" : "arduino_uno_q_voice";
-  const now = new Date();
-  let roundNumber: number | null = null;
-
-  if (input.kind === "taps" || input.kind === "not_today") {
-    roundNumber = await resolveRoundNumber(participant.id, input.date, prisma);
-    const status = input.kind === "taps" ? "completed" : "not_today";
-    const data = {
-      scheduledAt: now,
-      respondedAt: input.kind === "taps" ? now : null,
-      date: input.date,
-      dayIndex: roundNumber * 3,
-      weekNumber: Math.max(1, Math.ceil(roundNumber / 2)),
-      status,
-      moodScore: input.kind === "taps" ? input.mood : null,
-      interestScore: input.kind === "taps" ? input.interest : null,
-      selfHarmTriggered: false,
-      crisisPathShown: false,
-      isSimulated: input.isSimulated,
-      source,
-    };
-
-    await prisma.checkInRound.upsert({
-      where: { participantId_roundNumber: { participantId: participant.id, roundNumber } },
-      update: data,
-      create: { participantId: participant.id, roundNumber, ...data },
-    });
-  }
+  const roundNumber =
+    input.kind === "taps" || input.kind === "not_today"
+      ? await upsertBedsideRound(participant.id, input, source, prisma)
+      : null;
 
   if (showCrisisPath) {
     await prisma.clinicFlag.create({
