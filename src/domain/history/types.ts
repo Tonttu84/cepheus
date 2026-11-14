@@ -17,6 +17,13 @@ export interface HistoryPhq9 {
   readonly total: number;
 }
 
+export interface HistoryGad7 {
+  readonly date: string;
+  readonly total: number;
+}
+
+export type QuestionnaireType = 'phq9' | 'gad7';
+
 export type CallPosition = 'before' | 'after';
 
 export interface HistoryCall {
@@ -27,7 +34,9 @@ export interface HistoryCall {
 export interface PatientHistory {
   readonly rounds: readonly HistoryRound[];
   readonly phq9s?: readonly HistoryPhq9[];
+  readonly gad7s?: readonly HistoryGad7[];
   readonly calls?: readonly HistoryCall[];
+  readonly questionnaires?: readonly QuestionnaireType[];
 }
 
 export interface EvaluatedRound {
@@ -60,16 +69,19 @@ export type TapBaselineSummary =
 export interface EvaluatedEffect {
   readonly effect: WarningEffect;
   readonly type: WarningEffect['type'];
-  readonly kind?: 'low_answers' | 'silence' | 'mixed' | 'phq9';
+  readonly kind?: 'low_answers' | 'silence' | 'mixed' | 'phq9' | 'gad7';
   readonly since?: string;
   readonly version: number;
   readonly causedBy:
     | { readonly type: 'round'; readonly roundNumber: number; readonly date: string }
-    | { readonly type: 'phq9'; readonly date: string; readonly total: number };
+    | { readonly type: 'phq9'; readonly date: string; readonly total: number }
+    | { readonly type: 'gad7'; readonly date: string; readonly total: number };
   readonly roundNumber?: number;
   readonly roundDate?: string;
   readonly phq9Date?: string;
   readonly phq9Total?: number;
+  readonly gad7Date?: string;
+  readonly gad7Total?: number;
 }
 
 export interface WarningCurrentState {

@@ -5,6 +5,7 @@ import type {
   SimulatedCheckInRoundRecord,
   SimulatedClinicFlagRecord,
   SimulatedConsentRecord,
+  SimulatedGad7AssessmentRecord,
   SimulatedParticipantRecord,
   SimulatedPatientSuggestionRecord,
   SimulatedPersonalBaselineRecord,
@@ -14,6 +15,14 @@ import type {
   SimulatedRingDayRecord,
   SimulatedRoutineReadingRecord,
 } from "./types";
+import type {
+  HistoryRound,
+  HistoryPhq9,
+  HistoryGad7,
+  HistoryCall,
+  PatientHistory,
+} from "../../domain/history";
+import type { RoundStatus } from "../../domain/rounds";
 
 export const SIMULATED_PARTICIPANT_EXTERNAL_ID = "sim-post-tms-01";
 export const DEFAULT_SIMULATION_SEED = 20261113;
@@ -271,104 +280,7 @@ function computeWindowMetrics(days: readonly SimulatedRingDayRecord[]): {
   };
 }
 
-/**
- * Generate a deterministic 8-week (56-day) post-TMS participant dataset.
- * Covers all 3 demo moments:
- *   - Day 18 ("well" / personal baseline)
- *   - Day 29 ("small_dip" / 1-round dip + low-effort suggestion)
- *   - Day 56 ("sustained_drift" / multi-round decline + Week 8 check-in silence while ring remains active)
- */
-export function generateSimulatedPersonWeeks(
-  options: GenerateSimulationOptions = {}
-): SimulatedPersonDataset {
-  const seed = options.seed ?? DEFAULT_SIMULATION_SEED;
-  const baseDate = options.baseDate ?? DEFAULT_BASE_DATE;
-  const rng = createSeededRng(seed);
-
-  const tmsCompletedDate = addDaysIso(baseDate, -1);
-
-  const participant: SimulatedParticipantRecord = {
-    externalId: SIMULATED_PARTICIPANT_EXTERNAL_ID,
-    label: "Simulated post-TMS participant",
-    source: "synthetic",
-    isSimulated: true,
-    seed,
-    tmsCompletedDate,
-    currentDemoDay: 56,
-    group: "post_tms_maintenance",
-    age: 34,
-    gender: null,
-    madrsBaseline: 28,
-    madrsEnd: 7,
-  };
-
-  const consentTimestamp = makeTimestamp(baseDate, 9, 0);
-  const consents: SimulatedConsentRecord[] = [
-    {
-      method: "check_in",
-      broadArea: "check_in",
-      recordedDescription:
-        "Twice-weekly 4-question wellbeing check-in (mood, interest, energy, rumination). Missed answers are recorded as missed, never scored as zero.",
-      enabled: true,
-      isPersonalSign: true,
-      consentedAt: consentTimestamp,
-      revokedAt: null,
-    },
-    {
-      method: "phq9",
-      broadArea: "check_in",
-      recordedDescription:
-        "Fortnightly 9-item PHQ-9 check-in compared against your post-treatment anchor score.",
-      enabled: true,
-      isPersonalSign: false,
-      consentedAt: consentTimestamp,
-      revokedAt: null,
-    },
-    {
-      method: "ring_rhythm",
-      broadArea: "sleep",
-      recordedDescription:
-        "Daily smart-ring sleep timing, regularity, and daytime movement rhythm. Distinguishes quiet device wear from a dead battery.",
-      enabled: true,
-      isPersonalSign: true,
-      consentedAt: consentTimestamp,
-      revokedAt: null,
-    },
-    {
-      method: "camera_expressivity",
-      broadArea: "check_in",
-      recordedDescription:
-        "60-second on-device facial movement and head-pose summary during check-ins. Only derived numbers are stored; video never leaves your device.",
-      enabled: true,
-      isPersonalSign: false,
-      consentedAt: consentTimestamp,
-      revokedAt: null,
-    },
-    {
-      method: "home_routine",
-      broadArea: "daily_routine",
-      recordedDescription:
-        "Weekly coarse counts of laundry and bathroom humidity cycles. Never continuous room tracking.",
-      enabled: true,
-      isPersonalSign: true,
-      consentedAt: consentTimestamp,
-      revokedAt: null,
-    },
-    {
-      method: "financial_routine",
-      broadArea: "financial_routine",
-      recordedDescription:
-        "Optional coarse weekly count of routine bill-pay activity. Disabled by default.",
-      enabled: false,
-      isPersonalSign: false,
-      consentedAt: null,
-      revokedAt: null,
-    },
-  ];
-
-  // -------------------------------------------------------------------------
-  // 1. Generate 56 RingDay rows (Days 1..56)
-  // -------------------------------------------------------------------------
+function generateRingDays(baseDate: string, rng: SeededRng): SimulatedRingDayRecord[] {
   const ringDays: SimulatedRingDayRecord[] = [];
 
   for (let dayIndex = 1; dayIndex <= 56; dayIndex++) {
@@ -551,6 +463,117 @@ export function generateSimulatedPersonWeeks(
       source: "synthetic",
     });
   }
+
+  return ringDays;
+}
+
+/**
+ * Generate a deterministic 8-week (56-day) post-TMS participant dataset.
+ * Covers all 3 demo moments:
+ *   - Day 18 ("well" / personal baseline)
+ *   - Day 29 ("small_dip" / 1-round dip + low-effort suggestion)
+ *   - Day 56 ("sustained_drift" / multi-round decline + Week 8 check-in silence while ring remains active)
+ */
+export function generateSimulatedPersonWeeks(
+  options: GenerateSimulationOptions = {}
+): SimulatedPersonDataset {
+  const condition = options.condition ?? options.profile;
+  if (condition === "depression_and_anxiety") {
+    return generateDepressionAndAnxietySamplePatient(options);
+  }
+  if (condition === "depression_only") {
+    return generateDepressionSamplePatient(options);
+  }
+
+  const seed = options.seed ?? DEFAULT_SIMULATION_SEED;
+  const baseDate = options.baseDate ?? DEFAULT_BASE_DATE;
+  const rng = createSeededRng(seed);
+
+  const tmsCompletedDate = addDaysIso(baseDate, -1);
+
+  const participant: SimulatedParticipantRecord = {
+    externalId: SIMULATED_PARTICIPANT_EXTERNAL_ID,
+    label: "Simulated post-TMS participant",
+    source: "synthetic",
+    isSimulated: true,
+    seed,
+    tmsCompletedDate,
+    currentDemoDay: 56,
+    group: "post_tms_maintenance",
+    age: 34,
+    gender: null,
+    madrsBaseline: 28,
+    madrsEnd: 7,
+  };
+
+  const consentTimestamp = makeTimestamp(baseDate, 9, 0);
+  const consents: SimulatedConsentRecord[] = [
+    {
+      method: "check_in",
+      broadArea: "check_in",
+      recordedDescription:
+        "Twice-weekly 4-question wellbeing check-in (mood, interest, energy, rumination). Missed answers are recorded as missed, never scored as zero.",
+      enabled: true,
+      isPersonalSign: true,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+    {
+      method: "phq9",
+      broadArea: "check_in",
+      recordedDescription:
+        "Fortnightly 9-item PHQ-9 check-in compared against your post-treatment anchor score.",
+      enabled: true,
+      isPersonalSign: false,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+    {
+      method: "ring_rhythm",
+      broadArea: "sleep",
+      recordedDescription:
+        "Daily smart-ring sleep timing, regularity, and daytime movement rhythm. Distinguishes quiet device wear from a dead battery.",
+      enabled: true,
+      isPersonalSign: true,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+    {
+      method: "camera_expressivity",
+      broadArea: "check_in",
+      recordedDescription:
+        "60-second on-device facial movement and head-pose summary during check-ins. Only derived numbers are stored; video never leaves your device.",
+      enabled: true,
+      isPersonalSign: false,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+    {
+      method: "home_routine",
+      broadArea: "daily_routine",
+      recordedDescription:
+        "Weekly coarse counts of laundry and bathroom humidity cycles. Never continuous room tracking.",
+      enabled: true,
+      isPersonalSign: true,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+    {
+      method: "financial_routine",
+      broadArea: "financial_routine",
+      recordedDescription:
+        "Optional coarse weekly count of routine bill-pay activity. Disabled by default.",
+      enabled: false,
+      isPersonalSign: false,
+      consentedAt: null,
+      revokedAt: null,
+    },
+  ];
+
+  // -------------------------------------------------------------------------
+  // 1. Generate 56 RingDay rows (Days 1..56)
+  // -------------------------------------------------------------------------
+  const ringDays = generateRingDays(baseDate, rng);
 
   // -------------------------------------------------------------------------
   // 2. Generate 16 Twice-Weekly CheckInRound rows
@@ -1119,6 +1142,8 @@ export function generateSimulatedPersonWeeks(
     ringDays,
     checkInRounds,
     phq9Assessments,
+    gad7Assessments: [],
+    calls: [],
     rhythmWindows,
     cameraReadings,
     routineReadings,
@@ -1126,6 +1151,7 @@ export function generateSimulatedPersonWeeks(
     patientSuggestions,
     clinicFlags,
   };
+  fullDataset.history = toPatientHistory(fullDataset);
 
   if (options.throughDay !== undefined) {
     return sliceDatasetThroughDay(fullDataset, options.throughDay);
@@ -1160,7 +1186,7 @@ export function sliceDatasetThroughDay(
       return { ...s };
     });
 
-  return {
+  const sliced: SimulatedPersonDataset = {
     participant: {
       ...dataset.participant,
       currentDemoDay: clampedDay,
@@ -1175,6 +1201,12 @@ export function sliceDatasetThroughDay(
     phq9Assessments: dataset.phq9Assessments
       .filter((p) => p.dayIndex <= clampedDay)
       .map((p) => ({ ...p })),
+    gad7Assessments: dataset.gad7Assessments
+      ? dataset.gad7Assessments
+          .filter((g) => g.dayIndex <= clampedDay)
+          .map((g) => ({ ...g }))
+      : [],
+    calls: dataset.calls ? dataset.calls.map((c) => ({ ...c })) : [],
     rhythmWindows: dataset.rhythmWindows
       .filter((w) => w.dayIndex <= clampedDay)
       .map((w) => ({ ...w })),
@@ -1190,4 +1222,567 @@ export function sliceDatasetThroughDay(
       .filter((f) => f.dayIndex <= clampedDay)
       .map((f) => ({ ...f })),
   };
+
+  if (dataset.history) {
+    sliced.history = toPatientHistory(sliced);
+  }
+
+  return sliced;
+}
+
+/**
+ * Pure function to map a simulated dataset to a domain PatientHistory.
+ */
+export function toPatientHistory(dataset: SimulatedPersonDataset): PatientHistory {
+  const isAnxiety =
+    dataset.participant.condition === "depression_and_anxiety" ||
+    (Array.isArray(dataset.participant.questionnaires) &&
+      dataset.participant.questionnaires.includes("gad7"));
+
+  const rounds: HistoryRound[] = dataset.checkInRounds.map((r) => ({
+    roundNumber: r.roundNumber,
+    localDate: r.date,
+    status: (r.status === "completed" ? "answered" : r.status) as RoundStatus,
+    ...(r.status === "completed" && r.moodScore !== null
+      ? { mood: Math.min(4, Math.max(0, Math.round(r.moodScore))) }
+      : {}),
+    ...(r.status === "completed" && r.interestScore !== null
+      ? { interest: Math.min(4, Math.max(0, Math.round(r.interestScore))) }
+      : {}),
+  }));
+
+  const phq9s: HistoryPhq9[] = dataset.phq9Assessments
+    .filter((p) => p.status === "completed" && p.totalScore !== null)
+    .map((p) => ({
+      date: p.date,
+      total: p.totalScore!,
+    }));
+
+  const gad7s: HistoryGad7[] = (dataset.gad7Assessments ?? [])
+    .filter((g) => g.status === "completed" && g.totalScore !== null)
+    .map((g) => ({
+      date: g.date,
+      total: g.totalScore!,
+    }));
+
+  const calls: HistoryCall[] = dataset.calls
+    ? dataset.calls.map((c) => ({
+        date: c.date,
+        ...(c.position ? { position: c.position } : {}),
+      }))
+    : isAnxiety
+    ? [{ date: addDaysIso(dataset.ringDays[0]?.date ?? DEFAULT_BASE_DATE, 19), position: "after" }]
+    : [];
+
+  return {
+    rounds,
+    phq9s,
+    gad7s,
+    calls,
+    questionnaires: isAnxiety ? ["phq9", "gad7"] : ["phq9"],
+  };
+}
+
+/**
+ * Simulated sample patient with depression only.
+ * PHQ-9 starts under 10 and crosses 10 at Round 13.
+ * No GAD-7; switch is off.
+ */
+export function generateDepressionSamplePatient(
+  options: GenerateSimulationOptions = {}
+): SimulatedPersonDataset {
+  const seed = options.seed ?? DEFAULT_SIMULATION_SEED;
+  const baseDate = options.baseDate ?? DEFAULT_BASE_DATE;
+  const rng = createSeededRng(seed);
+  const tmsCompletedDate = addDaysIso(baseDate, -1);
+
+  const participant: SimulatedParticipantRecord = {
+    externalId: "sim-sample-depression-01",
+    label: "Simulated sample patient (depression only)",
+    source: "synthetic",
+    isSimulated: true,
+    seed,
+    tmsCompletedDate,
+    currentDemoDay: 56,
+    group: "post_tms_maintenance",
+    age: 38,
+    gender: null,
+    madrsBaseline: 26,
+    madrsEnd: 8,
+    condition: "depression_only",
+    questionnaires: ["phq9"],
+  };
+
+  const consentTimestamp = makeTimestamp(baseDate, 9, 0);
+  const consents: SimulatedConsentRecord[] = [
+    {
+      method: "check_in",
+      broadArea: "check_in",
+      recordedDescription: "Twice-weekly check-in.",
+      enabled: true,
+      isPersonalSign: true,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+    {
+      method: "phq9",
+      broadArea: "check_in",
+      recordedDescription: "Fortnightly PHQ-9 depression check-in.",
+      enabled: true,
+      isPersonalSign: false,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+  ];
+
+  const checkInRounds: SimulatedCheckInRoundRecord[] = CHECK_IN_SCHEDULE_DAYS.map((dayIndex, idx) => {
+    const roundNumber = idx + 1;
+    const weekNumber = Math.ceil(dayIndex / 7);
+    const date = addDaysIso(baseDate, dayIndex - 1);
+    const scheduledAt = makeTimestamp(date, 18, 0);
+    const respondedAt = makeTimestamp(date, 18, 20);
+
+    return {
+      scheduledAt,
+      respondedAt,
+      date,
+      dayIndex,
+      weekNumber,
+      roundNumber,
+      status: "completed",
+      moodScore: 3,
+      interestScore: 3,
+      energyScore: 3,
+      ruminationScore: 2,
+      compositeScore: 3.25,
+      singleItemScore: 3,
+      itemOrderJson: JSON.stringify(["mood", "interest", "energy", "rumination"]),
+      freeTextNote: null,
+      selfHarmTriggered: false,
+      crisisPathShown: false,
+      responseLatencyMs: 25000,
+      ringActiveAtRound: true,
+      isSimulated: true,
+      source: "synthetic",
+    };
+  });
+
+  const phq9Assessments: SimulatedPhq9AssessmentRecord[] = [
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 2), 18, 0),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 2), 18, 15),
+      date: addDaysIso(baseDate, 2),
+      dayIndex: 3,
+      weekNumber: 1,
+      status: "completed",
+      totalScore: 3,
+      item1Interest: 0,
+      item2Mood: 0,
+      item3Sleep: 1,
+      item4Energy: 1,
+      item5Appetite: 0,
+      item6SelfWorth: 0,
+      item7Concentration: 1,
+      item8Psychomotor: 0,
+      item9SelfHarm: 0,
+      crisisPathShown: false,
+      baselineDelta: 0,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 16), 18, 0),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 16), 18, 18),
+      date: addDaysIso(baseDate, 16),
+      dayIndex: 17,
+      weekNumber: 3,
+      status: "completed",
+      totalScore: 4,
+      item1Interest: 1,
+      item2Mood: 0,
+      item3Sleep: 1,
+      item4Energy: 1,
+      item5Appetite: 0,
+      item6SelfWorth: 0,
+      item7Concentration: 1,
+      item8Psychomotor: 0,
+      item9SelfHarm: 0,
+      crisisPathShown: false,
+      baselineDelta: 1,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 30), 18, 0),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 30), 18, 20),
+      date: addDaysIso(baseDate, 30),
+      dayIndex: 31,
+      weekNumber: 5,
+      status: "completed",
+      totalScore: 6,
+      item1Interest: 1,
+      item2Mood: 1,
+      item3Sleep: 1,
+      item4Energy: 1,
+      item5Appetite: 1,
+      item6SelfWorth: 0,
+      item7Concentration: 1,
+      item8Psychomotor: 0,
+      item9SelfHarm: 0,
+      crisisPathShown: false,
+      baselineDelta: 3,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 44), 18, 0),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 44), 18, 25),
+      date: addDaysIso(baseDate, 44),
+      dayIndex: 45,
+      weekNumber: 7,
+      status: "completed",
+      totalScore: 11,
+      item1Interest: 2,
+      item2Mood: 2,
+      item3Sleep: 2,
+      item4Energy: 2,
+      item5Appetite: 1,
+      item6SelfWorth: 1,
+      item7Concentration: 1,
+      item8Psychomotor: 0,
+      item9SelfHarm: 0,
+      crisisPathShown: false,
+      baselineDelta: 8,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 54), 18, 0),
+      completedAt: null,
+      date: addDaysIso(baseDate, 54),
+      dayIndex: 55,
+      weekNumber: 8,
+      status: "missed",
+      totalScore: null,
+      item1Interest: null,
+      item2Mood: null,
+      item3Sleep: null,
+      item4Energy: null,
+      item5Appetite: null,
+      item6SelfWorth: null,
+      item7Concentration: null,
+      item8Psychomotor: null,
+      item9SelfHarm: null,
+      crisisPathShown: false,
+      baselineDelta: null,
+      isSimulated: true,
+      source: "synthetic",
+    },
+  ];
+
+  const ringDays = generateRingDays(baseDate, rng);
+
+  const dataset: SimulatedPersonDataset = {
+    participant,
+    consents,
+    ringDays,
+    checkInRounds,
+    phq9Assessments,
+    gad7Assessments: [],
+    calls: [],
+    rhythmWindows: [],
+    cameraReadings: [],
+    routineReadings: [],
+    personalBaselines: [],
+    patientSuggestions: [],
+    clinicFlags: [],
+  };
+
+  dataset.history = toPatientHistory(dataset);
+  return dataset;
+}
+
+/**
+ * Simulated sample patient with depression and anxiety.
+ * GAD-7 switched on.
+ * Both start under 10; GAD-7 crosses 10 at Round 5; PHQ-9 crosses 10 at Round 9.
+ */
+export function generateDepressionAndAnxietySamplePatient(
+  options: GenerateSimulationOptions = {}
+): SimulatedPersonDataset {
+  const seed = options.seed ?? DEFAULT_SIMULATION_SEED;
+  const baseDate = options.baseDate ?? DEFAULT_BASE_DATE;
+  const rng = createSeededRng(seed);
+  const tmsCompletedDate = addDaysIso(baseDate, -1);
+
+  const participant: SimulatedParticipantRecord = {
+    externalId: "sim-sample-anxiety-01",
+    label: "Simulated sample patient (depression and anxiety)",
+    source: "synthetic",
+    isSimulated: true,
+    seed,
+    tmsCompletedDate,
+    currentDemoDay: 56,
+    group: "post_tms_maintenance",
+    age: 32,
+    gender: null,
+    madrsBaseline: 25,
+    madrsEnd: 6,
+    condition: "depression_and_anxiety",
+    questionnaires: ["phq9", "gad7"],
+  };
+
+  const consentTimestamp = makeTimestamp(baseDate, 9, 0);
+  const consents: SimulatedConsentRecord[] = [
+    {
+      method: "check_in",
+      broadArea: "check_in",
+      recordedDescription: "Twice-weekly check-in.",
+      enabled: true,
+      isPersonalSign: true,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+    {
+      method: "phq9",
+      broadArea: "check_in",
+      recordedDescription: "Fortnightly PHQ-9 depression check-in.",
+      enabled: true,
+      isPersonalSign: false,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+    {
+      method: "gad7",
+      broadArea: "check_in",
+      recordedDescription: "Fortnightly GAD-7 anxiety check-in.",
+      enabled: true,
+      isPersonalSign: false,
+      consentedAt: consentTimestamp,
+      revokedAt: null,
+    },
+  ];
+
+  const checkInRounds: SimulatedCheckInRoundRecord[] = CHECK_IN_SCHEDULE_DAYS.map((dayIndex, idx) => {
+    const roundNumber = idx + 1;
+    const weekNumber = Math.ceil(dayIndex / 7);
+    const date = addDaysIso(baseDate, dayIndex - 1);
+    const scheduledAt = makeTimestamp(date, 18, 0);
+    const respondedAt = makeTimestamp(date, 18, 20);
+
+    return {
+      scheduledAt,
+      respondedAt,
+      date,
+      dayIndex,
+      weekNumber,
+      roundNumber,
+      status: "completed",
+      moodScore: 3,
+      interestScore: 3,
+      energyScore: 3,
+      ruminationScore: 2,
+      compositeScore: 3.25,
+      singleItemScore: 3,
+      itemOrderJson: JSON.stringify(["mood", "interest", "energy", "rumination"]),
+      freeTextNote: null,
+      selfHarmTriggered: false,
+      crisisPathShown: false,
+      responseLatencyMs: 25000,
+      ringActiveAtRound: true,
+      isSimulated: true,
+      source: "synthetic",
+    };
+  });
+
+  const phq9Assessments: SimulatedPhq9AssessmentRecord[] = [
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 2), 18, 0),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 2), 18, 15),
+      date: addDaysIso(baseDate, 2),
+      dayIndex: 3,
+      weekNumber: 1,
+      status: "completed",
+      totalScore: 3,
+      item1Interest: 0,
+      item2Mood: 0,
+      item3Sleep: 1,
+      item4Energy: 1,
+      item5Appetite: 0,
+      item6SelfWorth: 0,
+      item7Concentration: 1,
+      item8Psychomotor: 0,
+      item9SelfHarm: 0,
+      crisisPathShown: false,
+      baselineDelta: 0,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 16), 18, 0),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 16), 18, 18),
+      date: addDaysIso(baseDate, 16),
+      dayIndex: 17,
+      weekNumber: 3,
+      status: "completed",
+      totalScore: 4,
+      item1Interest: 1,
+      item2Mood: 0,
+      item3Sleep: 1,
+      item4Energy: 1,
+      item5Appetite: 0,
+      item6SelfWorth: 0,
+      item7Concentration: 1,
+      item8Psychomotor: 0,
+      item9SelfHarm: 0,
+      crisisPathShown: false,
+      baselineDelta: 1,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 30), 18, 0),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 30), 18, 20),
+      date: addDaysIso(baseDate, 30),
+      dayIndex: 31,
+      weekNumber: 5,
+      status: "completed",
+      totalScore: 12,
+      item1Interest: 2,
+      item2Mood: 2,
+      item3Sleep: 2,
+      item4Energy: 2,
+      item5Appetite: 1,
+      item6SelfWorth: 1,
+      item7Concentration: 1,
+      item8Psychomotor: 1,
+      item9SelfHarm: 0,
+      crisisPathShown: false,
+      baselineDelta: 9,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 44), 18, 0),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 44), 18, 25),
+      date: addDaysIso(baseDate, 44),
+      dayIndex: 45,
+      weekNumber: 7,
+      status: "completed",
+      totalScore: 12,
+      item1Interest: 2,
+      item2Mood: 2,
+      item3Sleep: 2,
+      item4Energy: 2,
+      item5Appetite: 1,
+      item6SelfWorth: 1,
+      item7Concentration: 1,
+      item8Psychomotor: 1,
+      item9SelfHarm: 0,
+      crisisPathShown: false,
+      baselineDelta: 9,
+      isSimulated: true,
+      source: "synthetic",
+    },
+  ];
+
+  const gad7Assessments: SimulatedGad7AssessmentRecord[] = [
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 2), 18, 16),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 2), 18, 25),
+      date: addDaysIso(baseDate, 2),
+      dayIndex: 3,
+      weekNumber: 1,
+      status: "completed",
+      totalScore: 4,
+      item1Nervous: 1,
+      item2ControlWorry: 1,
+      item3ExcessiveWorry: 1,
+      item4Relaxing: 1,
+      item5Restless: 0,
+      item6Irritable: 0,
+      item7Afraid: 0,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 16), 18, 19),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 16), 18, 27),
+      date: addDaysIso(baseDate, 16),
+      dayIndex: 17,
+      weekNumber: 3,
+      status: "completed",
+      totalScore: 11,
+      item1Nervous: 2,
+      item2ControlWorry: 2,
+      item3ExcessiveWorry: 2,
+      item4Relaxing: 2,
+      item5Restless: 1,
+      item6Irritable: 1,
+      item7Afraid: 1,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 30), 18, 21),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 30), 18, 29),
+      date: addDaysIso(baseDate, 30),
+      dayIndex: 31,
+      weekNumber: 5,
+      status: "completed",
+      totalScore: 6,
+      item1Nervous: 1,
+      item2ControlWorry: 1,
+      item3ExcessiveWorry: 1,
+      item4Relaxing: 1,
+      item5Restless: 1,
+      item6Irritable: 1,
+      item7Afraid: 0,
+      isSimulated: true,
+      source: "synthetic",
+    },
+    {
+      scheduledAt: makeTimestamp(addDaysIso(baseDate, 44), 18, 26),
+      completedAt: makeTimestamp(addDaysIso(baseDate, 44), 18, 34),
+      date: addDaysIso(baseDate, 44),
+      dayIndex: 45,
+      weekNumber: 7,
+      status: "completed",
+      totalScore: 7,
+      item1Nervous: 1,
+      item2ControlWorry: 1,
+      item3ExcessiveWorry: 2,
+      item4Relaxing: 1,
+      item5Restless: 1,
+      item6Irritable: 1,
+      item7Afraid: 0,
+      isSimulated: true,
+      source: "synthetic",
+    },
+  ];
+
+  const calls: Array<{ date: string; position: "before" | "after" }> = [
+    { date: addDaysIso(baseDate, 19), position: "after" },
+  ];
+
+  const ringDays = generateRingDays(baseDate, rng);
+
+  const dataset: SimulatedPersonDataset = {
+    participant,
+    consents,
+    ringDays,
+    checkInRounds,
+    phq9Assessments,
+    gad7Assessments,
+    calls,
+    rhythmWindows: [],
+    cameraReadings: [],
+    routineReadings: [],
+    personalBaselines: [],
+    patientSuggestions: [],
+    clinicFlags: [],
+  };
+
+  dataset.history = toPatientHistory(dataset);
+  return dataset;
 }

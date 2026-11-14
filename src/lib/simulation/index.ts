@@ -8,5 +8,8 @@ export type {
 export { createSeededRng } from "./prng";
 export {
   generateSimulatedPersonWeeks,
+  generateDepressionSamplePatient,
+  generateDepressionAndAnxietySamplePatient,
+  toPatientHistory,
   sliceDatasetThroughDay,
 } from "./person-generator";

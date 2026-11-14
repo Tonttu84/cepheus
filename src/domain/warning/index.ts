@@ -4,11 +4,12 @@ import { calculatePhq9Baseline } from '../baseline';
 export type WarningEvent = 
   | { type: 'round_closed'; kind: 'normal' | 'low' | 'no_answer'; date: string }
   | { type: 'phq9_completed'; total: number; date: string }
+  | { type: 'gad7_completed'; total: number; date: string }
   | { type: 'call_recorded' };
 
 export type WarningEffect = 
   | { type: 'small_dip'; version: number }
-  | { type: 'warning'; kind: 'low_answers' | 'silence' | 'mixed' | 'phq9'; since: string; version: number }
+  | { type: 'warning'; kind: 'low_answers' | 'silence' | 'mixed' | 'phq9' | 'gad7'; since: string; version: number }
   | { type: 'baseline_not_well'; version: number };
 
 export type WarningState = {
@@ -40,6 +41,10 @@ export function processWarningEvent(
 
   if (event.type === 'phq9_completed') {
     return handlePhq9Completed(state, event, config);
+  }
+
+  if (event.type === 'gad7_completed') {
+    return handleGad7Completed(state, event, config);
   }
 
   return { ok: false, error: 'Unknown event type' };
@@ -167,6 +172,38 @@ export function handlePhq9Completed(
     if (isWarning) {
       activeWarning = true;
       effects.push({ type: 'warning', kind: 'phq9', since: event.date, version: config.version });
+      prevRound = null;
+    }
+  }
+
+  return {
+    ok: true as const,
+    newState: {
+      ...state,
+      activeWarning,
+      prevRound,
+    },
+    effects,
+  };
+}
+
+export function handleGad7Completed(
+  state: WarningState,
+  event: Extract<WarningEvent, { type: 'gad7_completed' }>,
+  config: RuleConfig
+) {
+  if (typeof event.total !== 'number' || !Number.isInteger(event.total) || event.total < 0 || event.total > 21) {
+    return { ok: false as const, error: 'invalid gad7 total' };
+  }
+
+  const effects: WarningEffect[] = [];
+  let activeWarning = state.activeWarning;
+  let prevRound = state.prevRound;
+
+  if (!state.activeWarning) {
+    if (event.total >= config.gad7WarningCutoff) {
+      activeWarning = true;
+      effects.push({ type: 'warning', kind: 'gad7', since: event.date, version: config.version });
       prevRound = null;
     }
   }

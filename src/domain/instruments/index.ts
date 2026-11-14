@@ -93,4 +93,6 @@ export function validateTapAnswer(item: unknown): { ok: true; value: TapAnswer }
 }
 
 export * from './phq9-text.en';
+export * from './gad7-text.en';
+export * from './gad7';
 
