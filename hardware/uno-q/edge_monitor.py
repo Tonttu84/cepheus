@@ -21,7 +21,9 @@ Environment variables:
 
 from __future__ import annotations
 
+import argparse
 import datetime as dt
+import gc
 import math
 import os
 import secrets
@@ -59,15 +61,19 @@ def run_edge_window(
     duration_sec: int = 20,
     camera_index: int = 0,
     face_landmarker_model: str | None = None,
+    width: int = 640,
+    height: int = 480,
+    target_fps: int = 10,
 ) -> dict[str, Any]:
     """
     Captures frames in RAM for `duration_sec`, computes derived immobility,
     brightness, and optional MediaPipe movement metrics, then releases camera.
+    Defaults to 640x480 @ 10 fps to fit comfortably in Arduino UNO Q (2 GB RAM).
     """
     cap = cv2.VideoCapture(camera_index)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-    cap.set(cv2.CAP_PROP_FPS, 30)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    cap.set(cv2.CAP_PROP_FPS, target_fps)
 
     if not cap.isOpened():
         raise RuntimeError(f"Could not open USB camera at index {camera_index}")
@@ -140,6 +146,8 @@ def run_edge_window(
         cap.release()
         if landmarker is not None:
             landmarker.close()
+        del landmarker
+        gc.collect()
 
     elapsed = max(1.0, time.monotonic() - start_mono)
     effective_fps = round(total_frames / elapsed, 2)
@@ -214,12 +222,22 @@ def post_derived_metrics(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Cepheus UNO Q Edge Monitor")
+    parser.add_argument("--duration", type=int, default=20)
+    parser.add_argument("--width", type=int, default=int(os.environ.get("CAMERA_WIDTH", "640")))
+    parser.add_argument("--height", type=int, default=int(os.environ.get("CAMERA_HEIGHT", "480")))
+    parser.add_argument("--fps", type=int, default=int(os.environ.get("CAMERA_FPS", "10")))
+    args = parser.parse_args()
+
     model_path = os.environ.get("MEDIAPIPE_FACE_MODEL", "face_landmarker.task")
     cam_idx = int(os.environ.get("CAMERA_INDEX", "0"))
     summary = run_edge_window(
-        duration_sec=20,
+        duration_sec=args.duration,
         camera_index=cam_idx,
         face_landmarker_model=model_path,
+        width=args.width,
+        height=args.height,
+        target_fps=args.fps,
     )
     result = post_derived_metrics(summary)
     print("Ingest response:", result)

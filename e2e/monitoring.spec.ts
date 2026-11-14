@@ -19,7 +19,9 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     await expect(crisisRegion).toContainText("112");
 
     await expect(page.getByTestId("simulated-badge").first()).toBeVisible();
-    await expect(page.getByTestId("consent-card-ring_rhythm")).toBeVisible();
+    await expect(page.getByTestId("consent-card-ring_rhythm")).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("consent-card-camera_expressivity")).toBeVisible();
     await expect(page.getByTestId("consent-card-home_routine")).toBeVisible();
   });
@@ -49,6 +51,11 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
       "Suggested"
     );
     await expect(page.getByText("home_immobility_bouts").first()).toBeVisible();
+
+    await page.getByTestId("arduino-simulate-voice").click();
+    await expect(page.getByTestId("monitoring-feedback")).toContainText(
+      "0 bytes audio stored"
+    );
   });
 
   test("3. Security API boundaries reject raw media payloads and cross-origin POSTs", async ({

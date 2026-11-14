@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { MonitoringSummaryPayload } from "@/server/monitoring/store";
 
 interface ArduinoSectionProps {
@@ -6,6 +7,7 @@ interface ArduinoSectionProps {
   lightCueActive: boolean;
   lightCueReason: string | null;
   busyAction: string | null;
+  bedsideControls?: ReactNode;
   onSimulateArduinoPush: () => void;
 }
 
@@ -15,6 +17,7 @@ export function ArduinoSection({
   lightCueActive,
   lightCueReason,
   busyAction,
+  bedsideControls,
   onSimulateArduinoPush,
 }: ArduinoSectionProps) {
   return (
@@ -36,15 +39,18 @@ export function ArduinoSection({
           </p>
         </div>
 
-        <button
-          type="button"
-          data-testid="arduino-simulate-push"
-          disabled={busyAction !== null}
-          onClick={onSimulateArduinoPush}
-          className="min-h-11 cursor-pointer rounded-xl border border-border-tactile bg-surface-card px-4 py-2 text-xs font-semibold text-ink-primary transition hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage disabled:opacity-50"
-        >
-          Simulate Arduino UNO Q push
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {bedsideControls}
+          <button
+            type="button"
+            data-testid="arduino-simulate-push"
+            disabled={busyAction !== null}
+            onClick={onSimulateArduinoPush}
+            className="min-h-11 cursor-pointer rounded-xl border border-border-tactile bg-surface-card px-4 py-2 text-xs font-semibold text-ink-primary transition hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage disabled:opacity-50"
+          >
+            Simulate Arduino UNO Q push
+          </button>
+        </div>
       </div>
 
       {lightCueReason ? (

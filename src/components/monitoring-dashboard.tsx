@@ -16,6 +16,7 @@ import {
   type FitbitStatus,
 } from "@/components/monitoring/wearable-section";
 import type { MonitoringSummaryPayload } from "@/server/monitoring/store";
+import { ArduinoBedsideControls } from "./arduino-bedside-controls";
 
 export function MonitoringDashboard() {
   const [fitbitStatus, setFitbitStatus] = useState<FitbitStatus | null>(null);
@@ -138,6 +139,7 @@ export function MonitoringDashboard() {
         lightCueActive={lightCueActive}
         lightCueReason={lightCueReason}
         busyAction={busyAction}
+        bedsideControls={<ArduinoBedsideControls onFeedback={setFeedback} />}
         onSimulateArduinoPush={() =>
           void runAction("arduino-sim", async () => {
             const result = await simulateArduinoPushAction();
