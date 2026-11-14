@@ -5,7 +5,8 @@ const isoDateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
 
-const checkInItemScoreSchema = z.number().min(0).max(5);
+const checkInItemScoreSchema = z.number().min(1).max(5);
+const checkInTwoTapItemScoreSchema = z.number().min(0).max(5);
 const phq9ItemScoreSchema = z.number().int().min(0).max(3);
 
 export const BroadAreaKeySchema = z.enum(BROAD_AREA_KEYS);
@@ -17,7 +18,7 @@ export const BroadAreaKeySchema = z.enum(BROAD_AREA_KEYS);
  * - Missed ("missed") or skipped ("not_today") rounds are recorded as missed events,
  *   NEVER scored as 0. All item/composite scores must be null or undefined when not completed.
  * - Completed rounds require either the 2-tap items (moodScore, interestScore as integers 0..4),
- *   the legacy 4 short items (1..5), or the low-effort singleItemScore (0..5).
+ *   the legacy 4 short items (1..5), or the low-effort singleItemScore (1..5).
  */
 export const CheckInSubmissionSchema = z
   .object({
@@ -27,8 +28,8 @@ export const CheckInSubmissionSchema = z
     weekNumber: z.number().int().positive().optional(),
     roundNumber: z.number().int().positive().optional(),
     status: z.enum(["completed", "not_today", "missed"]),
-    moodScore: checkInItemScoreSchema.nullable().optional(),
-    interestScore: checkInItemScoreSchema.nullable().optional(),
+    moodScore: checkInTwoTapItemScoreSchema.nullable().optional(),
+    interestScore: checkInTwoTapItemScoreSchema.nullable().optional(),
     energyScore: checkInItemScoreSchema.nullable().optional(),
     ruminationScore: checkInItemScoreSchema.nullable().optional(),
     compositeScore: checkInItemScoreSchema.nullable().optional(),
@@ -75,7 +76,8 @@ export const CheckInSubmissionSchema = z
       typeof val.moodScore === "number" &&
       typeof val.interestScore === "number" &&
       (val.energyScore === null || val.energyScore === undefined) &&
-      (val.ruminationScore === null || val.ruminationScore === undefined);
+      (val.ruminationScore === null || val.ruminationScore === undefined) &&
+      (val.compositeScore === null || val.compositeScore === undefined);
     const hasSingleItem = typeof val.singleItemScore === "number";
 
     if (!hasAllFourItems && !hasTwoTapItems && !hasSingleItem) {
