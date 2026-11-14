@@ -127,6 +127,13 @@ These hold whatever is built.
   provides the `git-remote-entire` helper, on the PATH, and a completed `entire login`.
 - Most figures in `docs/research/` come from abstracts. Each report lists what it could
   not check; read that list before relying on a number.
+- The local database in `npm run db:setup` uses PostgreSQL binaries from the
+  embedded-postgres package; on Linux they need the PostgreSQL client library
+  (libpq.so.5) installed on the system first, for example the `libpq5` package on
+  Debian or Ubuntu (not checked on every distribution); without it,
+  `npm run db:setup`, `npm run test:db` and the browser tests fail, while
+  `npm run check` and the build still run. It was seen on a teammate's Linux
+  machine on 14 Nov 2026.
 
 ## Entire Brain
 
