@@ -16,11 +16,11 @@ function toStoredCrisisEvent(row: CrisisEvent): StoredCrisisEvent {
   return {
     patientId: row.participantId,
     roundNumber: row.roundNumber,
-    itemId: ITEM_ID_BY_COLUMN[row.itemId] ?? row.itemId,
+    itemId: row.itemId === "item9SelfHarm" ? "9" : row.itemId,
     value: row.value,
     occurredAt: row.occurredAt.toISOString(),
     acknowledgedAt: row.acknowledgedAt?.toISOString() ?? null,
-    acknowledgedByStaffId: row.acknowledgedByStaffId ?? null,
+    ...(row.acknowledgedByStaffId ? { acknowledgedByStaffId: row.acknowledgedByStaffId } : {}),
   };
 }
 

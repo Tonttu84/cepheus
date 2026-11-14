@@ -15,6 +15,14 @@ describe("Call repository (*.dbtest.ts)", () => {
     clinicId = (
       await prisma.clinic.create({ data: { code: "calls-dbtest-clinic", name: "Calls" } })
     ).id;
+    await prisma.staffUser.create({
+      data: {
+        id: "staff-1",
+        clinicId,
+        email: "calls-staff-1@test.local",
+        name: "Calls Staff 1",
+      },
+    });
   });
 
   afterAll(async () => {

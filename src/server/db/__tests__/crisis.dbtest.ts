@@ -24,6 +24,14 @@ describe("Crisis repository (*.dbtest.ts)", () => {
   beforeAll(async () => {
     prisma = getPrisma();
     clinicId = (await prisma.clinic.create({ data: { code: "crisis-dbtest-clinic", name: "Crisis" } })).id;
+    await prisma.staffUser.create({
+      data: {
+        id: "staff-user-test-1",
+        clinicId,
+        email: "crisis-staff-1@test.local",
+        name: "Crisis Staff 1",
+      },
+    });
     const data = { clinicId, source: "live" };
     patientId = (await prisma.participant.create({ data: { ...data, label: "crisis-dbtest-main" } })).id;
     otherId = (await prisma.participant.create({ data: { ...data, label: "crisis-dbtest-other" } })).id;

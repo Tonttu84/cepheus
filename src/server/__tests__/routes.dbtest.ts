@@ -6,6 +6,8 @@ import { POST as postPhq9 } from "@/app/api/check-in/phq9/route";
 import { POST as postGad7 } from "@/app/api/check-in/gad7/route";
 import { GET as getFlags } from "@/app/api/clinic/flags/route";
 import { POST as evaluate } from "@/app/api/patients/[patientId]/evaluate/route";
+import { POST as acknowledgeCrisis } from "@/app/api/clinic/crisis-events/acknowledge/route";
+import { POST as postNurseCall } from "@/app/api/clinic/nurse-calls/route";
 import { getPrisma } from "@/lib/db";
 import { SESSION_COOKIE_NAME, sealSession, simulatedFinnishEidProvider } from "@/server/auth";
 import { resetRouteDeps } from "@/server/api";
@@ -53,6 +55,15 @@ describe("the routes on PostgreSQL (*.dbtest.ts)", () => {
     await prisma.clinic.deleteMany({ where: { code: CLINIC_CODE } });
     const clinic = await prisma.clinic.create({ data: { code: CLINIC_CODE, name: "Routes test clinic" } });
     clinicId = clinic.id;
+    await prisma.staffUser.create({
+      data: {
+        id: "routes-dbtest-nurse",
+        clinicId,
+        email: "nurse@sim-clinic.local",
+        name: "Simulated nurse",
+        role: "nurse",
+      },
+    });
     const participant = await prisma.participant.create({
       data: {
         clinicId,
@@ -165,5 +176,69 @@ describe("the routes on PostgreSQL (*.dbtest.ts)", () => {
     })}`;
     const flags = await (await getFlags(request("/api/clinic/flags", { method: "GET", cookie: otherNurse }))).json();
     expect(flags).toEqual({ ok: true, flags: [] });
+  });
+
+  it("a seeded nurse acknowledges a crisis event and records a nurse call through the storage, and both rows are read back", async () => {
+    // Round 1 produced a crisis event in the first test when PHQ-9 item 9 was answered with 1
+    const ackRes = await acknowledgeCrisis(
+      request("/api/clinic/crisis-events/acknowledge", {
+        cookie: nurseCookie,
+        body: { patientId, roundNumber: 1 },
+      })
+    );
+    expect(ackRes.status).toBe(200);
+    const ackBody = await ackRes.json();
+    expect(ackBody).toMatchObject({
+      ok: true,
+      acknowledged: true,
+      patientId,
+      roundNumber: 1,
+      acknowledgedByStaffId: "routes-dbtest-nurse",
+    });
+
+    const callRes = await postNurseCall(
+      request("/api/clinic/nurse-calls", {
+        cookie: nurseCookie,
+        body: {
+          patientId,
+          status: "completed",
+          outcomeTier: "rough_patch",
+          actionTaken: "advice_and_medication_check",
+          medicationChecked: true,
+          watchNextRounds: 2,
+          date: "2026-11-16",
+          position: "after",
+        },
+      })
+    );
+    expect(callRes.status).toBe(200);
+    const callBody = await callRes.json();
+    expect(callBody).toMatchObject({
+      ok: true,
+      saved: true,
+      patientId,
+      status: "completed",
+      outcomeTier: "rough_patch",
+      actionTaken: "advice_and_medication_check",
+    });
+
+    // Read back both rows through the database storage
+    const crisisRow = await prisma.crisisEvent.findFirstOrThrow({
+      where: { participantId: patientId, roundNumber: 1 },
+    });
+    expect(crisisRow.acknowledgedAt).not.toBeNull();
+    expect(crisisRow.acknowledgedByStaffId).toBe("routes-dbtest-nurse");
+
+    const callRow = await prisma.nurseCallRecord.findFirstOrThrow({
+      where: { participantId: patientId },
+    });
+    expect(callRow.staffUserId).toBe("routes-dbtest-nurse");
+    expect(callRow.status).toBe("completed");
+    expect(callRow.outcomeTier).toBe("rough_patch");
+    expect(callRow.actionTaken).toBe("advice_and_medication_check");
+    expect(callRow.medicationChecked).toBe(true);
+    expect(callRow.watchNextRounds).toBe(2);
+    expect(callRow.date).toBe("2026-11-16");
+    expect(callRow.position).toBe("after");
   });
 });
