@@ -16,7 +16,13 @@ export const SYSTEM_KEY = "system-key-for-tests-0123456789abcdef";
 export const ROUND_1_OPEN = "2026-11-16T16:00:00.000Z";
 
 const processEnv = process.env as Record<string, string | undefined>;
-const ENV_KEYS = ["NODE_ENV", "DATABASE_URL", "APP_SESSION_SECRET", "SYSTEM_API_KEY"] as const;
+const ENV_KEYS = [
+  "NODE_ENV",
+  "DATABASE_URL",
+  "APP_SESSION_SECRET",
+  "SYSTEM_API_KEY",
+  "ARDUINO_INGEST_TOKEN",
+] as const;
 let savedEnv: Record<string, string | undefined> = {};
 
 export function patientRecord(overrides: Partial<PatientRecord> = {}): PatientRecord {
@@ -43,6 +49,7 @@ export function setUpRoutes(now = ROUND_1_OPEN, extraItems: ExtraItemsConfig = D
   setRouteDepsForTests(() => ({
     ports: fake.ports,
     clinicPatientIds: async (clinicId) => clinicPatients[clinicId] ?? [],
+    resolveDevicePatient: async () => ({ patientId: PATIENT_ID, clinicId: CLINIC_ID }),
   }));
   return { ...fake, clinicPatients };
 }

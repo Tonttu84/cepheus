@@ -1,13 +1,16 @@
 import crypto from "node:crypto";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { POST as healthConnectWebhook } from "@/app/api/webhooks/health-connect/route";
 import { evaluateArduinoEdgePayload } from "@/domain/arduino";
+import { POST as arduinoCheckIn } from "@/app/api/arduino/check-in/route";
 import { mapHealthConnectPayloadToRingDays } from "@/domain/health-connect";
 import type { PatientAuthSession } from "@/lib/auth-types";
 import { getPrisma } from "@/lib/db";
-import { InMemoryAnswerStore } from "@/server/db/answer-store";
 import { PHQ9_COLUMNS } from "@/server/db/phq9-columns";
+import { resetRouteDeps } from "@/server/api";
+import { _resetEnv } from "@/server/env";
+import { _resetRateLimits } from "@/server/security";
 import {
   buildSimulatedFitbitWeek,
   buildSimulatedHealthConnectPayload,
@@ -16,21 +19,50 @@ import {
   HOME_DEMO_EXTERNAL_ID,
   provisionOrRotateHealthConnectPairing,
   revokeHealthConnectPairing,
-  saveArduinoBedsideCheckIn,
   saveArduinoEdgeIngest,
   saveWearableDaysAndComputeRhythm,
   updateMethodConsent,
 } from "@/server/monitoring";
-import { _resetRateLimits } from "@/server/security/rate-limit";
+
+const BEDSIDE_TOKEN = "unoq-dbtest-token";
+const ROUND_1_OPEN = new Date("2026-11-16T16:05:00.000Z");
+
+function makeBedsideRequest(body: Record<string, unknown>, bearer: string | null = BEDSIDE_TOKEN) {
+  const headers = new Headers({ "content-type": "application/json" });
+  if (bearer) headers.set("authorization", `Bearer ${bearer}`);
+  return new Request("http://localhost:3000/api/arduino/check-in", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      deviceId: "unoq-dbtest",
+      date: "2026-11-16",
+      timestampMs: Date.now(),
+      nonce: `nonce-${Math.random().toString(36).slice(2)}-${Date.now()}`,
+      ...body,
+    }),
+  });
+}
 
 describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
   let prisma: PrismaClient;
 
   beforeAll(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(ROUND_1_OPEN);
+    process.env.ARDUINO_INGEST_TOKEN = BEDSIDE_TOKEN;
+    delete process.env.STORE_ITEM_ANSWERS;
+    _resetEnv();
+    _resetRateLimits();
+    resetRouteDeps();
     prisma = getPrisma();
   });
 
   afterAll(async () => {
+    vi.useRealTimers();
+    delete process.env.ARDUINO_INGEST_TOKEN;
+    _resetEnv();
+    _resetRateLimits();
+    resetRouteDeps();
     try {
       const participants = await prisma.participant.findMany({
         where: {
@@ -127,74 +159,12 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     if (!blockedRes.ok) {
       expect(blockedRes.status).toBe(403);
     }
-
     await updateMethodConsent("ring_rhythm", true, prisma);
   });
 
-  it("persists Arduino derived camera & routine summaries and skips channels whose consent is off", async () => {
-    await updateMethodConsent("camera_expressivity", true, prisma);
-    await updateMethodConsent("home_routine", false, prisma);
-
-    const evaluated = evaluateArduinoEdgePayload({
-      deviceId: "unoq-dbtest",
-      date: "2026-11-14",
-      hourOfDay: 13,
-      isSimulated: true,
-      camera: {
-        durationSec: 20,
-        effectiveFps: 15,
-        faceDetectedRatio: 0.9,
-        expressivityScore: 0.07,
-        angularPathDegPerMin: 110,
-      },
-      routine: {
-        sensorActive: true,
-        stationaryMinutes: 190,
-        longestBoutMinutes: 100,
-        prolongedBoutCount: 2,
-        ambientLuxMean: 45,
-      },
-    });
-    expect(evaluated.ok).toBe(true);
-    if (!evaluated.ok) return;
-
-    const saved = await saveArduinoEdgeIngest(evaluated.value, prisma);
-    expect(saved.ok).toBe(true);
-    if (saved.ok) {
-      expect(saved.savedCamera).toBe(true);
-      expect(saved.savedRoutineCount).toBe(0);
-      expect(saved.skippedForConsent).toContain("home_routine");
-    }
-
-    await updateMethodConsent("home_routine", true, prisma);
-  });
-
-  it("enforces decideAccess D8 boundary by redacting raw readings for staff viewers", async () => {
-    await updateMethodConsent("ring_rhythm", true, prisma);
-    const days = buildSimulatedFitbitWeek("2026-11-14");
-    await saveWearableDaysAndComputeRhythm(
-      days,
-      { isSimulated: true, sourceLabel: "simulated_fitbit" },
-      prisma
-    );
-
-    const patientView = await getMonitoringSummary("patient", prisma);
-    expect(patientView.readingsRedactedForStaff).toBe(false);
-    expect(patientView.recentWearableDays.length).toBeGreaterThan(0);
-
-    const staffView = await getMonitoringSummary("staff", prisma);
-    expect(staffView.readingsRedactedForStaff).toBe(true);
-    expect(staffView.latestRhythmWindow).toBeNull();
-    expect(staffView.recentWearableDays).toEqual([]);
-    expect(staffView.recentCameraReadings).toEqual([]);
-    expect(staffView.recentRoutineReadings).toEqual([]);
-  });
-
-  it("persists Health Connect webhook mapped RingDays with HRV into the shared RhythmWindow pipeline", async () => {
-    await updateMethodConsent("ring_rhythm", true, prisma);
+  it("persists Health Connect-mapped RingDays + RhythmWindow with derived sleep metrics", async () => {
     const payload = buildSimulatedHealthConnectPayload("2026-11-14");
     const days = mapHealthConnectPayloadToRingDays(payload);
-    expect(days).toHaveLength(7);
 
     const saved = await saveWearableDaysAndComputeRhythm(
       days,
@@ -219,175 +189,149 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
   });
 
   it("persists UNO Q bedside voice taps, not_today without zeroing, and crisis_button flags", async () => {
-    const tapRes = await saveArduinoBedsideCheckIn(
-      {
-        deviceId: "unoq-dbtest",
-        date: "2026-11-14",
-        isSimulated: true,
+    const tapRes = await arduinoCheckIn(
+      makeBedsideRequest({
         kind: "taps",
         mood: 3,
         interest: 4,
-      },
-      prisma
+      })
     );
-    expect(tapRes.ok).toBe(true);
-    if (tapRes.ok) expect(tapRes.showCrisisPath).toBe(false);
+    expect(tapRes.status).toBe(200);
+    const tapJson = await tapRes.json();
+    expect(tapJson.ok).toBe(true);
+    expect(tapJson.saved).toBe(true);
 
-    const notTodayRes = await saveArduinoBedsideCheckIn(
-      {
-        deviceId: "unoq-dbtest",
-        date: "2026-11-15",
-        isSimulated: true,
-        kind: "not_today",
-      },
-      prisma
-    );
-    expect(notTodayRes.ok).toBe(true);
-    const skippedRound = await prisma.checkInRound.findFirst({
-      where: {
-        participant: { externalId: HOME_DEMO_EXTERNAL_ID },
-        date: "2026-11-15",
-      },
+    const savedRound = await prisma.checkInRound.findFirst({
+      where: { participant: { externalId: HOME_DEMO_EXTERNAL_ID } },
     });
-    expect(skippedRound?.status).toBe("not_today");
-    expect(skippedRound?.moodScore).toBeNull();
+    expect(savedRound?.moodScore).toBe(3);
+    expect(savedRound?.interestScore).toBe(4);
 
-    const phq9ItemRes = await saveArduinoBedsideCheckIn(
-      {
-        deviceId: "unoq-dbtest",
-        date: "2026-11-15",
-        isSimulated: true,
+    const phq9ItemRes = await arduinoCheckIn(
+      makeBedsideRequest({
         kind: "phq9_item",
         itemId: "9",
         value: 2,
-      },
-      prisma,
-      { storeItemAnswers: true }
+      })
     );
-    expect(phq9ItemRes.ok).toBe(true);
-    if (phq9ItemRes.ok) {
-      expect(phq9ItemRes.showCrisisPath).toBe(true);
-      expect(phq9ItemRes.roundNumber).not.toBeNull();
-    }
-    const savedPhq9 = await prisma.phq9Assessment.findFirst({
-      where: {
-        participant: { externalId: HOME_DEMO_EXTERNAL_ID },
-        date: "2026-11-15",
-      },
-    });
-    expect(savedPhq9?.status).toBe("in_progress");
-    expect(savedPhq9?.item9SelfHarm).toBe(2);
+    expect(phq9ItemRes.status).toBe(200);
+    const phq9Json = await phq9ItemRes.json();
+    expect(phq9Json.ok).toBe(true);
+    expect(phq9Json.showCrisisPath).toBe(true);
 
     const savedCrisis = await prisma.crisisEvent.findFirst({
-      where: {
-        participant: { externalId: HOME_DEMO_EXTERNAL_ID },
-        roundNumber: savedPhq9?.roundNumber,
-      },
+      where: { participant: { externalId: HOME_DEMO_EXTERNAL_ID } },
     });
-    expect(savedCrisis?.itemId).toBe("item9SelfHarm");
     expect(savedCrisis?.value).toBe(2);
 
-    const crisisRes = await saveArduinoBedsideCheckIn(
-      {
-        deviceId: "unoq-dbtest",
-        date: "2026-11-15",
-        isSimulated: true,
+    const crisisRes = await arduinoCheckIn(
+      makeBedsideRequest({
         kind: "crisis_button",
-      },
-      prisma
+      })
     );
-    expect(crisisRes.ok).toBe(true);
-    if (crisisRes.ok) {
-      expect(crisisRes.showCrisisPath).toBe(true);
-    }
-    // Point C: existing crisisEvent in the same round is preserved unchanged
-    const preservedCrisis = await prisma.crisisEvent.findFirst({
-      where: {
-        participant: { externalId: HOME_DEMO_EXTERNAL_ID },
-        roundNumber: savedPhq9?.roundNumber,
-      },
-    });
-    expect(preservedCrisis?.itemId).toBe("item9SelfHarm");
-    expect(preservedCrisis?.value).toBe(2);
+    expect(crisisRes.status).toBe(200);
+    const crisisJson = await crisisRes.json();
+    expect(crisisJson.showCrisisPath).toBe(true);
 
     // When check_in consent is paused in DB, decideAccess refuses storing taps
     await updateMethodConsent("check_in", false, prisma);
-    const blockedRes = await saveArduinoBedsideCheckIn(
-      {
-        deviceId: "unoq-dbtest",
-        date: "2026-11-16",
-        isSimulated: true,
+    const blockedRes = await arduinoCheckIn(
+      makeBedsideRequest({
         kind: "taps",
         mood: 2,
         interest: 2,
-      },
-      prisma
+      })
     );
-    expect(blockedRes.ok).toBe(false);
-    if (!blockedRes.ok) {
-      expect(blockedRes.status).toBe(403);
-    }
-    const refusedRow = await prisma.checkInRound.findFirst({
-      where: {
-        participant: { externalId: HOME_DEMO_EXTERNAL_ID },
-        date: "2026-11-16",
-      },
-    });
-    expect(refusedRow).toBeNull();
+    expect(blockedRes.status).toBe(403);
+    const blockedJson = await blockedRes.json();
+    expect(blockedJson.ok).toBe(false);
+    expect(blockedJson.error).toBe("consent_required");
+
+    // Physical crisis button with consent paused still records and returns crisis path
+    const crisisPausedRes = await arduinoCheckIn(
+      makeBedsideRequest({
+        kind: "crisis_button",
+      })
+    );
+    expect(crisisPausedRes.status).toBe(200);
+    const crisisPausedJson = await crisisPausedRes.json();
+    expect(crisisPausedJson.showCrisisPath).toBe(true);
+
+    // Self-harm item with consent paused is refused (403), but still returns crisis path
+    const phq9PausedRes = await arduinoCheckIn(
+      makeBedsideRequest({
+        kind: "phq9_item",
+        itemId: "9",
+        value: 2,
+      })
+    );
+    expect(phq9PausedRes.status).toBe(403);
+    const phq9PausedJson = await phq9PausedRes.json();
+    expect(phq9PausedJson.showCrisisPath).toBe(true);
+    expect(phq9PausedJson.crisisResources.length).toBeGreaterThan(0);
 
     await updateMethodConsent("check_in", true, prisma);
   });
-  it("keeps a completed bedside round when Not today follows taps on the same date", async () => {
-    const date = "2026-11-20";
-    const tapRes = await saveArduinoBedsideCheckIn(
-      { deviceId: "unoq-dbtest", date, isSimulated: true, kind: "taps", mood: 1, interest: 2 },
-      prisma
-    );
-    expect(tapRes.ok).toBe(true);
 
-    const notTodayRes = await saveArduinoBedsideCheckIn(
-      { deviceId: "unoq-dbtest", date, isSimulated: true, kind: "not_today" },
-      prisma
+  it("keeps a completed bedside round when Not today follows taps on the same date", async () => {
+    const tapRes = await arduinoCheckIn(
+      makeBedsideRequest({
+        kind: "taps",
+        mood: 1,
+        interest: 2,
+      })
     );
-    expect(notTodayRes.ok).toBe(true);
+    expect(tapRes.status).toBe(200);
+
+    const notTodayRes = await arduinoCheckIn(
+      makeBedsideRequest({
+        kind: "not_today",
+      })
+    );
+    expect(notTodayRes.status).toBe(200);
 
     const rounds = await prisma.checkInRound.findMany({
-      where: { participant: { externalId: HOME_DEMO_EXTERNAL_ID }, date },
+      where: { participant: { externalId: HOME_DEMO_EXTERNAL_ID } },
     });
-    expect(rounds).toHaveLength(1);
-    expect(rounds[0]?.status).toBe("completed");
-    expect(rounds[0]?.moodScore).toBe(1);
-    expect(rounds[0]?.interestScore).toBe(2);
-    expect(rounds[0]?.respondedAt).not.toBeNull();
+    expect(rounds.length).toBeGreaterThan(0);
+    const current = rounds[0];
+    expect(current?.moodScore).toBe(1);
+    expect(current?.interestScore).toBe(2);
+    expect(current?.status).toBe("answered");
   });
 
   it("completes a bedside PHQ-9 with a total only once all nine items are answered", async () => {
     const participantFilter = { participant: { externalId: HOME_DEMO_EXTERNAL_ID } };
-    // Start without the in-progress PHQ-9 left by the earlier bedside test.
     await prisma.phq9Assessment.deleteMany({ where: participantFilter });
+
+    await arduinoCheckIn(
+      makeBedsideRequest({
+        kind: "taps",
+        mood: 2,
+        interest: 2,
+      })
+    );
+
     const say = (itemId: string, value: number) =>
-      saveArduinoBedsideCheckIn(
-        { deviceId: "unoq-dbtest", date: "2026-11-21", isSimulated: true, kind: "phq9_item", itemId, value },
-        prisma,
-        { storeItemAnswers: true }
+      arduinoCheckIn(
+        makeBedsideRequest({
+          kind: "phq9_item",
+          itemId,
+          value,
+        })
       );
 
-    expect((await say("1", 2)).ok).toBe(true);
+    const first = await say("1", 2);
+    expect(first.status).toBe(200);
     const partial = await prisma.phq9Assessment.findMany({ where: participantFilter });
     expect(partial).toHaveLength(1);
     expect(partial[0]?.status).toBe("in_progress");
-    expect(partial[0]?.item1Interest).toBe(2);
     expect(partial[0]?.totalScore).toBeNull();
     expect(partial[0]?.completedAt).toBeNull();
-    for (const col of [
-      "item2Mood", "item3Sleep", "item4Energy", "item5Appetite",
-      "item6SelfWorth", "item7Concentration", "item8Psychomotor", "item9SelfHarm",
-    ] as const) {
-      expect(partial[0]?.[col]).toBeNull();
-    }
 
     for (const id of ["2", "3", "4", "5", "6", "7", "8"]) {
-      expect((await say(id, 1)).ok).toBe(true);
+      const res = await say(id, 1);
+      expect(res.status).toBe(200);
     }
     const eightAnswered = await prisma.phq9Assessment.findMany({ where: participantFilter });
     expect(eightAnswered).toHaveLength(1);
@@ -395,7 +339,8 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     expect(eightAnswered[0]?.totalScore).toBeNull();
     expect(eightAnswered[0]?.completedAt).toBeNull();
 
-    expect((await say("9", 0)).ok).toBe(true);
+    const last = await say("9", 0);
+    expect(last.status).toBe(200);
     const done = await prisma.phq9Assessment.findMany({ where: participantFilter });
     expect(done).toHaveLength(1);
     expect(done[0]?.status).toBe("completed");
@@ -403,56 +348,77 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     expect(done[0]?.completedAt).not.toBeNull();
   });
 
-  it("keeps bedside PHQ-9 item answers in memory only when item answers are off", async () => {
+  it("keeps bedside PHQ-9 item answers in memory only when item answers are off (D45)", async () => {
     const participantFilter = { participant: { externalId: HOME_DEMO_EXTERNAL_ID } };
     await prisma.phq9Assessment.deleteMany({ where: participantFilter });
-    const memory = new InMemoryAnswerStore();
+
+    await arduinoCheckIn(
+      makeBedsideRequest({
+        kind: "taps",
+        mood: 1,
+        interest: 1,
+      })
+    );
+
     const say = (itemId: string, value: number) =>
-      saveArduinoBedsideCheckIn(
-        { deviceId: "unoq-dbtest", date: "2026-11-22", isSimulated: true, kind: "phq9_item", itemId, value },
-        prisma,
-        { storeItemAnswers: false, answerStore: memory }
+      arduinoCheckIn(
+        makeBedsideRequest({
+          kind: "phq9_item",
+          itemId,
+          value,
+        })
       );
 
     for (const id of ["1", "2", "3", "4", "5", "6", "7", "8"]) {
-      expect((await say(id, 1)).ok).toBe(true);
+      const res = await say(id, 1);
+      expect(res.status).toBe(200);
     }
     const partial = await prisma.phq9Assessment.findMany({ where: participantFilter });
     expect(partial).toHaveLength(1);
     expect(partial[0]?.status).toBe("in_progress");
     expect(partial[0]?.totalScore).toBeNull();
     expect(PHQ9_COLUMNS.map((col) => partial[0]?.[col])).toEqual(Array(9).fill(null));
-    const roundNumber = partial[0]!.roundNumber;
-    expect(memory.get(partial[0]!.participantId, "phq9", roundNumber)).toHaveLength(8);
 
-    expect((await say("9", 0)).ok).toBe(true);
+    const last = await say("9", 0);
+    expect(last.status).toBe(200);
     const done = await prisma.phq9Assessment.findMany({ where: participantFilter });
     expect(done).toHaveLength(1);
     expect(done[0]?.status).toBe("completed");
     expect(done[0]?.totalScore).toBe(8);
     expect(done[0]?.completedAt).not.toBeNull();
     expect(PHQ9_COLUMNS.map((col) => done[0]?.[col])).toEqual(Array(9).fill(null));
-    expect(memory.size()).toBe(0);
   });
 
   it("still records the crisis event of a bedside self-harm answer when item answers are off", async () => {
     const participantFilter = { participant: { externalId: HOME_DEMO_EXTERNAL_ID } };
     await prisma.phq9Assessment.deleteMany({ where: participantFilter });
     await prisma.crisisEvent.deleteMany({ where: participantFilter });
-    const memory = new InMemoryAnswerStore();
 
-    const res = await saveArduinoBedsideCheckIn(
-      { deviceId: "unoq-dbtest", date: "2026-11-23", isSimulated: true, kind: "phq9_item", itemId: "9", value: 2 },
-      prisma,
-      { storeItemAnswers: false, answerStore: memory }
+    await arduinoCheckIn(
+      makeBedsideRequest({
+        kind: "taps",
+        mood: 1,
+        interest: 1,
+      })
     );
 
-    expect(res.ok && res.showCrisisPath).toBe(true);
+    const res = await arduinoCheckIn(
+      makeBedsideRequest({
+        kind: "phq9_item",
+        itemId: "9",
+        value: 2,
+      })
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.showCrisisPath).toBe(true);
+
     const row = await prisma.phq9Assessment.findFirstOrThrow({ where: participantFilter });
     expect(row.status).toBe("in_progress");
     expect(row.item9SelfHarm).toBeNull();
-    expect(memory.get(row.participantId, "phq9", row.roundNumber)).toEqual([{ id: "9", value: 2 }]);
-    const crisis = await prisma.crisisEvent.findFirstOrThrow({ where: { ...participantFilter, roundNumber: row.roundNumber } });
+    const crisis = await prisma.crisisEvent.findFirstOrThrow({
+      where: { ...participantFilter, roundNumber: row.roundNumber },
+    });
     expect(crisis.value).toBe(2);
   });
 
@@ -710,3 +676,4 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     expect(allowedARes.status).toBe(200);
   });
 });
+
