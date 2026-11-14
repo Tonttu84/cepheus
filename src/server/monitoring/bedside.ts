@@ -90,7 +90,7 @@ function checkStoredCheckInConsent(
   return access.ok && access.value.allowed;
 }
 
-function isCrisisBedsideInput(input: BedsideCheckInInput): boolean {
+export function isCrisisBedsideInput(input: BedsideCheckInInput): boolean {
   if (input.kind === "crisis_button") return true;
   if (input.kind !== "phq9_item") return false;
   const res = isCrisis({ id: input.itemId, value: input.value });
