@@ -59,6 +59,9 @@ model Clinic {
   baselineNotices       BaselineNotice[]
   extraAnswers          ExtraAnswer[]
   gad7Assessments       Gad7Assessment[]
+  rewardLedgerEntries   RewardLedgerEntry[]
+  taskPreferences       TaskPreference[]
+  taskRecords           TaskRecord[]
 }
 
 /// Named clinic staff account (nurse or admin). The only named people in the DB.
@@ -131,6 +134,9 @@ model Participant {
   baselineNotices       BaselineNotice[]
   extraAnswers          ExtraAnswer[]
   gad7Assessments       Gad7Assessment[]
+  rewardLedgerEntries   RewardLedgerEntry[]
+  taskPreference        TaskPreference?
+  taskRecords           TaskRecord[]
 
   @@index([clinicId])
 }
@@ -718,5 +724,64 @@ model Gad7Assessment {
 
   @@unique([participantId, roundNumber])
   @@index([participantId, date])
+  @@index([clinicId])
+}
+
+/// Ledger entry for earned rewards and requested payouts. Natural id is unique.
+model RewardLedgerEntry {
+  id            String      @id
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId      String?
+  clinic        Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  kind          String      // "answered_round" | "small_task" | "payout"
+  amountCents   Int
+  roundNumber   Int?
+  taskKey       String?
+  localDate     String?     // "YYYY-MM-DD"
+  requestId     String?
+  createdAt     DateTime    @default(now())
+  isSimulated   Boolean     @default(false)
+
+  @@index([participantId, createdAt])
+  @@index([participantId, roundNumber])
+  @@index([participantId, localDate])
+  @@index([participantId, requestId])
+  @@index([clinicId])
+}
+
+/// A participant's task preferences for rotating small tasks.
+model TaskPreference {
+  id                String      @id @default(cuid())
+  participantId     String      @unique
+  participant       Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId          String?
+  clinic            Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  preferredKeysJson String      // JSON array of TaskKey
+  isSimulated       Boolean     @default(false)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([clinicId])
+}
+
+/// A day's small task offered, completed, or deferred for a participant.
+model TaskRecord {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId      String?
+  clinic        Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  localDate     String      // "YYYY-MM-DD"
+  taskKey       String
+  status        String      // "offered" | "completed" | "not_today"
+  source        String      @default("self_report")
+  completedAt   DateTime?
+  respondedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  isSimulated   Boolean     @default(false)
+
+  @@unique([participantId, localDate])
+  @@index([participantId, status])
   @@index([clinicId])
 }

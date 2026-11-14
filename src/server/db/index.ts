@@ -59,3 +59,4 @@ export {
   checkDemoNeedsReset,
   type SimulatedPatientDemoSummary,
 } from "./demo-patients";
+export { createPrismaRewardsPorts } from "./rewards-factory";
