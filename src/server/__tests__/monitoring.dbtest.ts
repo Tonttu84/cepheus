@@ -301,7 +301,9 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     const current = rounds[0];
     expect(current?.moodScore).toBe(1);
     expect(current?.interestScore).toBe(2);
-    expect(current?.status).toBe("answered");
+    // The shared use cases store an answered round as "completed", the word the
+    // schema documents; the old bedside storage wrote "answered" directly.
+    expect(current?.status).toBe("completed");
   });
 
   it("completes a bedside PHQ-9 with a total only once all nine items are answered", async () => {
