@@ -12,6 +12,7 @@ import type { CallPosition, EvaluatedEffect, QuestionnaireType } from '../domain
 
 export type { CallPosition };
 import type { ExtraItem, ExtraItemsConfig } from '../domain/extra-items';
+import type { CrisisResource } from '../lib/constants';
 
 export type UseCaseResult<T, E = unknown> =
   | { readonly ok: true; readonly value: T }
@@ -304,3 +305,11 @@ export interface EvaluatePatientResult {
   readonly storedEffectsCount: number;
   readonly newEffects: readonly EvaluatedEffect[];
 }
+
+export interface SubmitCrisisButtonResult {
+  readonly saved: boolean;
+  readonly showCrisisPath: true;
+  readonly crisisResources: readonly CrisisResource[];
+  readonly roundNumber: number;
+}
+

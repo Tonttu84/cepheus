@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { PatientActor } from "@/domain/access";
 import { containsRawMediaFields } from "@/domain/arduino";
-import { getOpenRound } from "@/domain/rounds";
 import {
   defaultResolveDevicePatient,
   failureOf,
@@ -25,6 +24,7 @@ import {
   verifySameOrigin,
 } from "@/server/security";
 import {
+  submitCrisisButton,
   submitNotToday,
   submitPhq9Answer,
   submitTaps,
@@ -132,29 +132,29 @@ async function readBedsideBody(
   return { ok: true, raw, body: parsed.data };
 }
 
-async function resolveBedsideCrisisRound(ports: Ports, patientId: string): Promise<number> {
-  const patient = await ports.patients.getPatient(patientId);
-  const openRound = patient ? getOpenRound(patient.schedule, ports.clock.now()) : null;
-  if (openRound) return openRound.number;
-  const rounds = await ports.rounds.getRounds(patientId);
-  if (rounds.length > 0) {
-    return Math.max(...rounds.map((r) => r.roundNumber));
+async function handleCrisisButton(
+  actor: PatientActor,
+  ports: Ports,
+  context: { route: string; actorKind: string }
+): Promise<NextResponse> {
+  const result = await submitCrisisButton(
+    actor,
+    { patientId: actor.patientId, time: ports.clock.now() },
+    ports
+  );
+  if (!result.ok) {
+    return failureOf(context, result.error, true);
   }
-  return 1;
-}
-
-async function handleCrisisButton(actor: PatientActor, ports: Ports): Promise<NextResponse> {
-  const roundNumber = await resolveBedsideCrisisRound(ports, actor.patientId);
-  await ports.unitOfWork.execute(async () => {
-    await ports.crisis.saveCrisisEvent({
-      patientId: actor.patientId,
-      roundNumber,
-      itemId: "crisis_button",
-      value: 1,
-      occurredAt: ports.clock.now(),
-    });
-  });
-  return respond({ ok: true, saved: true, kind: "crisis_button", roundNumber }, 200, true);
+  return respond(
+    {
+      ok: true,
+      saved: result.value.saved,
+      kind: "crisis_button",
+      roundNumber: result.value.roundNumber,
+    },
+    200,
+    true
+  );
 }
 
 async function handleTaps(
@@ -220,7 +220,7 @@ async function dispatchBedsideAction(
     itemId: data.kind === "phq9_item" ? data.itemId : undefined,
   };
   if (data.kind === "crisis_button") {
-    return handleCrisisButton(actor, ports);
+    return handleCrisisButton(actor, ports, context);
   }
   if (data.kind === "taps") {
     return handleTaps(actor, data, ports, context);
@@ -260,6 +260,8 @@ export async function POST(request: Request) {
     context,
     async () => {
       const { ports, resolveDevicePatient } = getRouteDeps();
+      // This lookup stands in for a device-to-patient table; the pairing design
+      // of the phone webhook (WebhookCredential) is the intended model.
       const patient = resolveDevicePatient
         ? await resolveDevicePatient(body.deviceId)
         : await defaultResolveDevicePatient();
