@@ -8,6 +8,7 @@ import { getCheckInState } from '../get-check-in-state';
 import { submitTaps } from '../submit-taps';
 import { submitNotToday } from '../submit-not-today';
 import { submitPhq9Answer } from '../submit-phq9-answer';
+import { submitExtraAnswer } from '../submit-extra-answer';
 
 describe('Access Decision Order across all Use Cases (Point 3)', () => {
   const patientId = 'patient-order-test';
@@ -98,6 +99,20 @@ describe('Access Decision Order across all Use Cases (Point 3)', () => {
     const otherPatient: PatientActor = { kind: 'patient', patientId: 'other', clinicId };
     const getPatientSpy = vi.spyOn(ports.patients, 'getPatient');
     const res = await getCheckInState(otherPatient, { patientId }, ports);
+    expect(res.ok).toBe(false);
+    expect(getPatientSpy).not.toHaveBeenCalled();
+  });
+
+  it('submitExtraAnswer never reads patient data when consent is off', async () => {
+    const { ports } = createFakePorts('2026-11-16T16:00:00.000Z');
+    await ports.patients.savePatient(recordConsentOff);
+
+    const getPatientSpy = vi.spyOn(ports.patients, 'getPatient');
+    const res = await submitExtraAnswer(
+      patientActor,
+      { patientId, itemId: 'extra_sleep', value: 3 },
+      ports
+    );
     expect(res.ok).toBe(false);
     expect(getPatientSpy).not.toHaveBeenCalled();
   });

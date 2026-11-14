@@ -1,4 +1,5 @@
 import { decideAccess, type Actor, type TargetData, type Purpose } from '../domain/access';
+import { DEFAULT_EXTRA_ITEMS_CONFIG, getOfferedExtraItem } from '../domain/extra-items';
 import {
   getOpenRound,
   isPhq9Due,
@@ -145,6 +146,7 @@ export async function getCheckInState(
           isPhq9Due: false,
           phq9Progress: 'not_started',
           hasSuggestionWaiting: false,
+          extraItem: null,
         };
         return;
       }
@@ -166,6 +168,8 @@ export async function getCheckInState(
       const phq9Due = isPhq9Due(openRound.number, history);
       const phq9Progress = resolvePhq9Progress(openRound.number, phq9Due, storedPhq9s);
       const hasSuggestionWaiting = smallDips.some((d) => d.roundNumber === openRound.number);
+      const extraConfig = ports.extraItemsConfig ?? DEFAULT_EXTRA_ITEMS_CONFIG;
+      const extraItem = getOfferedExtraItem(openRound.number, extraConfig);
 
       returnValue = {
         openRound: {
@@ -178,6 +182,7 @@ export async function getCheckInState(
         isPhq9Due: phq9Due,
         phq9Progress,
         hasSuggestionWaiting,
+        extraItem,
       };
     });
   } catch (err) {
