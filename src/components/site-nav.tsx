@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { HeaderAuthControl } from "@/components/header-auth-control";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", testId: "nav-overview" },
@@ -17,7 +18,7 @@ export function SiteNav() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border-hairline bg-surface-card/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link
           href="/"
           className="group inline-flex min-h-11 items-center gap-2.5 rounded-lg text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
@@ -35,6 +36,8 @@ export function SiteNav() {
             Cepheus
           </span>
         </Link>
+
+        <HeaderAuthControl />
 
         <nav
           aria-label="Primary navigation"
