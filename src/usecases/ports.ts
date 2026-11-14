@@ -7,8 +7,8 @@ import type {
 } from '../domain/access';
 import type { ConsentState } from '../domain/consent';
 import type { Schedule, RoundStatus, Phq9Progress } from '../domain/rounds';
-import type { Phq9Answer } from '../domain/instruments';
-import type { CallPosition, EvaluatedEffect } from '../domain/history';
+import type { Phq9Answer, Gad7Answer } from '../domain/instruments';
+import type { CallPosition, EvaluatedEffect, QuestionnaireType } from '../domain/history';
 
 export type UseCaseResult<T, E = unknown> =
   | { readonly ok: true; readonly value: T }
@@ -23,12 +23,14 @@ export interface PatientRecord {
   readonly clinicId: string;
   readonly schedule: Schedule;
   readonly consent: ConsentState;
+  readonly questionnaires?: readonly QuestionnaireType[];
 }
 
 export interface PatientAccessSwitches {
   readonly patientId: string;
   readonly clinicId: string;
   readonly consent: ConsentState;
+  readonly questionnaires?: readonly QuestionnaireType[];
 }
 
 export interface PatientRepository {
@@ -84,11 +86,25 @@ export interface CallRepository {
 
 export interface StoredWarning {
   readonly patientId: string;
-  readonly kind: 'low_answers' | 'silence' | 'mixed' | 'phq9';
+  readonly kind: 'low_answers' | 'silence' | 'mixed' | 'phq9' | 'gad7';
   readonly since: string;
   readonly version: number;
   readonly causedBy: EvaluatedEffect['causedBy'];
   readonly raisedAt: string;
+}
+
+export interface StoredGad7 {
+  readonly patientId: string;
+  readonly roundNumber: number;
+  readonly answers: readonly Gad7Answer[];
+  readonly total?: number | null;
+  readonly completedAt?: string | null;
+  readonly date?: string | null;
+}
+
+export interface Gad7Repository {
+  getGad7s(patientId: string): Promise<readonly StoredGad7[]>;
+  saveGad7(assessment: StoredGad7): Promise<void>;
 }
 
 export interface WarningRepository {
@@ -164,6 +180,7 @@ export interface Ports {
   readonly patients: PatientRepository;
   readonly rounds: RoundRepository;
   readonly phq9: Phq9Repository;
+  readonly gad7?: Gad7Repository;
   readonly calls: CallRepository;
   readonly warnings: WarningRepository;
   readonly smallDips: SmallDipRepository;

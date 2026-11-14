@@ -10,6 +10,7 @@ import type {
   EvaluatedRound,
   HistoryCall,
   HistoryPhq9,
+  HistoryGad7,
   HistoryRound,
   TapBaselineSummary,
   WarningCurrentState,
@@ -24,6 +25,7 @@ interface TaggedEvent {
   cause:
     | { readonly type: 'round'; readonly roundNumber: number; readonly date: string }
     | { readonly type: 'phq9'; readonly date: string; readonly total: number }
+    | { readonly type: 'gad7'; readonly date: string; readonly total: number }
     | null;
 }
 
@@ -74,7 +76,9 @@ function getCallSubOrder(position: 'before' | 'after' | undefined): number {
 function buildTaggedEvents(
   rounds: readonly EvaluatedRound[],
   phq9s: readonly HistoryPhq9[],
-  calls: readonly HistoryCall[]
+  calls: readonly HistoryCall[],
+  gad7s: readonly HistoryGad7[] = [],
+  isGad7On = false
 ): TaggedEvent[] {
   const list: TaggedEvent[] = [];
 
@@ -82,7 +86,7 @@ function buildTaggedEvents(
     const r = rounds[i];
     list.push({
       date: r.localDate,
-      subOrder: 1, // Round closes after before-calls and before PHQ-9
+      subOrder: 1, // Round closes after before-calls and before questionnaires
       index: i,
       event: { type: 'round_closed', kind: r.kind, date: r.localDate },
       cause: { type: 'round', roundNumber: r.roundNumber, date: r.localDate },
@@ -98,6 +102,19 @@ function buildTaggedEvents(
       event: { type: 'phq9_completed', total: p.total, date: p.date },
       cause: { type: 'phq9', date: p.date, total: p.total },
     });
+  }
+
+  if (isGad7On) {
+    for (let i = 0; i < gad7s.length; i++) {
+      const g = gad7s[i];
+      list.push({
+        date: g.date,
+        subOrder: 2, // GAD-7 completes after round closes
+        index: i,
+        event: { type: 'gad7_completed', total: g.total, date: g.date },
+        cause: { type: 'gad7', date: g.date, total: g.total },
+      });
+    }
   }
 
   for (let i = 0; i < calls.length; i++) {
@@ -141,6 +158,7 @@ function mapEffects(
     const cause = taggedEvents[index]?.cause;
     const isRound = cause?.type === 'round';
     const isPhq9 = cause?.type === 'phq9';
+    const isGad7 = cause?.type === 'gad7';
 
     return {
       effect,
@@ -150,6 +168,7 @@ function mapEffects(
       causedBy: cause ?? { type: 'round', roundNumber: 0, date: '' },
       ...(isRound ? { roundNumber: cause.roundNumber, roundDate: cause.date } : {}),
       ...(isPhq9 ? { phq9Date: cause.date, phq9Total: cause.total } : {}),
+      ...(isGad7 ? { gad7Date: cause.date, gad7Total: cause.total } : {}),
     };
   });
 }
@@ -193,7 +212,14 @@ export function evaluateHistory(
   if (!roundsRes.ok) return roundsRes;
   const evaluatedRounds = roundsRes.value;
 
-  const taggedEvents = buildTaggedEvents(evaluatedRounds, history.phq9s ?? [], history.calls ?? []);
+  const isGad7On = Array.isArray(history.questionnaires) && history.questionnaires.includes('gad7');
+  const taggedEvents = buildTaggedEvents(
+    evaluatedRounds,
+    history.phq9s ?? [],
+    history.calls ?? [],
+    history.gad7s ?? [],
+    isGad7On
+  );
   const rawEvents = taggedEvents.map((t) => t.event);
 
   const foldRes = foldWarningEvents(rawEvents, config);

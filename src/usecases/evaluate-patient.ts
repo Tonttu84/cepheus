@@ -4,6 +4,7 @@ import {
   type EvaluatedEffect,
   type HistoryCall,
   type HistoryPhq9,
+  type HistoryGad7,
   type HistoryRound,
   type PatientHistory,
 } from '../domain/history';
@@ -51,6 +52,9 @@ function isEffectStored(
       return c1.roundNumber === c2.roundNumber && c1.date === c2.date;
     }
     if (c1.type === 'phq9' && c2.type === 'phq9') {
+      return c1.date === c2.date;
+    }
+    if (c1.type === 'gad7' && c2.type === 'gad7') {
       return c1.date === c2.date;
     }
     return false;
@@ -223,10 +227,11 @@ export async function evaluatePatient(
         throw new Error('Patient not found');
       }
 
-      const [storedRounds, storedPhq9s, storedCalls, warnings, smallDips, notices] =
+      const [storedRounds, storedPhq9s, storedGad7s, storedCalls, warnings, smallDips, notices] =
         await Promise.all([
           ports.rounds.getRounds(patient.patientId),
           ports.phq9.getPhq9s(patient.patientId),
+          ports.gad7 ? ports.gad7.getGad7s(patient.patientId) : Promise.resolve([]),
           ports.calls.getCalls(patient.patientId),
           ports.warnings.getWarnings(patient.patientId),
           ports.smallDips.getSmallDips(patient.patientId),
@@ -237,12 +242,21 @@ export async function evaluatePatient(
       const phq9s: HistoryPhq9[] = storedPhq9s
         .filter((p) => p.progress === 'completed' && p.date && typeof p.total === 'number')
         .map((p) => ({ date: p.date!, total: p.total! }));
+      const gad7s: HistoryGad7[] = storedGad7s
+        .filter((g) => g.date && typeof g.total === 'number')
+        .map((g) => ({ date: g.date!, total: g.total! }));
       const calls: HistoryCall[] = storedCalls.map((c) => ({
         date: c.date,
         ...(c.position ? { position: c.position } : {}),
       }));
 
-      const history: PatientHistory = { rounds, phq9s, calls };
+      const history: PatientHistory = {
+        rounds,
+        phq9s,
+        gad7s,
+        calls,
+        ...(patient.questionnaires ? { questionnaires: patient.questionnaires } : {}),
+      };
       const evalResult = evaluateHistory(history);
       if (!evalResult.ok) {
         throw new Error(`Rule evaluation failed: ${evalResult.error}`);
