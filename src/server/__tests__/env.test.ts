@@ -171,4 +171,34 @@ describe("Environment Check (src/server/env.ts)", () => {
       _resetEnv();
     }
   });
+
+  it("validates optional Verda URL and API key rules in production without leaking secrets", () => {
+    const baseProd = {
+      NODE_ENV: "production",
+      DATABASE_URL:
+        "postgresql://cloud_user:strong_prod_pass_999@helsinki.db:5432/cepheus_prod",
+    };
+
+    expect(() =>
+      parseEnv({
+        ...baseProd,
+        VERDA_INFERENCE_URL: "ftp://invalid.verda.example",
+      })
+    ).toThrowError(/VERDA_INFERENCE_URL/);
+
+    expect(() =>
+      parseEnv({
+        ...baseProd,
+        VERDA_INFERENCE_URL: "https://inference.verda.example/v1/chat/completions",
+        VERDA_API_KEY: "",
+      })
+    ).toThrowError(/VERDA_API_KEY/);
+
+    const ok = parseEnv({
+      ...baseProd,
+      VERDA_INFERENCE_URL: "https://inference.verda.example/v1/chat/completions",
+      VERDA_API_KEY: "verda-prod-secret",
+    });
+    expect(ok.VERDA_GEMMA_MODEL).toBe("google/gemma-3-27b-it");
+  });
 });
