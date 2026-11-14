@@ -40,15 +40,20 @@ check-in API. The check-in, patient and clinic pages still show generated data.
 | 59 | Added task P1.4 to this file | Merged; P1.4 is package M below |
 | 60 | Monitoring, Fitbit and the Health Connect pairing bound to the signed-in patient | Reviewed (findings on the trail). Contains trail 55 and fixes its two serious findings; two gaps in the Fitbit link are being fixed on its branch. It also covers the Fitbit part of package H, which H therefore leaves out |
 
-## Who owns which area
+## Who knows which area
 
 Most conflicts on 14 and 15 Nov came from two people changing the same area at the
-same time. Until the demo, each area has one owner, named here by the trails they
-wrote (no names in files). A change inside your own area needs no one's leave. A
-change in someone else's area goes through them: a request in `docs/requests.md`, or
-a finding on their open trail. A small fix they are told about is fine.
+same time without knowing of each other. The work is done by agents and anyone may
+change anything, so this table is not about permission: it says who knows each area
+best, named by the trails they wrote (no names in files). Before changing an area,
+check their open trails and build on them; after changing it, tell them with a
+request in `docs/requests.md` or a finding on their trail.
 
-| Area | Paths | Owner |
+Merging: `main` takes one merge at a time. Branches that are waiting may be combined
+with each other first, whoever wrote them, so conflicts are solved once; say on each
+trail what was combined.
+
+| Area | Paths | Knows it best |
 | --- | --- | --- |
 | Devices and home monitoring | `hardware/uno-q/`, `src/app/api/arduino/`, `src/app/api/fitbit/`, `src/app/api/webhooks/`, `src/app/api/monitoring/`, `src/server/monitoring/`, `src/server/fitbit/`, `src/domain/health-connect/`, `src/app/monitoring/`, `src/components/monitoring/` | Author of trails 55, 56 and 60 |
 | Sign-in, session and the page shell | `src/server/auth/`, `src/app/api/auth/`, `src/app/sign-in/`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/components/site-nav.tsx`, `src/components/header-auth-control.tsx`, `src/components/auth-*.tsx` | Author of trail 57 |
