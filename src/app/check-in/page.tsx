@@ -29,7 +29,7 @@ export default function CheckInPage() {
           Twice-weekly wellbeing check-in
         </h1>
         <p className="mt-2.5 max-w-3xl text-sm leading-relaxed text-ink-secondary">
-          You can answer four quick 1 to 5 tap questions twice a week, or tap{" "}
+          You can answer two quick 0 to 4 tap questions twice a week, or tap{" "}
           <strong className="font-semibold text-ink-primary">
             &ldquo;Not today&rdquo;
           </strong>{" "}

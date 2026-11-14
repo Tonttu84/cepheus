@@ -1,31 +1,22 @@
 // ============================================================================
-// Cepheus — Unified Prisma Schema (SQLite)
+// Cepheus — Unified Prisma Schema (PostgreSQL, Step 2: aligned with decisions)
 // ============================================================================
-// Shared data contract across all workstreams:
-//   1. Foundation & Open-Dataset Seeding
-//   2. Twice-Weekly Check-In & Fortnightly PHQ-9 + Crisis Path
-//   3. Wearable Circadian Rhythm & Baseline Z-Score Maths
-//   4. On-Device MediaPipe Camera Expressivity Check & Optional Signals
-//   5. Patient & Clinic Views, Low-Effort Suggestions & Nurse Call Loop
-//
 // Core Repository Rules enforced by this schema:
-//   - No real patient data or names: `Participant.label` is anonymous and
-//     `isSimulated` / `source` explicitly mark simulated or open-dataset records
-//     so every UI screen can label simulated data clearly.
-//   - Never store raw video frames or audio recordings: `CameraReading` and
-//     `SpeechReading` persist only on-device derived numerical summaries.
-//   - Never store raw bank transactions or continuous home sensor traces:
-//     `RoutineSignalReading` holds only coarse period aggregates.
-//   - Missed answers are never punished or scored as zero: `CheckInRound` and
-//     `Phq9Assessment` record `status = "missed"` or `"not_today"` with nullable
-//     item scores, never coercing a missed check-in to 0.
-//   - Anything asking about mood or self-harm exposes an immediate crisis path:
-//     `selfHarmTriggered` and `crisisPathShown` are tracked without automated
-//     triage gates in between.
-//   - Clinic flags (`ClinicFlag`) expose only broad life areas (`check_in`,
-//     `sleep`, `daily_routine`, `activity_outside_home`, `financial_routine`)
-//     and `sinceDate`, never raw sensor numbers or diagnostic relapse labels,
-//     unless the participant explicitly opts to share details.
+//   - Pseudonymous patients (`Participant.participantCode` / `externalId`),
+//     no patient names, emails, phone numbers, DOBs, or national IDs.
+//     Clinic staff accounts (`StaffUser`) are the only named accounts.
+//   - No free text stored anywhere in this build (`freeTextNote` and
+//     `summaryNote` removed).
+//   - Twice-weekly check-in uses 2 taps (moodScore, interestScore: 0..4);
+//     missed or "not_today" rounds keep null scores, never coerced to 0.
+//   - PHQ-9 tracks roundNumber & in_progress state; self-harm item > 0
+//     produces a `CrisisEvent` row separate from `ClinicFlag`.
+//   - Three consent layers (`takingPart`, per-method `MeasurementConsent`,
+//     `ruleCheckConsent`) recorded as immutable `ConsentEvent` rows.
+//   - Clinic flags (`ClinicFlag`) expose only broad life areas, `sinceDate`,
+//     triggerKind, and ruleVersion — never raw answers or sensor numbers.
+//   - Every read/write/delete decision is recorded in `AccessLog` (keyed by
+//     `patientCode`, never answers) and survives participant deletion.
 // ============================================================================
 
 generator client {
@@ -37,26 +28,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Anonymous participant profile (simulated trajectory, open dataset, or live demo user).
-/// Never store real patient names or personal identifiers here.
-model Participant {
-  id               String   @id @default(cuid())
-  externalId       String?  @unique
-  label            String   // Anonymous label, e.g. "Simulated post-TMS participant"
-  source           String   // "synthetic" | "depresjon" | "kossakowski" | "oura" | "live"
-  isSimulated      Boolean  @default(true)
-  seed             Int?
-  tmsCompletedDate String?
-  currentDemoDay   Int      @default(56)
-  group            String?
-  age              Int?
-  gender           String?
-  madrsBaseline    Int?
-  madrsEnd         Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+/// Clinic organization owning pseudonymous patients and staff accounts.
+model Clinic {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  participants          Participant[]
+  staffUsers            StaffUser[]
+  enrolmentCodes        EnrolmentCode[]
   consents              MeasurementConsent[]
+  consentEvents         ConsentEvent[]
   checkInRounds         CheckInRound[]
   phq9Assessments       Phq9Assessment[]
   ringDays              RingDay[]
@@ -70,13 +54,101 @@ model Participant {
   patientSuggestions    PatientSuggestion[]
   clinicFlags           ClinicFlag[]
   nurseCallRecords      NurseCallRecord[]
+  crisisEvents          CrisisEvent[]
 }
 
-/// Per-method consent and plain-language transparency about what is recorded.
+/// Named clinic staff account (nurse or admin). The only named people in the DB.
+model StaffUser {
+  id               String   @id @default(cuid())
+  clinicId         String
+  clinic           Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  email            String   @unique
+  name             String
+  role             String   @default("nurse") // "nurse" | "admin"
+  twoFactorEnabled Boolean  @default(false)
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  nurseCalls               NurseCallRecord[]
+  acknowledgedCrisisEvents CrisisEvent[]
+
+  @@index([clinicId])
+}
+
+/// Pseudonymous participant profile (simulated trajectory, open dataset, or live patient).
+/// Never store real patient names, phone numbers, emails, DOBs, or national IDs here.
+model Participant {
+  id               String   @id @default(cuid())
+  clinicId         String?
+  clinic           Clinic?  @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  externalId       String?  @unique
+  participantCode  String?  @unique
+  label            String   // Anonymous label, e.g. "Simulated post-TMS participant"
+  source           String   // "synthetic" | "depresjon" | "kossakowski" | "oura" | "live"
+  isSimulated      Boolean  @default(true)
+  seed             Int?
+  enrolmentDate    String?  // "YYYY-MM-DD"
+  scheduleDaysJson String?  // JSON tuple of 2 ISO weekdays, e.g. "[1,4]"
+  scheduleTime     String?  // "HH:MM"
+  timeZone         String   @default("Europe/Helsinki")
+  takingPart       Boolean  @default(false)
+  ruleCheckConsent Boolean  @default(false)
+  tmsCompletedDate String?
+  currentDemoDay   Int      @default(56)
+  // Study-only fields for open datasets or synthetic trajectories; always null for live patients:
+  group            String?
+  age              Int?
+  gender           String?
+  madrsBaseline    Int?
+  madrsEnd         Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  enrolmentCodes        EnrolmentCode[]
+  consents              MeasurementConsent[]
+  consentEvents         ConsentEvent[]
+  checkInRounds         CheckInRound[]
+  phq9Assessments       Phq9Assessment[]
+  ringDays              RingDay[]
+  activitySamples       ActivitySample[]
+  rhythmWindows         RhythmWindow[]
+  cameraReadings        CameraReading[]
+  speechReadings        SpeechReading[]
+  cognitiveGameReadings CognitiveGameReading[]
+  routineSignalReadings RoutineSignalReading[]
+  personalBaselines     PersonalBaseline[]
+  patientSuggestions    PatientSuggestion[]
+  clinicFlags           ClinicFlag[]
+  nurseCallRecords      NurseCallRecord[]
+  crisisEvents          CrisisEvent[]
+
+  @@index([clinicId])
+}
+
+/// One-time clinic-issued code (stored as SHA-256 hash) to sign a patient's phone in.
+model EnrolmentCode {
+  id            String       @id @default(cuid())
+  clinicId      String
+  clinic        Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  codeHash      String       @unique
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([clinicId])
+  @@index([participantId])
+}
+
+/// Per-method consent state and plain-language transparency about what is recorded.
 model MeasurementConsent {
   id                  String      @id @default(cuid())
   participantId       String
   participant         Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId            String?
+  clinic              Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   method              String      // "check_in" | "phq9" | "ring_rhythm" | "camera_expressivity" | "speech_rate" | "ambiguous_faces" | "home_routine" | "financial_routine"
   broadArea           String      // "check_in" | "sleep" | "daily_routine" | "activity_outside_home" | "financial_routine"
   recordedDescription String
@@ -87,31 +159,45 @@ model MeasurementConsent {
   updatedAt           DateTime    @updatedAt
 
   @@unique([participantId, method])
+  @@index([clinicId])
 }
 
-/// Twice-weekly short wellbeing check-in round.
+/// Append-only record of every consent change across the three layers (taking_part, method, rule_check).
+model ConsentEvent {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId      String?
+  clinic        Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  layer         String      // "taking_part" | "method" | "rule_check"
+  method        String?     // Present when layer === "method"
+  enabled       Boolean
+  noticeVersion String      @default("v1")
+  recordedAt    DateTime    @default(now())
+
+  @@index([participantId, recordedAt])
+  @@index([clinicId])
+}
+
+/// Twice-weekly short wellbeing check-in round (two taps: moodScore and interestScore, 0..4).
 /// Missed answers are recorded as status = "missed" or "not_today" and never scored as 0.
 model CheckInRound {
   id                String      @id @default(cuid())
   participantId     String
   participant       Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId          String?
+  clinic            Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   scheduledAt       DateTime
   respondedAt       DateTime?
+  reminderSentAt    DateTime?
   date              String      // "YYYY-MM-DD"
   dayIndex          Int
   weekNumber        Int
   roundNumber       Int
   status            String      // "completed" | "not_today" | "missed"
-  moodScore         Float?      // 1..5
-  interestScore     Float?      // 1..5
-  energyScore       Float?      // 1..5
-  ruminationScore   Float?      // 1..5
-  compositeScore    Float?      // 1..5 (higher = better wellbeing)
-  singleItemScore   Float?      // 1..5 low-effort fallback
+  moodScore         Int?        // 0..4 ("very low" .. "very good")
+  interestScore     Int?        // 0..4 ("not at all" .. "very much")
   itemOrderJson     String?
-  freeTextNote      String?
-  selfHarmTriggered Boolean     @default(false)
-  crisisPathShown   Boolean     @default(false)
   responseLatencyMs Int?
   ringActiveAtRound Boolean?
   isSimulated       Boolean     @default(false)
@@ -120,37 +206,82 @@ model CheckInRound {
 
   @@unique([participantId, roundNumber])
   @@index([participantId, date])
+  @@index([clinicId])
 }
 
 /// Fortnightly PHQ-9 assessment (9 items rated 0..3).
-/// Any item9SelfHarm > 0 immediately surfaces the crisis path.
+/// Supports "in_progress" across rounds; any item9SelfHarm > 0 creates a CrisisEvent immediately.
 model Phq9Assessment {
-  id                 String      @id @default(cuid())
-  participantId      String
-  participant        Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
-  scheduledAt        DateTime
-  completedAt        DateTime?
-  date               String      // "YYYY-MM-DD"
-  dayIndex           Int
-  weekNumber         Int
-  status             String      // "completed" | "in_progress" | "missed"
-  totalScore         Int?        // 0..27
-  item1Interest      Int?
-  item2Mood          Int?
-  item3Sleep         Int?
-  item4Energy        Int?
-  item5Appetite      Int?
-  item6SelfWorth     Int?
-  item7Concentration Int?
-  item8Psychomotor   Int?
-  item9SelfHarm      Int?
-  crisisPathShown    Boolean     @default(false)
-  baselineDelta      Int?
-  isSimulated        Boolean     @default(false)
-  source             String      @default("live")
-  createdAt          DateTime    @default(now())
+  id                     String      @id @default(cuid())
+  participantId          String
+  participant            Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId               String?
+  clinic                 Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  scheduledAt            DateTime
+  completedAt            DateTime?
+  date                   String      // "YYYY-MM-DD"
+  dayIndex               Int
+  weekNumber             Int
+  roundNumber            Int
+  completedInRoundNumber Int?
+  status                 String      // "completed" | "in_progress" | "missed"
+  totalScore             Int?        // 0..27
+  item1Interest          Int?
+  item2Mood              Int?
+  item3Sleep             Int?
+  item4Energy            Int?
+  item5Appetite          Int?
+  item6SelfWorth         Int?
+  item7Concentration     Int?
+  item8Psychomotor       Int?
+  item9SelfHarm          Int?
+  baselineDelta          Int?
+  isSimulated            Boolean     @default(false)
+  source                 String      @default("live")
+  createdAt              DateTime    @default(now())
 
+  @@unique([participantId, roundNumber])
   @@index([participantId, date])
+  @@index([clinicId])
+}
+
+/// Urgent crisis event generated immediately when PHQ-9 item 9 > 0 (separate from ClinicFlag).
+model CrisisEvent {
+  id                    String      @id @default(cuid())
+  participantId         String
+  participant           Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId              String?
+  clinic                Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  roundNumber           Int
+  itemId                String      @default("item9SelfHarm")
+  value                 Int
+  occurredAt            DateTime    @default(now())
+  acknowledgedAt        DateTime?
+  acknowledgedByStaffId String?
+  acknowledgedByStaff   StaffUser?  @relation(fields: [acknowledgedByStaffId], references: [id], onDelete: SetNull)
+  isSimulated           Boolean     @default(false)
+
+  @@unique([participantId, roundNumber])
+  @@index([clinicId, acknowledgedAt])
+}
+
+/// Immutable audit entry for access checks. Keyed by pseudonymous `patientCode` (no answers)
+/// so logs remain intact when a participant requests data deletion.
+model AccessLog {
+  id          String   @id @default(cuid())
+  clinicId    String?
+  actorKind   String   // "patient" | "staff" | "system"
+  actorId     String?
+  patientCode String?
+  action      String   // "read" | "write" | "delete"
+  targetKind  String
+  purpose     String
+  allowed     Boolean
+  reason      String
+  timestamp   DateTime @default(now())
+
+  @@index([clinicId, timestamp])
+  @@index([patientCode, timestamp])
 }
 
 /// Daily smart-ring summary plus compact 24h hourly array and 1440-min sleep/wake string
@@ -159,6 +290,8 @@ model RingDay {
   id                    String      @id @default(cuid())
   participantId         String
   participant           Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId              String?
+  clinic                Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   date                  String      // "YYYY-MM-DD"
   dayIndex              Int
   ringActive            Boolean     @default(true)
@@ -191,6 +324,7 @@ model RingDay {
 
   @@unique([participantId, date])
   @@index([participantId, dayIndex])
+  @@index([clinicId])
 }
 
 /// Optional fine-grained per-minute or 5-minute actigraphy rows for open datasets (e.g. Depresjon CSV).
@@ -198,6 +332,8 @@ model ActivitySample {
   id            String      @id @default(cuid())
   participantId String
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId      String?
+  clinic        Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   timestamp     DateTime
   date          String
   resolutionSec Int         @default(60)
@@ -208,6 +344,7 @@ model ActivitySample {
 
   @@index([participantId, timestamp])
   @@index([participantId, date])
+  @@index([clinicId])
 }
 
 /// Rolling 7- or 14-day circadian and sleep regularity metrics compared against personal baseline.
@@ -215,6 +352,8 @@ model RhythmWindow {
   id                    String      @id @default(cuid())
   participantId         String
   participant           Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId              String?
+  clinic                Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   windowEndDate         String
   dayIndex              Int
   windowDays            Int         @default(7)
@@ -234,6 +373,7 @@ model RhythmWindow {
   isSimulated           Boolean     @default(false)
 
   @@unique([participantId, windowEndDate, windowDays])
+  @@index([clinicId])
 }
 
 /// On-device MediaPipe facial expressivity & head-kinematics reading.
@@ -242,6 +382,8 @@ model CameraReading {
   id                   String      @id @default(cuid())
   participantId        String
   participant          Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId             String?
+  clinic               Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   recordedAt           DateTime    @default(now())
   date                 String      // "YYYY-MM-DD"
   dayIndex             Int?
@@ -272,6 +414,7 @@ model CameraReading {
   source               String      @default("live")
 
   @@index([participantId, date])
+  @@index([clinicId])
 }
 
 /// Optional 30s scripted read-aloud timing & pause summary.
@@ -280,6 +423,8 @@ model SpeechReading {
   id                        String      @id @default(cuid())
   participantId             String
   participant               Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId                  String?
+  clinic                    Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   recordedAt                DateTime    @default(now())
   date                      String
   dayIndex                  Int?
@@ -299,6 +444,7 @@ model SpeechReading {
   source                    String      @default("live")
 
   @@index([participantId, date])
+  @@index([clinicId])
 }
 
 /// Optional weekly ambiguous-faces / scenarios rating game summary.
@@ -306,6 +452,8 @@ model CognitiveGameReading {
   id                      String      @id @default(cuid())
   participantId           String
   participant             Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId                String?
+  clinic                  Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   recordedAt              DateTime    @default(now())
   date                    String
   dayIndex                Int?
@@ -321,6 +469,7 @@ model CognitiveGameReading {
   source                  String      @default("live")
 
   @@index([participantId, date])
+  @@index([clinicId])
 }
 
 /// Optional derived home or financial routine counts — never raw transactions or sensor traces.
@@ -328,6 +477,8 @@ model RoutineSignalReading {
   id              String      @id @default(cuid())
   participantId   String
   participant     Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId        String?
+  clinic          Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   periodStartDate String
   periodEndDate   String
   dayIndex        Int?
@@ -340,6 +491,7 @@ model RoutineSignalReading {
   source          String      @default("synthetic")
 
   @@index([participantId, channel, periodEndDate])
+  @@index([clinicId])
 }
 
 /// Per-participant personal baseline statistics anchored on initial well weeks post-TMS.
@@ -347,6 +499,8 @@ model PersonalBaseline {
   id              String      @id @default(cuid())
   participantId   String
   participant     Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId        String?
+  clinic          Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   metricName      String
   windowStartDate String
   windowEndDate   String
@@ -358,13 +512,16 @@ model PersonalBaseline {
   updatedAt       DateTime    @updatedAt
 
   @@unique([participantId, metricName])
+  @@index([clinicId])
 }
 
-/// One-button low-effort state-shifter suggestion for small dips, with pre/post verification fields.
+/// One-button low-effort state-shifter suggestion for small dips (no follow-up mood questions).
 model PatientSuggestion {
   id               String      @id @default(cuid())
   participantId    String
   participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId         String?
+  clinic           Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   createdAt        DateTime    @default(now())
   date             String
   dayIndex         Int?
@@ -376,23 +533,25 @@ model PatientSuggestion {
   status           String      @default("shown") // "shown" | "accepted" | "completed" | "skipped"
   respondedAt      DateTime?
   armType          String      @default("intervention")
-  preMoodScore     Float?
-  postMoodScore    Float?
   nextCheckInDelta Float?
   isSimulated      Boolean     @default(false)
 
   @@index([participantId, date])
+  @@index([clinicId])
 }
 
-/// Clinic-side flag naming only broad area(s) and since when — never raw sensor numbers or diagnostic labels.
+/// Clinic-side flag naming only broad area(s), triggerKind, ruleVersion, and sinceDate — never answers or raw sensors.
 model ClinicFlag {
   id                      String            @id @default(cuid())
   participantId           String
   participant             Participant       @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId                String?
+  clinic                  Clinic?           @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   createdAt               DateTime          @default(now())
   sinceDate               String            // "YYYY-MM-DD"
   dayIndex                Int?
-  triggerKind             String            // "sustained_dip" | "silence" | "crisis_self_harm"
+  triggerKind             String            // "low_answers" | "silence" | "mixed" | "phq9" | "sustained_dip"
+  ruleVersion             Int               @default(1)
   primaryArea             String            // "check_in" | "sleep" | "daily_routine" | "activity_outside_home" | "financial_routine"
   broadAreasJson          String            // JSON array of broad area keys
   status                  String            @default("open") // "open" | "nurse_call_requested" | "booster_offered" | "watching" | "resolved"
@@ -403,15 +562,20 @@ model ClinicFlag {
   nurseCalls              NurseCallRecord[]
 
   @@index([participantId, status])
+  @@index([clinicId, status])
 }
 
-/// Nurse call outreach record and post-warning clinical action outcome for verification.
+/// Nurse call outreach record and post-warning clinical action outcome (no free-text notes).
 model NurseCallRecord {
   id                     String      @id @default(cuid())
   flagId                 String?
   flag                   ClinicFlag? @relation(fields: [flagId], references: [id], onDelete: SetNull)
   participantId          String
   participant            Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  clinicId               String?
+  clinic                 Clinic?     @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  staffUserId            String?
+  staffUser              StaffUser?  @relation(fields: [staffUserId], references: [id], onDelete: SetNull)
   requestedAt            DateTime    @default(now())
   completedAt            DateTime?
   status                 String      @default("requested") // "requested" | "completed" | "unreachable"
@@ -420,8 +584,9 @@ model NurseCallRecord {
   medicationChecked      Boolean     @default(false)
   watchNextRounds        Int         @default(0)
   boosterSessionsPlanned Int?
-  summaryNote            String?
   isSimulated            Boolean     @default(false)
 
   @@index([participantId, requestedAt])
+  @@index([clinicId])
+  @@index([staffUserId])
 }

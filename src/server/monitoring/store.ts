@@ -202,10 +202,20 @@ function assertDomainAccess(params: {
  * consent rows exist in PostgreSQL. Never stores real names or PII.
  */
 export async function ensureHomeDemoParticipant(prisma: PrismaClient = getPrisma()) {
+  const clinic = await prisma.clinic.upsert({
+    where: { code: DEMO_CLINIC_ID },
+    update: {},
+    create: {
+      code: DEMO_CLINIC_ID,
+      name: "Demo Home Clinic",
+    },
+  });
+
   const participant = await prisma.participant.upsert({
     where: { externalId: HOME_DEMO_EXTERNAL_ID },
     update: {},
     create: {
+      clinicId: clinic.id,
       externalId: HOME_DEMO_EXTERNAL_ID,
       label: "Home Demo Node (Arduino UNO Q & Wearable)",
       source: "live",
@@ -225,6 +235,7 @@ export async function ensureHomeDemoParticipant(prisma: PrismaClient = getPrisma
       update: {},
       create: {
         participantId: participant.id,
+        clinicId: clinic.id,
         method: methodKey,
         broadArea: meta?.broadArea ?? "daily_routine",
         recordedDescription:

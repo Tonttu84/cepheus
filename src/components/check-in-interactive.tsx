@@ -40,13 +40,13 @@ function ScaleButtons({
         aria-labelledby={promptId}
         className="mt-3.5 flex flex-wrap items-center gap-2.5"
       >
-        {[1, 2, 3, 4, 5].map((choice) => {
+        {[0, 1, 2, 3, 4].map((choice) => {
           const isChosen = !skippedToday && selected === choice;
           return (
             <button
               key={choice}
               type="button"
-              aria-label={`${itemLabel}: ${choice} of 5`}
+              aria-label={`${itemLabel}: ${choice} of 4`}
               aria-pressed={isChosen}
               onClick={() => onSelect(choice)}
               className={`tabular-nums inline-flex h-11 w-11 items-center justify-center rounded-xl border text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
@@ -61,8 +61,8 @@ function ScaleButtons({
         })}
       </div>
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted">
-        <span>1 = {lowAnchor}</span>
-        <span>5 = {highAnchor}</span>
+        <span>0 = {lowAnchor}</span>
+        <span>4 = {highAnchor}</span>
       </div>
     </div>
   );
@@ -135,14 +135,14 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h2 className="font-display text-xl font-semibold text-ink-primary">
-              Twice-weekly check-in prompts (4 quick taps)
+              Twice-weekly check-in prompts (2 quick taps)
             </h2>
             <span className="tabular-nums rounded-full border border-accent-sage-border bg-accent-sage-soft px-2.5 py-0.5 text-xs font-medium text-accent-sage-hover">
               {answeredCount} of {items.length} answered
             </span>
           </div>
           <p className="mt-1 max-w-2xl text-sm text-ink-secondary">
-            If four questions feel like too much today, tap &ldquo;Not
+            If two questions feel like too much today, tap &ldquo;Not
             today&rdquo;.
           </p>
         </div>

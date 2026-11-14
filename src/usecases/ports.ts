@@ -9,6 +9,7 @@ import type { ConsentState } from '../domain/consent';
 import type { Schedule, RoundStatus, Phq9Progress } from '../domain/rounds';
 import type { Phq9Answer, Gad7Answer } from '../domain/instruments';
 import type { CallPosition, EvaluatedEffect, QuestionnaireType } from '../domain/history';
+import type { ExtraItem, ExtraItemsConfig } from '../domain/extra-items';
 
 export type UseCaseResult<T, E = unknown> =
   | { readonly ok: true; readonly value: T }
@@ -167,6 +168,20 @@ export interface AccessLogRepository {
   getLogs(patientId?: string): Promise<readonly StoredAccessLogEntry[]>;
 }
 
+export interface StoredExtraAnswer {
+  readonly patientId: string;
+  readonly roundNumber: number;
+  readonly itemId: string;
+  readonly value: number;
+  readonly answeredAt: string;
+}
+
+export interface ExtraAnswerRepository {
+  getExtraAnswers(patientId: string): Promise<readonly StoredExtraAnswer[]>;
+  getExtraAnswer(patientId: string, roundNumber: number): Promise<StoredExtraAnswer | null>;
+  saveExtraAnswer(answer: StoredExtraAnswer): Promise<void>;
+}
+
 /**
  * The real implementation must give a use case a consistent view for one patient 
  * (for example by locking that patient's row), so two requests for one patient cannot interleave.
@@ -187,6 +202,8 @@ export interface Ports {
   readonly crisis: CrisisRepository;
   readonly baselineNotWell: BaselineNotWellRepository;
   readonly accessLog: AccessLogRepository;
+  readonly extraAnswers: ExtraAnswerRepository;
+  readonly extraItemsConfig?: ExtraItemsConfig;
   readonly unitOfWork: UnitOfWork;
 }
 
@@ -203,10 +220,15 @@ export interface CheckInState {
   readonly isPhq9Due: boolean;
   readonly phq9Progress: Phq9Progress;
   readonly hasSuggestionWaiting: boolean;
+  readonly extraItem: ExtraItem | null;
 }
 
 export interface SubmitTapsResult {
   readonly ruleRunNeeded: boolean;
+}
+
+export interface SubmitExtraAnswerResult {
+  readonly recorded: boolean;
 }
 
 export interface SubmitNotTodayResult {

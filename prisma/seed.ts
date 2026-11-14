@@ -39,6 +39,16 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
     });
 
     const result = await prisma.$transaction(async (tx) => {
+      const clinic = await tx.clinic.upsert({
+        where: { code: "sim-clinic-01" },
+        update: { name: "Simulated TMS Clinic" },
+        create: {
+          code: "sim-clinic-01",
+          name: "Simulated TMS Clinic",
+        },
+      });
+      const clinicId = clinic.id;
+
       // Remove any existing simulated participant with this externalId (cascade cleans children)
       await tx.participant.deleteMany({
         where: { externalId: SIMULATED_PARTICIPANT_EXTERNAL_ID },
@@ -46,11 +56,19 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
 
       const participant = await tx.participant.create({
         data: {
+          clinicId,
           externalId: dataset.participant.externalId,
+          participantCode: dataset.participant.participantCode,
           label: dataset.participant.label,
           source: dataset.participant.source,
           isSimulated: dataset.participant.isSimulated,
           seed: dataset.participant.seed,
+          enrolmentDate: dataset.participant.enrolmentDate,
+          scheduleDaysJson: dataset.participant.scheduleDaysJson,
+          scheduleTime: dataset.participant.scheduleTime,
+          timeZone: dataset.participant.timeZone,
+          takingPart: dataset.participant.takingPart,
+          ruleCheckConsent: dataset.participant.ruleCheckConsent,
           tmsCompletedDate: dataset.participant.tmsCompletedDate,
           currentDemoDay: dataset.participant.currentDemoDay,
           group: dataset.participant.group,
@@ -66,6 +84,7 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
       await tx.measurementConsent.createMany({
         data: dataset.consents.map((c) => ({
           participantId,
+          clinicId,
           method: c.method,
           broadArea: c.broadArea,
           recordedDescription: c.recordedDescription,
@@ -76,9 +95,39 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
         })),
       });
 
+      await tx.consentEvent.createMany({
+        data: [
+          {
+            participantId,
+            clinicId,
+            layer: "taking_part",
+            method: null,
+            enabled: dataset.participant.takingPart,
+            noticeVersion: "v1",
+          },
+          {
+            participantId,
+            clinicId,
+            layer: "rule_check",
+            method: null,
+            enabled: dataset.participant.ruleCheckConsent,
+            noticeVersion: "v1",
+          },
+          ...dataset.consents.map((c) => ({
+            participantId,
+            clinicId,
+            layer: "method",
+            method: c.method,
+            enabled: c.enabled,
+            noticeVersion: "v1",
+          })),
+        ],
+      });
+
       await tx.ringDay.createMany({
         data: dataset.ringDays.map((d) => ({
           participantId,
+          clinicId,
           date: d.date,
           dayIndex: d.dayIndex,
           ringActive: d.ringActive,
@@ -113,8 +162,10 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
       await tx.checkInRound.createMany({
         data: dataset.checkInRounds.map((r) => ({
           participantId,
+          clinicId,
           scheduledAt: r.scheduledAt,
           respondedAt: r.respondedAt,
+          reminderSentAt: r.reminderSentAt,
           date: r.date,
           dayIndex: r.dayIndex,
           weekNumber: r.weekNumber,
@@ -122,14 +173,7 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
           status: r.status,
           moodScore: r.moodScore,
           interestScore: r.interestScore,
-          energyScore: r.energyScore,
-          ruminationScore: r.ruminationScore,
-          compositeScore: r.compositeScore,
-          singleItemScore: r.singleItemScore,
           itemOrderJson: r.itemOrderJson,
-          freeTextNote: r.freeTextNote,
-          selfHarmTriggered: r.selfHarmTriggered,
-          crisisPathShown: r.crisisPathShown,
           responseLatencyMs: r.responseLatencyMs,
           ringActiveAtRound: r.ringActiveAtRound,
           isSimulated: r.isSimulated,
@@ -140,11 +184,14 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
       await tx.phq9Assessment.createMany({
         data: dataset.phq9Assessments.map((p) => ({
           participantId,
+          clinicId,
           scheduledAt: p.scheduledAt,
           completedAt: p.completedAt,
           date: p.date,
           dayIndex: p.dayIndex,
           weekNumber: p.weekNumber,
+          roundNumber: p.roundNumber,
+          completedInRoundNumber: p.completedInRoundNumber,
           status: p.status,
           totalScore: p.totalScore,
           item1Interest: p.item1Interest,
@@ -156,7 +203,6 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
           item7Concentration: p.item7Concentration,
           item8Psychomotor: p.item8Psychomotor,
           item9SelfHarm: p.item9SelfHarm,
-          crisisPathShown: p.crisisPathShown,
           baselineDelta: p.baselineDelta,
           isSimulated: p.isSimulated,
           source: p.source,
@@ -166,6 +212,7 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
       await tx.rhythmWindow.createMany({
         data: dataset.rhythmWindows.map((w) => ({
           participantId,
+          clinicId,
           windowEndDate: w.windowEndDate,
           dayIndex: w.dayIndex,
           windowDays: w.windowDays,
@@ -189,6 +236,7 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
       await tx.cameraReading.createMany({
         data: dataset.cameraReadings.map((c) => ({
           participantId,
+          clinicId,
           recordedAt: c.recordedAt,
           date: c.date,
           dayIndex: c.dayIndex,
@@ -223,6 +271,7 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
       await tx.routineSignalReading.createMany({
         data: dataset.routineReadings.map((r) => ({
           participantId,
+          clinicId,
           periodStartDate: r.periodStartDate,
           periodEndDate: r.periodEndDate,
           dayIndex: r.dayIndex,
@@ -239,6 +288,7 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
       await tx.personalBaseline.createMany({
         data: dataset.personalBaselines.map((b) => ({
           participantId,
+          clinicId,
           metricName: b.metricName,
           windowStartDate: b.windowStartDate,
           windowEndDate: b.windowEndDate,
@@ -253,6 +303,7 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
       await tx.patientSuggestion.createMany({
         data: dataset.patientSuggestions.map((s) => ({
           participantId,
+          clinicId,
           createdAt: s.createdAt,
           date: s.date,
           dayIndex: s.dayIndex,
@@ -264,8 +315,6 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
           status: s.status,
           respondedAt: s.respondedAt,
           armType: s.armType,
-          preMoodScore: s.preMoodScore,
-          postMoodScore: s.postMoodScore,
           nextCheckInDelta: s.nextCheckInDelta,
           isSimulated: s.isSimulated,
         })),
@@ -274,10 +323,12 @@ export async function seedDatabase(client?: PrismaClient): Promise<{
       await tx.clinicFlag.createMany({
         data: dataset.clinicFlags.map((f) => ({
           participantId,
+          clinicId,
           createdAt: f.createdAt,
           sinceDate: f.sinceDate,
           dayIndex: f.dayIndex,
           triggerKind: f.triggerKind,
+          ruleVersion: f.ruleVersion,
           primaryArea: f.primaryArea,
           broadAreasJson: f.broadAreasJson,
           status: f.status,

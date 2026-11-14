@@ -97,16 +97,33 @@ function isCrisisBedsideInput(input: BedsideCheckInInput): boolean {
   return res.ok && res.value === true;
 }
 
+const PHQ9_COLUMN_BY_ID = {
+  "1": "item1Interest",
+  "2": "item2Mood",
+  "3": "item3Sleep",
+  "4": "item4Energy",
+  "5": "item5Appetite",
+  "6": "item6SelfWorth",
+  "7": "item7Concentration",
+  "8": "item8Psychomotor",
+  "9": "item9SelfHarm",
+} as const;
+
+type Phq9ItemColumn = (typeof PHQ9_COLUMN_BY_ID)[keyof typeof PHQ9_COLUMN_BY_ID];
+
+const PHQ9_COLUMNS: readonly Phq9ItemColumn[] = Object.values(PHQ9_COLUMN_BY_ID);
+
 async function upsertBedsideRound(
-  participantId: string,
+  participant: { id: string; clinicId: string | null },
   input: Extract<BedsideCheckInInput, { kind: "taps" | "not_today" }>,
   source: string,
   prisma: PrismaClient
 ): Promise<number> {
-  const roundNumber = await resolveRoundNumber(participantId, input.date, prisma);
+  const roundNumber = await resolveRoundNumber(participant.id, input.date, prisma);
   const now = new Date();
   const isTaps = input.kind === "taps";
   const data = {
+    clinicId: participant.clinicId,
     scheduledAt: now,
     respondedAt: isTaps ? now : null,
     date: input.date,
@@ -115,18 +132,96 @@ async function upsertBedsideRound(
     status: isTaps ? "completed" : "not_today",
     moodScore: isTaps ? input.mood : null,
     interestScore: isTaps ? input.interest : null,
-    selfHarmTriggered: false,
-    crisisPathShown: false,
     isSimulated: input.isSimulated,
     source,
   };
 
   await prisma.checkInRound.upsert({
-    where: { participantId_roundNumber: { participantId, roundNumber } },
+    where: { participantId_roundNumber: { participantId: participant.id, roundNumber } },
     update: data,
-    create: { participantId, roundNumber, ...data },
+    create: { participantId: participant.id, roundNumber, ...data },
   });
   return roundNumber;
+}
+
+async function upsertBedsidePhq9Item(
+  participant: { id: string; clinicId: string | null },
+  input: Extract<BedsideCheckInInput, { kind: "phq9_item" }>,
+  source: string,
+  prisma: PrismaClient
+): Promise<number> {
+  const openRoundNumber = await resolveRoundNumber(participant.id, input.date, prisma);
+  const inProgress = await prisma.phq9Assessment.findFirst({
+    where: { participantId: participant.id, status: "in_progress" },
+    orderBy: { roundNumber: "desc" },
+  });
+  const roundNumber = inProgress?.roundNumber ?? openRoundNumber;
+  const existing =
+    inProgress ??
+    (await prisma.phq9Assessment.findUnique({
+      where: { participantId_roundNumber: { participantId: participant.id, roundNumber } },
+    }));
+
+  const col = PHQ9_COLUMN_BY_ID[input.itemId as keyof typeof PHQ9_COLUMN_BY_ID];
+  if (!col) {
+    throw new Error(`Invalid PHQ-9 itemId: ${input.itemId}`);
+  }
+
+  const itemValues = Object.fromEntries(
+    PHQ9_COLUMNS.map((k) => [k, existing ? existing[k] : null])
+  ) as Record<Phq9ItemColumn, number | null>;
+  itemValues[col] = input.value;
+
+  const scores = PHQ9_COLUMNS.map((k) => itemValues[k]);
+  const isComplete = scores.every((v): v is number => typeof v === "number");
+  const totalScore = isComplete ? scores.reduce((sum, v) => sum + v, 0) : null;
+  const now = new Date();
+  const data = {
+    clinicId: participant.clinicId,
+    scheduledAt: existing?.scheduledAt ?? now,
+    completedAt: isComplete ? now : null,
+    date: input.date,
+    dayIndex: roundNumber * 3,
+    weekNumber: Math.max(1, Math.ceil(roundNumber / 2)),
+    completedInRoundNumber: isComplete ? openRoundNumber : null,
+    status: isComplete ? "completed" : "in_progress",
+    totalScore,
+    ...itemValues,
+    isSimulated: input.isSimulated,
+    source,
+  };
+
+  await prisma.phq9Assessment.upsert({
+    where: { participantId_roundNumber: { participantId: participant.id, roundNumber } },
+    update: data,
+    create: { participantId: participant.id, roundNumber, ...data },
+  });
+  return roundNumber;
+}
+
+async function recordBedsideCrisisEvent(
+  participant: { id: string; clinicId: string | null },
+  roundNumber: number,
+  input: BedsideCheckInInput,
+  prisma: PrismaClient
+): Promise<void> {
+  await prisma.crisisEvent.upsert({
+    where: {
+      participantId_roundNumber: {
+        participantId: participant.id,
+        roundNumber,
+      },
+    },
+    update: {},
+    create: {
+      participantId: participant.id,
+      clinicId: participant.clinicId,
+      roundNumber,
+      itemId: input.kind === "phq9_item" ? "item9SelfHarm" : "crisis_button",
+      value: input.kind === "phq9_item" ? input.value : 1,
+      isSimulated: input.isSimulated,
+    },
+  });
 }
 
 /**
@@ -160,23 +255,18 @@ export async function saveArduinoBedsideCheckIn(
   }
 
   const source = input.isSimulated ? "simulated_uno_q_voice" : "arduino_uno_q_voice";
-  const roundNumber =
-    input.kind === "taps" || input.kind === "not_today"
-      ? await upsertBedsideRound(participant.id, input, source, prisma)
-      : null;
+  let roundNumber: number | null = null;
+  if (input.kind === "taps" || input.kind === "not_today") {
+    roundNumber = await upsertBedsideRound(participant, input, source, prisma);
+  } else if (input.kind === "phq9_item") {
+    roundNumber = await upsertBedsidePhq9Item(participant, input, source, prisma);
+  }
 
   if (showCrisisPath) {
-    await prisma.clinicFlag.create({
-      data: {
-        participantId: participant.id,
-        sinceDate: input.date,
-        triggerKind: "crisis_self_harm",
-        primaryArea: "check_in",
-        broadAreasJson: JSON.stringify(["check_in"]),
-        status: "open",
-        isSimulated: input.isSimulated,
-      },
-    });
+    const crisisRound =
+      roundNumber ?? (await resolveRoundNumber(participant.id, input.date, prisma));
+    await recordBedsideCrisisEvent(participant, crisisRound, input, prisma);
+    roundNumber = crisisRound;
   }
 
   return {

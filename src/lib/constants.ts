@@ -107,7 +107,7 @@ export const MEASUREMENT_METHODS: MeasurementMethodDescriptor[] = [
     defaultEnabled: true,
     isPersonalSignDefault: true,
     recordedDescription:
-      "Saves your 1 to 5 tap answers twice a week, or notes that a round was skipped or missed. Missed rounds are never scored as zero.",
+      "Saves your two 0 to 4 tap answers (mood and interest) twice a week, or notes that a round was skipped or missed. Missed rounds are never scored as zero.",
   },
   {
     method: "phq9",
@@ -276,7 +276,7 @@ export const CRISIS_RESOURCES: CrisisResource[] = [
 ];
 
 export interface CheckInItemDescriptor {
-  key: "moodScore" | "interestScore" | "energyScore" | "ruminationScore";
+  key: "moodScore" | "interestScore";
   label: string;
   prompt: string;
   lowAnchor: string;
@@ -286,31 +286,17 @@ export interface CheckInItemDescriptor {
 export const CHECK_IN_ITEMS: CheckInItemDescriptor[] = [
   {
     key: "moodScore",
-    label: "Overall mood",
-    prompt: "How has your mood felt over the last couple of days?",
+    label: "Mood",
+    prompt: "How is your mood right now?",
     lowAnchor: "Very low",
-    highAnchor: "Steady and well",
+    highAnchor: "Very good",
   },
   {
     key: "interestScore",
-    label: "Interest in everyday things",
-    prompt: "How much have you been able to enjoy or take interest in small things?",
+    label: "Interest",
+    prompt: "How much do you feel like doing things right now?",
     lowAnchor: "Not at all",
-    highAnchor: "As usual for me",
-  },
-  {
-    key: "energyScore",
-    label: "Daytime energy",
-    prompt: "How has your energy felt for ordinary daily tasks?",
-    lowAnchor: "Exhausted",
-    highAnchor: "Rested enough",
-  },
-  {
-    key: "ruminationScore",
-    label: "Ease of letting worries go",
-    prompt: "How easy has it been to step back from repetitive heavy thoughts?",
-    lowAnchor: "Stuck in loops",
-    highAnchor: "Clear and settled",
+    highAnchor: "Very much",
   },
 ];
 

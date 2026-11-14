@@ -5,20 +5,19 @@ const isoDateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
 
-const checkInItemScoreSchema = z.number().min(1).max(5);
-const checkInTwoTapItemScoreSchema = z.number().min(0).max(5);
+const checkInTwoTapItemScoreSchema = z.number().int().min(0).max(4);
 const phq9ItemScoreSchema = z.number().int().min(0).max(3);
 
 export const BroadAreaKeySchema = z.enum(BROAD_AREA_KEYS);
 
 /**
- * Twice-weekly short wellbeing check-in submission schema.
+ * Twice-weekly short wellbeing check-in submission schema (Step 2).
  *
  * Rules enforced:
  * - Missed ("missed") or skipped ("not_today") rounds are recorded as missed events,
- *   NEVER scored as 0. All item/composite scores must be null or undefined when not completed.
- * - Completed rounds require either the 2-tap items (moodScore, interestScore as integers 0..4),
- *   the legacy 4 short items (1..5), or the low-effort singleItemScore (1..5).
+ *   NEVER scored as 0. Both tap scores must be null or undefined when not completed.
+ * - Completed rounds require the 2-tap integers (moodScore, interestScore in 0..4).
+ * - No free text or self-harm fields on the check-in (self-harm belongs to PHQ-9 alone).
  */
 export const CheckInSubmissionSchema = z
   .object({
@@ -30,14 +29,7 @@ export const CheckInSubmissionSchema = z
     status: z.enum(["completed", "not_today", "missed"]),
     moodScore: checkInTwoTapItemScoreSchema.nullable().optional(),
     interestScore: checkInTwoTapItemScoreSchema.nullable().optional(),
-    energyScore: checkInItemScoreSchema.nullable().optional(),
-    ruminationScore: checkInItemScoreSchema.nullable().optional(),
-    compositeScore: checkInItemScoreSchema.nullable().optional(),
-    singleItemScore: checkInItemScoreSchema.nullable().optional(),
     itemOrderJson: z.string().nullable().optional(),
-    freeTextNote: z.string().max(500).nullable().optional(),
-    selfHarmTriggered: z.boolean().default(false),
-    crisisPathShown: z.boolean().default(false),
     responseLatencyMs: z.number().int().nonnegative().nullable().optional(),
     ringActiveAtRound: z.boolean().nullable().optional(),
     isSimulated: z.boolean().default(false),
@@ -45,14 +37,7 @@ export const CheckInSubmissionSchema = z
   })
   .strict()
   .superRefine((val, ctx) => {
-    const scoreFields = [
-      "moodScore",
-      "interestScore",
-      "energyScore",
-      "ruminationScore",
-      "compositeScore",
-      "singleItemScore",
-    ] as const;
+    const scoreFields = ["moodScore", "interestScore"] as const;
 
     if (val.status === "missed" || val.status === "not_today") {
       for (const field of scoreFields) {
@@ -68,63 +53,13 @@ export const CheckInSubmissionSchema = z
     }
 
     // status === "completed"
-    const hasAllFourItems =
-      typeof val.moodScore === "number" &&
-      typeof val.interestScore === "number" &&
-      typeof val.energyScore === "number" &&
-      typeof val.ruminationScore === "number";
-    const hasTwoTapItems =
-      typeof val.moodScore === "number" &&
-      typeof val.interestScore === "number" &&
-      (val.energyScore === null || val.energyScore === undefined) &&
-      (val.ruminationScore === null || val.ruminationScore === undefined) &&
-      (val.compositeScore === null || val.compositeScore === undefined);
-    const hasSingleItem = typeof val.singleItemScore === "number";
-
-    if (!hasAllFourItems && !hasTwoTapItems && !hasSingleItem) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["moodScore"],
-        message:
-          "Completed check-in requires either 2-tap (moodScore, interestScore in 0..4), all 4 item scores (1..5), or singleItemScore.",
-      });
-      return;
-    }
-
-    if (hasTwoTapItems && !hasAllFourItems) {
-      for (const field of ["moodScore", "interestScore"] as const) {
-        const score = val[field];
-        if (
-          typeof score !== "number" ||
-          !Number.isInteger(score) ||
-          score < 0 ||
-          score > 4
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: [field],
-            message: `Two-tap ${field} must be an integer 0..4.`,
-          });
-        }
-      }
-      return;
-    }
-
-    if (hasAllFourItems) {
-      for (const field of [
-        "moodScore",
-        "interestScore",
-        "energyScore",
-        "ruminationScore",
-      ] as const) {
-        const score = val[field];
-        if (typeof score === "number" && score < 1) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: [field],
-            message: `4-item ${field} must be between 1 and 5.`,
-          });
-        }
+    for (const field of scoreFields) {
+      if (typeof val[field] !== "number") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `Completed check-in requires ${field} as an integer 0..4.`,
+        });
       }
     }
   });
@@ -147,6 +82,7 @@ export const Phq9SubmissionSchema = z
     date: isoDateString,
     dayIndex: z.number().int().nonnegative().optional(),
     weekNumber: z.number().int().positive().optional(),
+    roundNumber: z.number().int().positive().nullable().optional(),
     status: z.enum(["completed", "in_progress", "missed"]),
     totalScore: z.number().int().min(0).max(27).nullable().optional(),
     item1Interest: phq9ItemScoreSchema.nullable().optional(),
@@ -158,7 +94,6 @@ export const Phq9SubmissionSchema = z
     item7Concentration: phq9ItemScoreSchema.nullable().optional(),
     item8Psychomotor: phq9ItemScoreSchema.nullable().optional(),
     item9SelfHarm: phq9ItemScoreSchema.nullable().optional(),
-    crisisPathShown: z.boolean().default(false),
     baselineDelta: z.number().int().nullable().optional(),
     isSimulated: z.boolean().default(false),
     source: z.string().default("live"),
@@ -450,6 +385,7 @@ export const NurseCallOutcomeSchema = z
   .object({
     participantId: z.string().min(1),
     flagId: z.string().min(1).nullable().optional(),
+    staffUserId: z.string().min(1).nullable().optional(),
     status: z.enum(["requested", "completed", "unreachable"]).default("completed"),
     outcomeTier: z
       .enum([
@@ -474,7 +410,6 @@ export const NurseCallOutcomeSchema = z
     medicationChecked: z.boolean().default(false),
     watchNextRounds: z.number().int().min(0).max(12).default(0),
     boosterSessionsPlanned: z.number().int().min(0).max(20).nullable().optional(),
-    summaryNote: z.string().max(1000).nullable().optional(),
     isSimulated: z.boolean().default(false),
   })
   .strict();
@@ -492,7 +427,7 @@ export const ClinicFlagViewSchema = z
     id: z.string().min(1),
     participantId: z.string().min(1),
     sinceDate: isoDateString,
-    triggerKind: z.enum(["sustained_dip", "silence", "crisis_self_harm"]),
+    triggerKind: z.enum(["low_answers", "silence", "mixed", "phq9", "sustained_dip"]),
     primaryArea: BroadAreaKeySchema,
     broadAreas: z.array(BroadAreaKeySchema).min(1),
     status: z.enum([

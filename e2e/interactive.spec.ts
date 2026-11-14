@@ -6,17 +6,17 @@ test.describe("Interactive Redesign Fixes & Invariants", () => {
   }) => {
     await page.goto("/check-in");
 
-    // Tap choice 3 in the first row ("Overall mood") reached by its accessible name
-    const choice3 = page.getByRole("button", {
-      name: "Overall mood: 3 of 5",
+    // Tap choice 2 in the first row ("Mood") reached by its accessible name
+    const choice2 = page.getByRole("button", {
+      name: "Mood: 2 of 4",
     });
-    await choice3.click();
-    await expect(choice3).toHaveAttribute("aria-pressed", "true");
+    await choice2.click();
+    await expect(choice2).toHaveAttribute("aria-pressed", "true");
 
     // Assert the other buttons in that row are not aria-pressed="true"
-    for (const choice of [1, 2, 4, 5]) {
+    for (const choice of [0, 1, 3, 4]) {
       const otherChoice = page.getByRole("button", {
-        name: `Overall mood: ${choice} of 5`,
+        name: `Mood: ${choice} of 4`,
       });
       await expect(otherChoice).not.toHaveAttribute("aria-pressed", "true");
     }

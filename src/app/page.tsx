@@ -195,7 +195,7 @@ function ExploreViewsGrid() {
               Twice-weekly wellbeing check-in
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-              Four quick 1 to 5 tap questions twice a week, or a single tap on
+              Two quick 0 to 4 tap questions twice a week, or a single tap on
               &ldquo;Not today&rdquo; when you want to rest. Missed rounds are
               simply noted as missed, and phone numbers for a real person stay
               at the top of the page.

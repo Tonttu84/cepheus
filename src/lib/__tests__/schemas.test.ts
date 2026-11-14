@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CameraReadingInputSchema,
   CheckInSubmissionSchema,
+  NurseCallOutcomeSchema,
   Phq9SubmissionSchema,
   RingDayInputSchema,
   RoutineSignalInputSchema,
@@ -11,6 +12,7 @@ import {
 } from "../schemas";
 import {
   BROAD_AREA_KEYS,
+  CHECK_IN_ITEMS,
   CRISIS_RESOURCES,
   DEMO_MOMENTS,
   PATIENT_SUGGESTIONS,
@@ -18,7 +20,7 @@ import {
 } from "../constants";
 
 describe("CheckInSubmissionSchema", () => {
-  it("accepts missed and not_today check-ins when all item scores are null or omitted", () => {
+  it("accepts missed and not_today check-ins when both tap scores are null or omitted", () => {
     const missed = CheckInSubmissionSchema.parse({
       participantId: "sim-post-tms-01",
       date: "2026-11-13",
@@ -26,14 +28,11 @@ describe("CheckInSubmissionSchema", () => {
       status: "missed",
       moodScore: null,
       interestScore: null,
-      energyScore: null,
-      ruminationScore: null,
-      compositeScore: null,
       ringActiveAtRound: true,
     });
     expect(missed.status).toBe("missed");
     expect(missed.moodScore).toBeNull();
-    expect(missed.selfHarmTriggered).toBe(false);
+    expect(missed.interestScore).toBeNull();
 
     const skipped = CheckInSubmissionSchema.parse({
       participantId: "sim-post-tms-01",
@@ -49,7 +48,6 @@ describe("CheckInSubmissionSchema", () => {
       date: "2026-11-13",
       status: "missed",
       moodScore: 0,
-      compositeScore: 0,
     });
     expect(zeroScoredMissed.success).toBe(false);
 
@@ -62,27 +60,7 @@ describe("CheckInSubmissionSchema", () => {
     expect(numericMissed.success).toBe(false);
   });
 
-  it("validates completed check-ins in 1..5 range and rejects out-of-range values", () => {
-    const validFourItems = CheckInSubmissionSchema.safeParse({
-      participantId: "sim-post-tms-01",
-      date: "2026-11-13",
-      status: "completed",
-      moodScore: 4,
-      interestScore: 4,
-      energyScore: 3,
-      ruminationScore: 4,
-      compositeScore: 3.75,
-    });
-    expect(validFourItems.success).toBe(true);
-
-    const validSingleTap = CheckInSubmissionSchema.safeParse({
-      participantId: "sim-post-tms-01",
-      date: "2026-11-13",
-      status: "completed",
-      singleItemScore: 3,
-    });
-    expect(validSingleTap.success).toBe(true);
-
+  it("validates completed 2-tap check-ins as integers 0..4 and rejects removed legacy fields", () => {
     const validTwoTap = CheckInSubmissionSchema.safeParse({
       participantId: "sim-post-tms-01",
       date: "2026-11-13",
@@ -110,94 +88,33 @@ describe("CheckInSubmissionSchema", () => {
     });
     expect(twoTapNonInteger.success).toBe(false);
 
-    const outOfRange = CheckInSubmissionSchema.safeParse({
+    const missingInterest = CheckInSubmissionSchema.safeParse({
       participantId: "sim-post-tms-01",
       date: "2026-11-13",
       status: "completed",
-      moodScore: 0,
-      interestScore: 6,
-      energyScore: 3,
-      ruminationScore: 4,
+      moodScore: 2,
     });
-    expect(outOfRange.success).toBe(false);
+    expect(missingInterest.success).toBe(false);
 
-    const zeroSingleTap = CheckInSubmissionSchema.safeParse({
-      participantId: "sim-post-tms-01",
-      date: "2026-11-13",
-      status: "completed",
-      singleItemScore: 0,
-    });
-    expect(zeroSingleTap.success).toBe(false);
-
-    const zeroComposite = CheckInSubmissionSchema.safeParse({
-      participantId: "sim-post-tms-01",
-      date: "2026-11-13",
-      status: "completed",
-      moodScore: 3,
-      interestScore: 3,
-      energyScore: 3,
-      ruminationScore: 3,
-      compositeScore: 0,
-    });
-    expect(zeroComposite.success).toBe(false);
-
-    for (const field of [
-      "moodScore",
-      "interestScore",
+    for (const removedField of [
       "energyScore",
       "ruminationScore",
-    ] as const) {
-      const fourItemWithZero = CheckInSubmissionSchema.safeParse({
+      "compositeScore",
+      "singleItemScore",
+      "freeTextNote",
+      "selfHarmTriggered",
+      "crisisPathShown",
+    ]) {
+      const withRemoved = CheckInSubmissionSchema.safeParse({
         participantId: "sim-post-tms-01",
         date: "2026-11-13",
         status: "completed",
-        moodScore: 3,
+        moodScore: 2,
         interestScore: 3,
-        energyScore: 3,
-        ruminationScore: 3,
-        [field]: 0,
+        [removedField]: removedField === "freeTextNote" ? "note" : 3,
       });
-      expect(fourItemWithZero.success).toBe(false);
+      expect(withRemoved.success).toBe(false);
     }
-
-    const twoTapZeroZero = CheckInSubmissionSchema.safeParse({
-      participantId: "sim-post-tms-01",
-      date: "2026-11-13",
-      status: "completed",
-      moodScore: 0,
-      interestScore: 0,
-    });
-    expect(twoTapZeroZero.success).toBe(true);
-
-    const twoTapWithEnergy = CheckInSubmissionSchema.safeParse({
-      participantId: "sim-post-tms-01",
-      date: "2026-11-13",
-      status: "completed",
-      moodScore: 2,
-      interestScore: 3,
-      energyScore: 3,
-    });
-    expect(twoTapWithEnergy.success).toBe(false);
-
-    const twoTapWithRumination = CheckInSubmissionSchema.safeParse({
-      participantId: "sim-post-tms-01",
-      date: "2026-11-13",
-      status: "completed",
-      moodScore: 2,
-      interestScore: 3,
-      ruminationScore: 3,
-    });
-    expect(twoTapWithRumination.success).toBe(false);
-
-    const twoTapWithComposite = CheckInSubmissionSchema.safeParse({
-      participantId: "sim-post-tms-01",
-      date: "2026-11-13",
-      status: "completed",
-      moodScore: 2,
-      interestScore: 3,
-      compositeScore: 2.5,
-    });
-    expect(twoTapWithComposite.success).toBe(false);
   });
 });
 
@@ -206,6 +123,7 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
     const withSelfHarm = evaluatePhq9Submission({
       participantId: "sim-post-tms-01",
       date: "2026-11-13",
+      roundNumber: 4,
       status: "completed",
       item1Interest: 1,
       item2Mood: 1,
@@ -216,7 +134,6 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
       item7Concentration: 1,
       item8Psychomotor: 0,
       item9SelfHarm: 1,
-      crisisPathShown: true,
       isSimulated: true,
       source: "synthetic",
     });
@@ -239,7 +156,6 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
       item7Concentration: 1,
       item8Psychomotor: 0,
       item9SelfHarm: 0,
-      crisisPathShown: false,
       isSimulated: true,
       source: "synthetic",
     });
@@ -251,7 +167,6 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
       participantId: "sim-post-tms-01",
       date: "2026-11-13",
       status: "missed",
-      crisisPathShown: false,
       isSimulated: true,
       source: "synthetic",
     });
@@ -266,7 +181,6 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
       status: "in_progress",
       item1Interest: 2,
       item9SelfHarm: 1,
-      crisisPathShown: true,
       isSimulated: true,
       source: "synthetic",
     });
@@ -279,7 +193,6 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
       status: "in_progress",
       item1Interest: 1,
       item2Mood: 2,
-      crisisPathShown: false,
       isSimulated: true,
       source: "synthetic",
     });
@@ -356,72 +269,7 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
       }
     });
 
-    it("four-item energyScore and ruminationScore boundaries (1..5): below min, at min, at max, above max, fraction, null, missing, numeric string", () => {
-      const baseFourItem = {
-        participantId: "sim-post-tms-01",
-        date: "2026-11-13",
-        status: "completed" as const,
-        moodScore: 3,
-        interestScore: 3,
-        energyScore: 3,
-        ruminationScore: 3,
-      };
-
-      for (const field of ["energyScore", "ruminationScore"] as const) {
-        expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, [field]: 0 }).success).toBe(false);
-        expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, [field]: 1 }).success).toBe(true);
-        expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, [field]: 5 }).success).toBe(true);
-        expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, [field]: 6 }).success).toBe(false);
-        expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, [field]: 2.5 }).success).toBe(true);
-        expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, [field]: null }).success).toBe(false);
-        const copy: Record<string, unknown> = { ...baseFourItem };
-        delete copy[field];
-        expect(CheckInSubmissionSchema.safeParse(copy).success).toBe(false);
-        expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, [field]: "3" }).success).toBe(false);
-      }
-    });
-
-    it("compositeScore boundaries (1..5, nullable): below min, at min, at max, above max, fraction, null, missing, numeric string", () => {
-      const baseFourItem = {
-        participantId: "sim-post-tms-01",
-        date: "2026-11-13",
-        status: "completed" as const,
-        moodScore: 3,
-        interestScore: 3,
-        energyScore: 3,
-        ruminationScore: 3,
-      };
-
-      expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, compositeScore: 0 }).success).toBe(false);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, compositeScore: 1 }).success).toBe(true);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, compositeScore: 5 }).success).toBe(true);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, compositeScore: 6 }).success).toBe(false);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, compositeScore: 3.5 }).success).toBe(true);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, compositeScore: null }).success).toBe(true);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, compositeScore: undefined }).success).toBe(true);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseFourItem, compositeScore: "3" }).success).toBe(false);
-    });
-
-    it("singleItemScore boundaries (1..5): below min, at min, at max, above max, fraction, null, missing, numeric string", () => {
-      const baseSingle = {
-        participantId: "sim-post-tms-01",
-        date: "2026-11-13",
-        status: "completed" as const,
-        singleItemScore: 3,
-      };
-
-      expect(CheckInSubmissionSchema.safeParse({ ...baseSingle, singleItemScore: 0 }).success).toBe(false);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseSingle, singleItemScore: 1 }).success).toBe(true);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseSingle, singleItemScore: 5 }).success).toBe(true);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseSingle, singleItemScore: 6 }).success).toBe(false);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseSingle, singleItemScore: 2.5 }).success).toBe(true);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseSingle, singleItemScore: null }).success).toBe(false);
-      expect(CheckInSubmissionSchema.safeParse({ participantId: "p1", date: "2026-11-13", status: "completed" }).success).toBe(false);
-      expect(CheckInSubmissionSchema.safeParse({ ...baseSingle, singleItemScore: "3" }).success).toBe(false);
-    });
-
     it("rejects an unknown extra field in CheckInSubmissionSchema", () => {
-      // Bug in src/lib/schemas.ts:23: CheckInSubmissionSchema lacks .strict() to reject unknown properties
       const res = CheckInSubmissionSchema.safeParse({
         ...baseCheckIn,
         unknownInjectedField: "malicious_payload",
@@ -518,6 +366,28 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
       });
       expect(res.success).toBe(false);
     });
+  });
+});
+
+describe("NurseCallOutcomeSchema (no free text)", () => {
+  it("accepts staffUserId and rejects removed summaryNote field", () => {
+    const valid = NurseCallOutcomeSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      flagId: "flag-1",
+      staffUserId: "staff-1",
+      status: "completed",
+      outcomeTier: "rough_patch",
+      actionTaken: "advice_and_medication_check",
+    });
+    expect(valid.success).toBe(true);
+
+    const withSummaryNote = NurseCallOutcomeSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      staffUserId: "staff-1",
+      status: "completed",
+      summaryNote: "free text",
+    });
+    expect(withSummaryNote.success).toBe(false);
   });
 });
 
@@ -713,5 +583,10 @@ describe("Domain Constants Compliance", () => {
     expect(allText).not.toContain("cold water");
     expect(PHQ9_ITEMS).toHaveLength(9);
     expect(PHQ9_ITEMS[8]?.isSelfHarmItem).toBe(true);
+    expect(CHECK_IN_ITEMS).toHaveLength(2);
+    expect(CHECK_IN_ITEMS.map((i) => i.key)).toEqual([
+      "moodScore",
+      "interestScore",
+    ]);
   });
 });
