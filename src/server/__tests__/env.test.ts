@@ -171,4 +171,61 @@ describe("Environment Check (src/server/env.ts)", () => {
       _resetEnv();
     }
   });
+
+  it("validates optional Fitbit, session secret, and Arduino ingest token rules in production without leaking secrets", () => {
+    const baseProd = {
+      NODE_ENV: "production",
+      DATABASE_URL:
+        "postgresql://cloud_user:strong_prod_pass_999@helsinki.db:5432/cepheus_prod",
+    };
+
+    expect(() =>
+      parseEnv({
+        ...baseProd,
+        FITBIT_CLIENT_ID: "fitbit-id-123",
+        FITBIT_CLIENT_SECRET: "",
+        APP_SESSION_SECRET: "short",
+      })
+    ).toThrowError(/FITBIT_CLIENT_SECRET/);
+
+    try {
+      parseEnv({
+        ...baseProd,
+        FITBIT_CLIENT_ID: "fitbit-id-123",
+        FITBIT_CLIENT_SECRET: "super-secret-fitbit-val",
+        APP_SESSION_SECRET: "too-short-secret",
+      });
+      expect.fail("Expected short APP_SESSION_SECRET to throw");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      expect(msg).toContain("APP_SESSION_SECRET");
+      expect(msg).not.toContain("too-short-secret");
+      expect(msg).not.toContain("super-secret-fitbit-val");
+    }
+
+    expect(() =>
+      parseEnv({
+        ...baseProd,
+        ARDUINO_INGEST_TOKEN: "short-token",
+      })
+    ).toThrowError(/ARDUINO_INGEST_TOKEN/);
+
+    expect(() =>
+      parseEnv({
+        ...baseProd,
+        FITBIT_REDIRECT_URI: "ftp://invalid.example.com/cb",
+      })
+    ).toThrowError(/FITBIT_REDIRECT_URI/);
+
+    const ok = parseEnv({
+      ...baseProd,
+      FITBIT_CLIENT_ID: "fitbit-id-123",
+      FITBIT_CLIENT_SECRET: "fitbit-secret-456",
+      FITBIT_REDIRECT_URI: "https://cepheus.example.fi/api/fitbit/callback",
+      APP_SESSION_SECRET: "0123456789abcdef0123456789abcdef",
+      ARDUINO_INGEST_TOKEN: "unoq-prod-token-123456",
+    });
+    expect(ok.FITBIT_CLIENT_ID).toBe("fitbit-id-123");
+    expect(ok.ARDUINO_INGEST_TOKEN).toBe("unoq-prod-token-123456");
+  });
 });
