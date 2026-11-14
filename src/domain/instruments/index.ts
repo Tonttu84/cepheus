@@ -91,3 +91,6 @@ export function validateTapAnswer(item: unknown): { ok: true; value: TapAnswer }
   
   return { ok: true, value: { kind: tapItem.kind, value: answer.value } };
 }
+
+export * from './phq9-text.en';
+
