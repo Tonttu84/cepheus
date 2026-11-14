@@ -950,4 +950,52 @@ describe('evaluateHistory', () => {
       expect(res.value.flags).toHaveLength(1);
     });
   });
+
+  describe('Europe/Helsinki daylight saving time transitions: consecutive missed rounds', () => {
+    it('consecutive missed rounds on either side of the March clock change raise a silence warning', () => {
+      // 2026-03-29 is spring forward in Europe/Helsinki (EET to EEST)
+      const rounds: HistoryRound[] = [
+        { roundNumber: 1, localDate: '2026-03-26', status: 'missed' }, // Thursday before change (EET)
+        { roundNumber: 2, localDate: '2026-03-30', status: 'missed' }, // Monday after change (EEST)
+      ];
+
+      const res = evaluateHistory({ rounds });
+      expect(res.ok).toBe(true);
+      if (!res.ok) throw new Error(res.error);
+
+      expect(res.value.rounds).toHaveLength(2);
+      expect(res.value.rounds[0].kind).toBe('no_answer');
+      expect(res.value.rounds[1].kind).toBe('no_answer');
+
+      expect(res.value.effects).toHaveLength(1);
+      expect(res.value.effects[0].type).toBe('warning');
+      expect(res.value.effects[0].kind).toBe('silence');
+      expect(res.value.effects[0].since).toBe('2026-03-26');
+      expect(res.value.currentState.isWarningWaitingForCall).toBe(true);
+      expect(res.value.currentState.since).toBe('2026-03-26');
+    });
+
+    it('consecutive missed rounds on either side of the October clock change raise a silence warning', () => {
+      // 2026-10-25 is fall back in Europe/Helsinki (EEST to EET)
+      const rounds: HistoryRound[] = [
+        { roundNumber: 1, localDate: '2026-10-22', status: 'missed' }, // Thursday before change (EEST)
+        { roundNumber: 2, localDate: '2026-10-26', status: 'missed' }, // Monday after change (EET)
+      ];
+
+      const res = evaluateHistory({ rounds });
+      expect(res.ok).toBe(true);
+      if (!res.ok) throw new Error(res.error);
+
+      expect(res.value.rounds).toHaveLength(2);
+      expect(res.value.rounds[0].kind).toBe('no_answer');
+      expect(res.value.rounds[1].kind).toBe('no_answer');
+
+      expect(res.value.effects).toHaveLength(1);
+      expect(res.value.effects[0].type).toBe('warning');
+      expect(res.value.effects[0].kind).toBe('silence');
+      expect(res.value.effects[0].since).toBe('2026-10-22');
+      expect(res.value.currentState.isWarningWaitingForCall).toBe(true);
+      expect(res.value.currentState.since).toBe('2026-10-22');
+    });
+  });
 });

@@ -341,10 +341,10 @@ describe('Access Rules Decision Function', () => {
       'all_on',
     ];
 
-    it('asserts every combination matches the plain allowed cases list or is refused with exact reason code', () => {
-      let combinationsChecked = 0;
+    for (const actorDef of actorDefs) {
+      it(`asserts every combination for actor ${actorDef.key} matches the plain allowed cases list`, () => {
+        let combinationsChecked = 0;
 
-      for (const actorDef of actorDefs) {
         for (const action of actions) {
           for (const kind of dataKinds) {
             for (const purpose of purposes) {
@@ -394,11 +394,11 @@ describe('Access Rules Decision Function', () => {
             }
           }
         }
-      }
 
-      // 4 actors * 3 actions * 14 kinds * 6 purposes * 4 target relationships * 5 switch states = 20,160
-      expect(combinationsChecked).toBe(20160);
-    });
+        // 3 actions * 14 kinds * 6 purposes * 4 target relationships * 5 switch states = 5,040
+        expect(combinationsChecked).toBe(5040);
+      });
+    }
   });
 
   describe('Named Tests for Specific Rules', () => {

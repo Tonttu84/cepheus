@@ -47,12 +47,98 @@ describe("parseRequests", () => {
     const short = "| Date | From | To | Request | Status |\n| --- | --- |\n| a | b |\n";
     expect(parseRequests(short)).toEqual([]);
   });
+
+  it("skips a row with too few cells (e.g. 4 cells in a 5-column table)", () => {
+    const fourCells = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 14 Nov 2026 | user | team | missing status |",
+    ].join("\n");
+    expect(parseRequests(fourCells)).toEqual([]);
+  });
+
+  it("parses a row with too many cells by taking the first 5 columns and ignoring extra cells", () => {
+    const tooManyCells = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 14 Nov 2026 | user | team | request text | open | extra column | trailing notes |",
+    ].join("\n");
+    const rows = parseRequests(tooManyCells);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual({
+      date: "14 Nov 2026",
+      from: "user",
+      to: "team",
+      request: "request text",
+      status: "open",
+    });
+  });
+
+  it("returns an empty array for an empty file or whitespace-only file", () => {
+    expect(parseRequests("")).toEqual([]);
+    expect(parseRequests("   \r\n\t  \r\n   ")).toEqual([]);
+  });
+
+  it("parses markdown with CRLF (\\r\\n) line endings correctly", () => {
+    const crlfDoc = "| Date | From | To | Request | Status |\r\n| --- | --- | --- | --- | --- |\r\n| 14 Nov 2026 | user | team | task | open |\r\n";
+    const rows = parseRequests(crlfDoc);
+    expect(rows).toEqual([
+      {
+        date: "14 Nov 2026",
+        from: "user",
+        to: "team",
+        request: "task",
+        status: "open",
+      },
+    ]);
+  });
+
+  it.fails("parses a table cell containing an escaped pipe (\\|)", () => {
+    // Bug in scripts/requests-core.mjs:12: splitCells naively splits on '|' even when escaped as '\|' in input "| 14 Nov 2026 | user | team | fix a \| b | open |"
+    const docWithEscapedPipe = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 14 Nov 2026 | user | team | fix a \\| b | open |",
+    ].join("\n");
+    const rows = parseRequests(docWithEscapedPipe);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].request).toBe("fix a | b");
+    expect(rows[0].status).toBe("open");
+  });
 });
 
 describe("isOpen and collectOpen", () => {
   it("treats a status starting with done as closed, whatever the case", () => {
     const rows = parseRequests(doc);
     expect(rows.map(isOpen)).toEqual([true, false, false]);
+  });
+
+  it("handles status with trailing spaces and different case in parseRequests and isOpen", () => {
+    const docCaseSpaces = [
+      "| Date | From | To | Request | Status |",
+      "| --- | --- | --- | --- | --- |",
+      "| 14 Nov 2026 | a | b | task 1 | OPEN   |",
+      "| 15 Nov 2026 | c | d | task 2 |  DoNe in trail 40   |",
+      "| 16 Nov 2026 | e | f | task 3 | dOnE   |",
+      "| 17 Nov 2026 | g | h | task 4 |   wAiTiNg  |",
+    ].join("\n");
+    const rows = parseRequests(docCaseSpaces);
+    expect(rows).toHaveLength(4);
+    expect(rows[0].status).toBe("OPEN");
+    expect(rows[1].status).toBe("DoNe in trail 40");
+    expect(rows[2].status).toBe("dOnE");
+    expect(rows[3].status).toBe("wAiTiNg");
+
+    expect(isOpen(rows[0])).toBe(true);
+    expect(isOpen(rows[1])).toBe(false);
+    expect(isOpen(rows[2])).toBe(false);
+    expect(isOpen(rows[3])).toBe(true);
+
+    expect(isOpen({ date: "d", from: "f", to: "t", request: "r", status: "  DONE   " })).toBe(false);
+    expect(isOpen({ date: "d", from: "f", to: "t", request: "r", status: "Done   " })).toBe(false);
+    expect(isOpen({ date: "d", from: "f", to: "t", request: "r", status: "  done   " })).toBe(false);
+    expect(isOpen({ date: "d", from: "f", to: "t", request: "r", status: "  OPEN   " })).toBe(true);
+    expect(isOpen({ date: "d", from: "f", to: "t", request: "r", status: "Open   " })).toBe(true);
   });
 
   it("merges copies of the file and keeps each open request once", () => {

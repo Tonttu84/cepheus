@@ -17,6 +17,7 @@ vi.mock("@/server/monitoring", () => ({
 import { POST as arduinoIngest } from "@/app/api/arduino/ingest/route";
 import { POST as healthConnectWebhook } from "@/app/api/webhooks/health-connect/route";
 import { _resetEnv } from "@/server/env";
+import { _resetDeviceReplays } from "@/server/security";
 import { _resetRateLimits } from "@/server/security/rate-limit";
 
 const ENV_KEYS = [
@@ -134,5 +135,114 @@ describe("Arduino ingest rate limit", () => {
       sameOriginPost("/api/arduino/ingest", simulatedArduino("unoq-fresh"))
     );
     expect(res.status).toBe(429);
+  });
+});
+
+describe("Arduino ingest replay and clock skew enforcement", () => {
+  const fixedNow = 1_794_650_000_000;
+  const CLOCK_SKEW_MS = 5 * 60_000; // 300,000 ms
+
+  function authorizedArduino(overrides: Record<string, unknown> = {}) {
+    return {
+      deviceId: "unoq-desk-01",
+      date: "2026-11-14",
+      hourOfDay: 13,
+      isSimulated: false,
+      camera: {
+        durationSec: 20,
+        effectiveFps: 15,
+        faceDetectedRatio: 0.9,
+        expressivityScore: 0.08,
+        angularPathDegPerMin: 120,
+      },
+      ...overrides,
+    };
+  }
+
+  function authorizedPost(path: string, body: unknown): Request {
+    return new Request(`http://localhost:3000${path}`, {
+      method: "POST",
+      headers: {
+        host: "localhost:3000",
+        "content-type": "application/json",
+        authorization: "Bearer arduino-token-for-tests",
+      },
+      body: JSON.stringify(body),
+    });
+  }
+
+  beforeEach(() => {
+    setEnv("production");
+    _resetDeviceReplays();
+    vi.useFakeTimers();
+    vi.setSystemTime(fixedNow);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    _resetDeviceReplays();
+  });
+
+  it("accepts a timestamp exactly at the allowed clock skew on both sides (past and future)", async () => {
+    // Past boundary: exactly now - 300,000 ms
+    const pastRes = await arduinoIngest(
+      authorizedPost("/api/arduino/ingest", authorizedArduino({
+        timestampMs: fixedNow - CLOCK_SKEW_MS,
+        nonce: "nonce-exact-past-01",
+      }))
+    );
+    expect(pastRes.status).toBe(200);
+
+    // Future boundary: exactly now + 300,000 ms
+    const futureRes = await arduinoIngest(
+      authorizedPost("/api/arduino/ingest", authorizedArduino({
+        timestampMs: fixedNow + CLOCK_SKEW_MS,
+        nonce: "nonce-exact-fut-01",
+      }))
+    );
+    expect(futureRes.status).toBe(200);
+  });
+
+  it("refuses a timestamp one millisecond past the allowed clock skew on both sides", async () => {
+    // Past skew + 1ms: now - 300,001 ms -> refused as stale (401)
+    const staleRes = await arduinoIngest(
+      authorizedPost("/api/arduino/ingest", authorizedArduino({
+        timestampMs: fixedNow - CLOCK_SKEW_MS - 1,
+        nonce: "nonce-past-skew-01",
+      }))
+    );
+    expect(staleRes.status).toBe(401);
+
+    // Future skew + 1ms: now + 300,001 ms -> refused like a stale one (401)
+    const futureRes = await arduinoIngest(
+      authorizedPost("/api/arduino/ingest", authorizedArduino({
+        timestampMs: fixedNow + CLOCK_SKEW_MS + 1,
+        nonce: "nonce-future-skew-01",
+      }))
+    );
+    expect(futureRes.status).toBe(401);
+  });
+
+  it("refuses an ingest request with a missing nonce", async () => {
+    const res = await arduinoIngest(
+      authorizedPost("/api/arduino/ingest", authorizedArduino({
+        timestampMs: fixedNow,
+        // nonce omitted
+      }))
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("refuses a request with a nonce used twice (replay rejection 409)", async () => {
+    const payload = authorizedArduino({
+      timestampMs: fixedNow,
+      nonce: "nonce-unique-replayed-01",
+    });
+
+    const firstRes = await arduinoIngest(authorizedPost("/api/arduino/ingest", payload));
+    expect(firstRes.status).toBe(200);
+
+    const secondRes = await arduinoIngest(authorizedPost("/api/arduino/ingest", payload));
+    expect(secondRes.status).toBe(409);
   });
 });
