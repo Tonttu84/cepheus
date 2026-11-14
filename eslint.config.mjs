@@ -50,6 +50,13 @@ const domainLayerPlugin = {
               }
             }
 
+            // 3. Test files may import the test runner, and nothing else from outside.
+            const importingFile = (context.filename || context.getFilename()).replace(/\\/g, "/");
+            const isTestFile = importingFile.includes("/__tests__/") || /\.test\.tsx?$/.test(importingFile);
+            if (isTestFile && source === "vitest") {
+              return;
+            }
+
             // Any import from outside src/domain/ is refused
             context.report({
               node,
