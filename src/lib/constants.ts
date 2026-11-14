@@ -2,8 +2,10 @@
  * Cepheus domain constants and shared configuration.
  *
  * Rules enforced here:
- * - No diagnostic, relapse-prediction, or treatment claims; sensing is described
- *   as a wellbeing check-in that supports the clinic's judgment about when to act.
+ * - Flags possible relapse risk for a clinician's review; makes no diagnosis,
+ *   no treatment claim, gives no final judgement, and says nothing about relapse
+ *   to the patient. Sensing is described as a wellbeing check-in that supports
+ *   the clinic's judgment about when to act.
  * - Crisis path connects directly to emergency help (112) and human support
  *   (MIELI Crisis Helpline & TMS Clinic Nurse Line) with zero automated triage.
  * - Low-effort patient suggestions exclude happy-memory recall, sad music, and
