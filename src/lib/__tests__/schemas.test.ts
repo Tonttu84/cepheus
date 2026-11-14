@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CameraReadingInputSchema,
   CheckInSubmissionSchema,
+  Phq9SubmissionSchema,
   RingDayInputSchema,
   RoutineSignalInputSchema,
   SpeechReadingInputSchema,
@@ -82,6 +83,33 @@ describe("CheckInSubmissionSchema", () => {
     });
     expect(validSingleTap.success).toBe(true);
 
+    const validTwoTap = CheckInSubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed",
+      moodScore: 0,
+      interestScore: 4,
+    });
+    expect(validTwoTap.success).toBe(true);
+
+    const twoTapOutOfRange = CheckInSubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed",
+      moodScore: 5,
+      interestScore: 2,
+    });
+    expect(twoTapOutOfRange.success).toBe(false);
+
+    const twoTapNonInteger = CheckInSubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed",
+      moodScore: 2.5,
+      interestScore: 3,
+    });
+    expect(twoTapNonInteger.success).toBe(false);
+
     const outOfRange = CheckInSubmissionSchema.safeParse({
       participantId: "sim-post-tms-01",
       date: "2026-11-13",
@@ -92,6 +120,84 @@ describe("CheckInSubmissionSchema", () => {
       ruminationScore: 4,
     });
     expect(outOfRange.success).toBe(false);
+
+    const zeroSingleTap = CheckInSubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed",
+      singleItemScore: 0,
+    });
+    expect(zeroSingleTap.success).toBe(false);
+
+    const zeroComposite = CheckInSubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed",
+      moodScore: 3,
+      interestScore: 3,
+      energyScore: 3,
+      ruminationScore: 3,
+      compositeScore: 0,
+    });
+    expect(zeroComposite.success).toBe(false);
+
+    for (const field of [
+      "moodScore",
+      "interestScore",
+      "energyScore",
+      "ruminationScore",
+    ] as const) {
+      const fourItemWithZero = CheckInSubmissionSchema.safeParse({
+        participantId: "sim-post-tms-01",
+        date: "2026-11-13",
+        status: "completed",
+        moodScore: 3,
+        interestScore: 3,
+        energyScore: 3,
+        ruminationScore: 3,
+        [field]: 0,
+      });
+      expect(fourItemWithZero.success).toBe(false);
+    }
+
+    const twoTapZeroZero = CheckInSubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed",
+      moodScore: 0,
+      interestScore: 0,
+    });
+    expect(twoTapZeroZero.success).toBe(true);
+
+    const twoTapWithEnergy = CheckInSubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed",
+      moodScore: 2,
+      interestScore: 3,
+      energyScore: 3,
+    });
+    expect(twoTapWithEnergy.success).toBe(false);
+
+    const twoTapWithRumination = CheckInSubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed",
+      moodScore: 2,
+      interestScore: 3,
+      ruminationScore: 3,
+    });
+    expect(twoTapWithRumination.success).toBe(false);
+
+    const twoTapWithComposite = CheckInSubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed",
+      moodScore: 2,
+      interestScore: 3,
+      compositeScore: 2.5,
+    });
+    expect(twoTapWithComposite.success).toBe(false);
   });
 });
 
@@ -151,6 +257,43 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
     });
     expect(missed.totalScore).toBeNull();
     expect(missed.crisisPathRequired).toBe(false);
+  });
+
+  it("handles unfinished (in_progress) PHQ-9 without scoring and triggers crisis immediately on item 9 > 0", () => {
+    const unfinishedWithSelfHarm = evaluatePhq9Submission({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "in_progress",
+      item1Interest: 2,
+      item9SelfHarm: 1,
+      crisisPathShown: true,
+      isSimulated: true,
+      source: "synthetic",
+    });
+    expect(unfinishedWithSelfHarm.totalScore).toBeNull();
+    expect(unfinishedWithSelfHarm.crisisPathRequired).toBe(true);
+
+    const unfinishedWithoutSelfHarm = evaluatePhq9Submission({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "in_progress",
+      item1Interest: 1,
+      item2Mood: 2,
+      crisisPathShown: false,
+      isSimulated: true,
+      source: "synthetic",
+    });
+    expect(unfinishedWithoutSelfHarm.totalScore).toBeNull();
+    expect(unfinishedWithoutSelfHarm.crisisPathRequired).toBe(false);
+
+    const unfinishedWithTotalScore = Phq9SubmissionSchema.safeParse({
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "in_progress",
+      item1Interest: 1,
+      totalScore: 1,
+    });
+    expect(unfinishedWithTotalScore.success).toBe(false);
   });
 });
 
