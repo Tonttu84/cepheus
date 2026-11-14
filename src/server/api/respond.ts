@@ -9,7 +9,7 @@ const MAX_BODY_BYTES = 8_192;
  * header that carries an answer value. A crisis answer adds the crisis path
  * to whatever else is said, refusals and failures included.
  */
-export function respond(body: Record<string, unknown>, status = 200, crisis = false): NextResponse {
+export function respond(body: object, status = 200, crisis = false): NextResponse {
   const withCrisis = crisis ? { ...body, showCrisisPath: true, crisisResources: CRISIS_RESOURCES } : body;
   return NextResponse.json(withCrisis, { status, headers: { "Cache-Control": "no-store" } });
 }
