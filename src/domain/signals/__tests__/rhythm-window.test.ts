@@ -92,6 +92,11 @@ describe("computeRhythmWindow and computeMovingRhythmWindows", () => {
     if (!result.ok) return;
     expect(result.value.validDays).toBe(7);
     expect(result.value.windowDays).toBe(8);
+    expect(result.value.interdailyStability).toBeCloseTo(1.0, 3);
+    expect(result.value.relativeAmplitude).toBeCloseTo(1.0, 3);
+    expect(result.value.m10).toBeCloseTo(50.0, 2);
+    expect(result.value.l5).toBeCloseTo(0.0, 2);
+    expect(result.value.sri).toBeCloseTo(100.0, 2);
   });
 
   // Edge case 4: M10 and L5 crossing midnight in window
@@ -148,6 +153,11 @@ describe("computeRhythmWindow and computeMovingRhythmWindows", () => {
       expect(w.ok).toBe(true);
       if (w.ok) {
         expect(w.value.validDays).toBe(7);
+        expect(w.value.interdailyStability).toBeCloseTo(1.0, 3);
+        expect(w.value.relativeAmplitude).toBeCloseTo(1.0, 3);
+        expect(w.value.m10).toBeCloseTo(50.0, 2);
+        expect(w.value.l5).toBeCloseTo(0.0, 2);
+        expect(w.value.sri).toBeCloseTo(100.0, 2);
       }
     }
     if (windows[0].ok) expect(windows[0].value.dayIndex).toBe(7);

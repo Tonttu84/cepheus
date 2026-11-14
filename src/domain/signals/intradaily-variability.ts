@@ -38,6 +38,24 @@ function sumConsecutiveDifferences(flatHours: readonly (number | null)[]): {
   return { diffSqSum, transitionCount };
 }
 
+function appendValidDayHours(
+  hourly: readonly (number | null)[],
+  flatHours: (number | null)[],
+  validSamples: number[]
+): void {
+  for (let h = 0; h < 24; h++) {
+    const v = hourly[h];
+    flatHours.push(v);
+    if (v !== null) validSamples.push(v);
+  }
+}
+
+function appendDroppedDayHours(flatHours: (number | null)[]): void {
+  for (let h = 0; h < 24; h++) {
+    flatHours.push(null);
+  }
+}
+
 /**
  * Compute Intradaily Variability (IV) over a window of days.
  * Measures fragmentation of the rest-activity rhythm (higher = more fragmented).
@@ -60,15 +78,9 @@ export function computeIntradailyVariability(
 
     if (validated.value.isValidDay) {
       validDaysCount++;
-      for (let h = 0; h < 24; h++) {
-        const v = validated.value.hourly[h];
-        flatHours.push(v);
-        if (v !== null) validSamples.push(v);
-      }
+      appendValidDayHours(validated.value.hourly, flatHours, validSamples);
     } else {
-      for (let h = 0; h < 24; h++) {
-        flatHours.push(null);
-      }
+      appendDroppedDayHours(flatHours);
     }
   }
 
