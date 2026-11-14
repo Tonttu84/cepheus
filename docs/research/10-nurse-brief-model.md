@@ -1,6 +1,6 @@
 # Feasibility and Rules for an LLM-Generated Nurse Brief
 
-Checked 2026-11-14. This report evaluates using an open-weights large language model to compose a pre-call summary brief for a nurse using pseudonymous derived numbers. Every claim is verified against opened primary sources (regulations, peer-reviewed journal papers, official model documentation, and provider specifications). Sources that could not be opened support nothing and their claims are moved to "Not checked".
+Checked 2026-11-14. This report evaluates using an open-weights large language model to compose a pre-call summary brief for a nurse using pseudonymous derived numbers. Every claim is checked against opened primary sources, or against abstracts where the Sources Cited list says so. Sources that could not be opened support nothing and their claims are moved to "Not checked".
 
 **Key constraint:** The model is provided only derived numeric summaries (e.g. check-in score changes, missed round counts, sleep regularity metrics) and outputs plain descriptive sentences quoting those numbers alongside neutral conversation starters. It never computes risk scores, never alerts autonomously, never alters crisis workflows, and never interprets emotion from voice or facial video.
 
@@ -42,7 +42,7 @@ Checked 2026-11-14. This report evaluates using an open-weights large language m
 - **EU AI Act (Regulation (EU) 2024/1689):**
   - **High-Risk Classification (Article 6(1)):** An AI system is high-risk if it is a product or safety component covered by EU harmonisation laws (Annex I, including MDR 2017/745) and requires a third-party conformity assessment (which applies to MDR Class IIa and above). Under Article 113(c), Article 6(1) obligations for Annex I products apply from 2 August 2027.
   - **Human Oversight (Article 14):** Systems must allow individuals overseeing the tool to fully understand limitations, disregard outputs, and intervene or stop processing.
-  - **Transparency Obligations (Article 50):** Under Article 50(1), providers must ensure AI systems interacting with individuals inform them that they are interacting with AI. Under Article 50(2), deployers of emotion recognition or biometric categorisation must inform affected individuals. General application of the AI Act begins 2 August 2026 (Article 113).
+  - **Transparency Obligations (Article 50):** Under Article 50(1), providers must ensure AI systems interacting with individuals inform them that they are interacting with AI. Under Article 50(3), deployers of emotion recognition or biometric categorisation must inform affected individuals. General application of the AI Act begins 2 August 2026 (Article 113).
 - **Verdict:** The software must avoid generating diagnostic statements or triage advice to prevent triggering MDR Class IIa classification and subsequent AI Act Article 6(1) high-risk designation.
 
 ## 5. The Model (Gemma) and Host (Verda)
@@ -96,7 +96,7 @@ To comply with MDR boundaries, AI Act rules, and professional licensing limits, 
 ## What this supports
 
 - **Constrained descriptive summaries:** Using an open-weights LLM to translate verified numeric metric deltas into concise, structured sentences for clinician review is technically feasible and legally permissible, provided the model does not generate clinical diagnoses or treatment recommendations.
-- **Hardware-isolated cloud execution:** Hosting the model on Verda in Finland utilizing confidential computing (hardware-level isolation) satisfies GDPR Article 28 and 32 security requirements for processing pseudonymous health data.
+- **Hardware-isolated cloud execution:** Verda's documented confidential computing and certifications support the technical safeguards, subject to an Article 28 processor agreement and a review of its retention terms, which could not be checked.
 - **Human oversight safeguards:** Presenting raw input metrics alongside the AI draft supports compliance with EU AI Act Article 14 (human oversight) and directly counters automation bias.
 
 ## What this does not support
@@ -108,7 +108,7 @@ To comply with MDR boundaries, AI Act rules, and professional licensing limits, 
 ## Not checked
 
 - Claims from the unopened Medium (2024) article regarding specific schema-lock and semantic cross-referencing benchmarks.
-- Verda's specific contractual log retention windows (such as the 90-day retention claim) from the blocked privacy policy page.
+- Verda's retention terms and specific contractual log retention windows (such as the 90-day retention claim) from the blocked privacy policy page.
 - Specific contractual terms of Google's Health AI Developer Foundations (HAI-DEF) license.
 - Licensing terms for Gemma 4 variants under Apache 2.0 (primary repository not opened).
 - Empirical hallucination rates of a quantized 4B model specifically on psychiatric check-in metrics.
