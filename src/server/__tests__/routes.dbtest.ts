@@ -241,4 +241,66 @@ describe("the routes on PostgreSQL (*.dbtest.ts)", () => {
     expect(callRow.date).toBe("2026-11-16");
     expect(callRow.position).toBe("after");
   });
+
+  it("Case 1 on PostgreSQL: brings a silent patient with elapsed rounds up to date with a silence flag and missed rounds", async () => {
+    const silentCode = "P-SIM-SILENT-01";
+    const silentParticipant = await prisma.participant.create({
+      data: {
+        clinicId,
+        participantCode: silentCode,
+        label: "Simulated silent participant",
+        source: "synthetic",
+        isSimulated: true,
+        enrolmentDate: "2026-11-16",
+        scheduleDaysJson: "[1,4]",
+        scheduleTime: "18:00",
+        timeZone: "Europe/Helsinki",
+        takingPart: true,
+        ruleCheckConsent: true,
+      },
+    });
+
+    const flagsBefore = await prisma.clinicFlag.findMany({ where: { participantId: silentParticipant.id } });
+    expect(flagsBefore).toHaveLength(0);
+    const roundsBefore = await prisma.checkInRound.findMany({ where: { participantId: silentParticipant.id } });
+    expect(roundsBefore).toHaveLength(0);
+
+    // Fast-forward past two rounds: round 1 ended Thu Nov 19, round 2 ended Mon Nov 23
+    vi.setSystemTime(new Date("2026-11-23T16:05:00.000Z"));
+
+    const currentNurseCookie = `${SESSION_COOKIE_NAME}=${sealSession({
+      kind: "staff",
+      actor: { kind: "staff", staffId: "routes-dbtest-nurse", clinicId, role: "nurse" },
+      displayName: "Simulated nurse",
+      email: "nurse@sim-clinic.local",
+      clinicName: "Routes test clinic",
+      avatarInitials: "SN",
+      isSimulated: true,
+      signedInAt: new Date().toISOString(),
+    })}`;
+
+    const res = await getFlags(request("/api/clinic/flags", { method: "GET", cookie: currentNurseCookie }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; flags: { patientId: string; area: string }[] };
+    expect(body.ok).toBe(true);
+
+    const silentFlag = body.flags.find((f) => f.patientId === silentParticipant.id);
+    expect(silentFlag).toBeDefined();
+    expect(silentFlag).toMatchObject({
+      patientId: silentParticipant.id,
+      area: "check_in",
+    });
+
+    const missedRounds = await prisma.checkInRound.findMany({
+      where: { participantId: silentParticipant.id },
+      orderBy: { roundNumber: "asc" },
+    });
+    expect(missedRounds).toHaveLength(2);
+    expect(missedRounds[0].status).toBe("missed");
+    expect(missedRounds[1].status).toBe("missed");
+
+    const flagRows = await prisma.clinicFlag.findMany({ where: { participantId: silentParticipant.id } });
+    expect(flagRows).toHaveLength(1);
+    expect(flagRows[0].triggerKind).toBe("silence");
+  });
 });

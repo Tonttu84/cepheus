@@ -28,6 +28,8 @@ function warningFor(patientId: string, raisedAt: string): StoredWarning {
   };
 }
 
+const TWO_ROUNDS_ELAPSED = "2026-11-23T16:05:00.000Z";
+
 function flagsRequest(cookie: string | null, query = "") {
   return apiRequest(`/api/clinic/flags${query}`, { method: "GET", cookie });
 }
@@ -117,6 +119,106 @@ describe("GET /api/clinic/flags", () => {
     }));
     const res = await getFlags(flagsRequest(staffCookie()));
     expect(res.status).toBe(503);
+  });
+
+  it("brings clinic patients up to date: a silent patient with elapsed rounds gets a silence flag and missed rounds are stored", async () => {
+    tearDownRoutes();
+    fake = setUpRoutes(TWO_ROUNDS_ELAPSED);
+    await fake.ports.patients.savePatient(patientRecord({ patientId: "silent-1" }));
+    fake.clinicPatients[CLINIC_ID] = ["silent-1"];
+
+    expect(await fake.ports.warnings.getWarnings("silent-1")).toHaveLength(0);
+    expect(await fake.ports.rounds.getRounds("silent-1")).toHaveLength(0);
+
+    const res = await getFlags(flagsRequest(staffCookie()));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; flags: { patientId: string; area: string }[] };
+    expect(body.flags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          patientId: "silent-1",
+          area: "check_in",
+        }),
+      ])
+    );
+
+    const storedRounds = await fake.ports.rounds.getRounds("silent-1");
+    expect(storedRounds).toHaveLength(2);
+    expect(storedRounds.map((r) => r.status)).toEqual(["missed", "missed"]);
+  });
+
+  it("does not touch a patient of another clinic (no rounds closed, no flag)", async () => {
+    tearDownRoutes();
+    fake = setUpRoutes(TWO_ROUNDS_ELAPSED);
+    await fake.ports.patients.savePatient(patientRecord({ patientId: "own-silent", clinicId: CLINIC_ID }));
+    await fake.ports.patients.savePatient(patientRecord({ patientId: "other-silent", clinicId: OTHER_CLINIC_ID }));
+    fake.clinicPatients[CLINIC_ID] = ["own-silent"];
+    fake.clinicPatients[OTHER_CLINIC_ID] = ["other-silent"];
+
+    const res = await getFlags(flagsRequest(staffCookie(CLINIC_ID)));
+    expect(res.status).toBe(200);
+
+    const otherRounds = await fake.ports.rounds.getRounds("other-silent");
+    expect(otherRounds).toHaveLength(0);
+    const otherWarnings = await fake.ports.warnings.getWarnings("other-silent");
+    expect(otherWarnings).toHaveLength(0);
+
+    const body = (await res.json()) as { ok: boolean; flags: { patientId: string }[] };
+    expect(body.flags.some((f) => f.patientId === "other-silent")).toBe(false);
+  });
+
+  it("calling twice gives the same flags and the same stored rounds", async () => {
+    tearDownRoutes();
+    fake = setUpRoutes(TWO_ROUNDS_ELAPSED);
+    await fake.ports.patients.savePatient(patientRecord({ patientId: "silent-twice" }));
+    fake.clinicPatients[CLINIC_ID] = ["silent-twice"];
+
+    const res1 = await getFlags(flagsRequest(staffCookie()));
+    expect(res1.status).toBe(200);
+    const body1 = await res1.json();
+    const rounds1 = await fake.ports.rounds.getRounds("silent-twice");
+    const warnings1 = await fake.ports.warnings.getWarnings("silent-twice");
+
+    const res2 = await getFlags(flagsRequest(staffCookie()));
+    expect(res2.status).toBe(200);
+    const body2 = await res2.json();
+    const rounds2 = await fake.ports.rounds.getRounds("silent-twice");
+    const warnings2 = await fake.ports.warnings.getWarnings("silent-twice");
+
+    expect(body2).toEqual(body1);
+    expect(rounds2).toEqual(rounds1);
+    expect(warnings2).toEqual(warnings1);
+    expect(rounds2).toHaveLength(2);
+    expect(warnings2).toHaveLength(1);
+  });
+
+  it("one patient whose storage fails does not prevent another patient's flag from being returned", async () => {
+    tearDownRoutes();
+    fake = setUpRoutes(TWO_ROUNDS_ELAPSED);
+    await fake.ports.patients.savePatient(patientRecord({ patientId: "patient-fail" }));
+    await fake.ports.patients.savePatient(patientRecord({ patientId: "patient-ok" }));
+    fake.clinicPatients[CLINIC_ID] = ["patient-fail", "patient-ok"];
+
+    const originalGetRounds = fake.ports.rounds.getRounds.bind(fake.ports.rounds);
+    vi.spyOn(fake.ports.rounds, "getRounds").mockImplementation(async (id: string) => {
+      if (id === "patient-fail") {
+        throw new Error("disk I/O error");
+      }
+      return originalGetRounds(id);
+    });
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await getFlags(flagsRequest(staffCookie()));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; flags: { patientId: string }[] };
+    expect(body.flags.some((f) => f.patientId === "patient-ok")).toBe(true);
+
+    expect(errorSpy).toHaveBeenCalled();
+    for (const call of errorSpy.mock.calls) {
+      const serialized = JSON.stringify(call);
+      expect(serialized).not.toContain("patient-fail");
+    }
   });
 });
 
