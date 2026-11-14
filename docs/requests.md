@@ -3,7 +3,8 @@
 This file holds the things one person asks of the others, so that agents can pass them on
 at the start of a session instead of anyone repeating them in chat. To add a request, add
 a row to the table through a trail, like any other change, and put the request in the
-trail's title. A row is removed or marked done in the trail that carries the request out.
+trail's title. Agents pass these on to their users unprompted, as soon as they see
+them. A row is removed or marked done in the trail that carries the request out.
 
 | Date | From | To | Request | Status |
 | --- | --- | --- | --- | --- |

@@ -30,13 +30,20 @@ This file is for coding agents and for people. It holds the rules of this reposi
   3. Report one line per trail: its title, whether it is your user's or a teammate's,
      and the web address that `entire trail show <number>` prints. If nothing is open,
      say nothing.
-  4. Read `docs/requests.md` and tell your user every open request addressed to them or
-     to the team, in a line each.
+  4. Read `docs/requests.md` on `main` and on every open trail whose title starts with
+     "Request".
   Only read: do not comment, approve, add findings or merge unless your user asks. If
   `entire` is missing or not signed in, say so in one line and carry on (see Quirks).
-  To ask something of a teammate, add a row to `docs/requests.md` through a trail and
-  put the request in the trail's title, so that other agents report it at their next
-  session start.
+- Requests pop up without being asked for. Repeat steps 1 and 4 every time you fetch
+  from the remote during a session: before starting a new piece of work and after
+  finishing one. Tell your user at once, in a line each and before carrying on with
+  your own work, about every request addressed to them or to the team that you have
+  not told them about in this session. A request is urgent by default: do not hold it
+  back until the end of a task. When your user answers one, mark it in
+  `docs/requests.md` through a trail, or do what it asks and say so; some things, such
+  as approving a trail in the web client, only a person can do.
+- To ask something of a teammate, add a row to `docs/requests.md` through a trail and
+  put the request in the trail's title, so that other agents pass it on.
 - The author fixes what the review finds. A fix that goes beyond a finding is reviewed
   again.
 - Commit messages follow Conventional Commits: `type(scope): imperative summary`, at
