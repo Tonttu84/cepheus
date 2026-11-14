@@ -136,8 +136,12 @@ export async function POST(request: Request) {
   const bearer = extractBearerToken(request);
   const webhookTokenHeader = request.headers.get("x-webhook-token")?.trim() ?? null;
 
+  // The Origin header can be set by any script, so this shortcut for the
+  // dashboard's simulated push exists only outside production.
   const sameOriginUiSimulation =
-    verifySameOrigin(request) && parsed.data.isSimulated === true;
+    env.NODE_ENV !== "production" &&
+    verifySameOrigin(request) &&
+    parsed.data.isSimulated === true;
 
   const hmacValid =
     secret.length > 0 && verifyHmacSha256Signature(rawText, sigHeader, secret);

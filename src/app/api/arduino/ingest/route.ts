@@ -20,12 +20,15 @@ function authenticateHardwareRequest(
   evaluated: EvaluatedArduinoEdgeIngest,
   rawIsSimulated: boolean
 ): { ok: true } | { ok: false; status: 401 | 409; error: string } {
-  const sameOriginUiSimulation = verifySameOrigin(request) && rawIsSimulated;
+  const env = getEnv();
+  // The Origin header can be set by any script, so this shortcut for the
+  // dashboard's simulated push exists only outside production.
+  const sameOriginUiSimulation =
+    env.NODE_ENV !== "production" && verifySameOrigin(request) && rawIsSimulated;
   if (sameOriginUiSimulation) {
     return { ok: true };
   }
 
-  const env = getEnv();
   const hasAnyCredentialConfig =
     env.ARDUINO_DEVICE_KEYS_JSON.length > 0 || env.ARDUINO_INGEST_TOKEN.length > 0;
 
@@ -93,11 +96,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: evaluated.error }, { status: 400 });
   }
 
-  const rate = checkRateLimit(
-    getClientKey(request, "arduino-ingest", evaluated.value.deviceId),
-    60,
-    60_000
-  );
+  // Before authentication the device id is unchecked, so the limit is keyed on
+  // the route alone; changing the device id must not give a fresh limit.
+  const rate = checkRateLimit(getClientKey(request, "arduino-ingest"), 60, 60_000);
   if (!rate.allowed) {
     return NextResponse.json(
       { ok: false, error: "Rate limit exceeded." },
