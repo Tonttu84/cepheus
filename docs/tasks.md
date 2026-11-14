@@ -1,6 +1,6 @@
 # Work plan: what is done, what is taken, what is free
 
-Updated against `main` (`9a6f01d`) on 15 Nov 2026, about 01:00. This is the one list
+Updated against `main` (`b024592`) on 15 Nov 2026, about 01:30. This is the one list
 of open work for people and agents. Before you start anything, read it, fetch, and
 check the open trails: two of us built the same sign-in protection in parallel on
 14 Nov because neither list showed the other's work.
@@ -11,7 +11,11 @@ How to use it:
   build on that branch or ask its owner through `docs/requests.md`.
 - **Free** means nobody has started. Take it by publishing a branch early (a draft
   trail is enough) and changing its line here in the same trail.
-- When your trail merges, tick the item in that trail or the next one.
+- **Keep it true.** Every trail that does something from this list changes the list
+  in the same trail: the package's state, the "On main" section, the open trails,
+  and the date and commit in the first line. When you merge someone else's trail,
+  update the list in your next trail. A list that is one merge behind is how the
+  duplicate work happened.
 
 ## On main
 
@@ -25,6 +29,10 @@ How to use it:
   (P0.1 to P0.4 of the earlier list; trails 53 and 57).
 - The Verda Gemma nurse brief (off by default, D44), the bedside unit's scripts and
   enclosure, the browser camera check.
+- The bedside unit's voice check-in (trail 56): Bluetooth headphone audio, spoken
+  answers recognised on the device, a camera check while the questions are asked.
+  Tested without hardware only.
+- This work plan and the pointer to it in `AGENTS.md` (trails 59 and 61).
 
 What main does **not** do yet: no screen reads or writes the database through the
 check-in API. The check-in, patient and clinic pages still show generated data.
@@ -33,11 +41,9 @@ check-in API. The check-in, patient and clinic pages still show generated data.
 
 | Trail | What | State |
 | --- | --- | --- |
-| 55 | Health Connect phone pairing | Reviewed, changes needed (findings on the trail): the pairing routes need a session now that sign-in is on main, and the webhook must store to the paired patient, not the fixed demo participant |
-| 56 | Bedside unit: Bluetooth audio, spoken answers, live face check | Reviewed, changes needed (findings on the trail); still being tested on hardware |
+| 55 | Health Connect phone pairing | Contained in trail 60, which fixes its two serious findings; it goes to main with trail 60 |
 | 53 | Sign-in | Contained in main through trail 57; can be closed |
-| 58 | Patient state over time: a four-state trajectory, suggestions and clinic alarms across the forms, the bedside unit and the health data | Not reviewed yet. Touches suggestions and clinic alarms, so packages C and D1 below must build on it or wait for it |
-| 59 | Added task P1.4 to this file | Merged; P1.4 is package M below |
+| 58 | Patient state over time: a four-state trajectory, suggestions and clinic alarms across the forms, the bedside unit and the health data | Reviewed, to be reworked (findings on the trail): it has its own check-in route and storage beside the shared use cases (against D43, and at the same path as package A), it takes the patient from the request body, and it raises clinic flags beside the decided warning rule. Planned rework: keep the formula as a read-only view computed from what the use cases stored, on top of package A |
 | 60 | Monitoring, Fitbit and the Health Connect pairing bound to the signed-in patient | Reviewed (findings on the trail). Contains trail 55 and fixes its two serious findings; two gaps in the Fitbit link are being fixed on its branch. It also covers the Fitbit part of package H, which H therefore leaves out |
 
 ## Who knows which area
