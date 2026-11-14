@@ -1,3 +1,4 @@
+import { CameraCheckSession } from "@/components/camera-check-session";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
 
@@ -21,12 +22,15 @@ export default function CameraPage() {
           On-device camera wellbeing check
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700">
-          During an optional brief check-in clip, MediaPipe Face Landmarker runs
-          locally inside your browser on your device. Only derived facial
-          expressivity and head-movement summary numbers are saved — never video
+          During an optional brief check-in, MediaPipe Face Landmarker runs
+          locally inside your browser on your device. Only two summary numbers
+          measuring movement of the face and head are saved — never video
           recordings, never image frames, and never audio.
         </p>
       </section>
+
+      {/* Live Interactive Camera Check-in Component */}
+      <CameraCheckSession />
 
       {/* Privacy & On-Device Processing Guarantee */}
       <section
@@ -52,26 +56,24 @@ export default function CameraPage() {
             Step 2 · Derived Numbers Only
           </span>
           <h2 className="mt-1 text-base font-semibold text-stone-900">
-            Expressivity &amp; head kinematics
+            Movement of the face and head
           </h2>
           <p className="mt-1.5 text-xs leading-relaxed text-stone-600">
-            Only aggregate numbers (facial expressivity dispersion, smile
-            fraction, and head pitch/yaw movement variability) are stored
-            against your personal baseline.
+            Only summary numbers measuring movement of the face and head are
+            kept.
           </p>
         </div>
 
         <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-xs">
           <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-            Step 3 · No Mood Reading by AI
+            Step 3 · No Model Judges Mood or Health
           </span>
           <h2 className="mt-1 text-base font-semibold text-stone-900">
             Supporting context only
           </h2>
           <p className="mt-1.5 text-xs leading-relaxed text-stone-600">
-            No general AI model reads mood from your face or voice. Derived
-            numbers are compared strictly against your own initial post-TMS
-            weeks.
+            No model judges mood or health. The camera measures movement of the
+            face and head only.
           </p>
         </div>
       </section>
