@@ -1,4 +1,4 @@
-import type { HistoryRound, HistoryPhq9, HistoryCall, PatientHistory } from './types';
+import type { HistoryRound, HistoryPhq9, HistoryGad7, HistoryCall, PatientHistory, QuestionnaireType } from './types';
 import type { RuleConfig } from '../config';
 
 export type ValidationResult<T> =
@@ -124,6 +124,58 @@ function validatePhq9s(phq9s: unknown): ValidationResult<HistoryPhq9[]> {
   return { ok: true, value: validated };
 }
 
+function validateGad7s(gad7s: unknown): ValidationResult<HistoryGad7[]> {
+  if (gad7s === undefined) {
+    return { ok: true, value: [] };
+  }
+  if (!Array.isArray(gad7s)) {
+    return { ok: false, error: 'GAD-7s must be an array' };
+  }
+
+  const validated: HistoryGad7[] = [];
+  let prevDate: string | null = null;
+
+  for (let i = 0; i < gad7s.length; i++) {
+    const item = gad7s[i];
+    if (!item || typeof item !== 'object') {
+      return { ok: false, error: `GAD-7 at index ${i} is not an object` };
+    }
+    const candidate = item as Record<string, unknown>;
+    if (!isValidCalendarDate(candidate.date)) {
+      return { ok: false, error: `GAD-7 at index ${i} has invalid date` };
+    }
+    const date = candidate.date as string;
+    if (prevDate !== null && date <= prevDate) {
+      return { ok: false, error: 'GAD-7 dates must be strictly increasing and not duplicated' };
+    }
+    prevDate = date;
+
+    const total = candidate.total;
+    if (typeof total !== 'number' || !Number.isInteger(total) || total < 0 || total > 21) {
+      return { ok: false, error: `GAD-7 at index ${i} has invalid total score` };
+    }
+
+    validated.push({ date, total });
+  }
+
+  return { ok: true, value: validated };
+}
+
+function validateQuestionnaires(questionnaires: unknown): ValidationResult<QuestionnaireType[] | undefined> {
+  if (questionnaires === undefined) {
+    return { ok: true, value: undefined };
+  }
+  if (!Array.isArray(questionnaires)) {
+    return { ok: false, error: 'Questionnaires must be an array' };
+  }
+  for (const q of questionnaires) {
+    if (q !== 'phq9' && q !== 'gad7') {
+      return { ok: false, error: `Unknown questionnaire: ${String(q)}` };
+    }
+  }
+  return { ok: true, value: questionnaires as QuestionnaireType[] };
+}
+
 function validateCalls(calls: unknown): ValidationResult<HistoryCall[]> {
   if (calls === undefined) {
     return { ok: true, value: [] };
@@ -179,6 +231,7 @@ export function validateRuleConfig(config: unknown): ValidationResult<RuleConfig
     'phq9NotWellCutoff',
     'phq9WarningCutoff',
     'phq9WarningRise',
+    'gad7WarningCutoff',
   ];
 
   for (const k of keys) {
@@ -202,12 +255,21 @@ export function validatePatientHistory(input: unknown): ValidationResult<Patient
   const phq9sRes = validatePhq9s(record.phq9s);
   if (!phq9sRes.ok) return phq9sRes;
 
+  const gad7sRes = validateGad7s(record.gad7s);
+  if (!gad7sRes.ok) return gad7sRes;
+
   const callsRes = validateCalls(record.calls);
   if (!callsRes.ok) return callsRes;
+
+  const questionnairesRes = validateQuestionnaires(record.questionnaires);
+  if (!questionnairesRes.ok) return questionnairesRes;
 
   if (roundsRes.value.length === 0) {
     if (phq9sRes.value.length > 0) {
       return { ok: false, error: 'PHQ-9 cannot be recorded before the first round' };
+    }
+    if (gad7sRes.value.length > 0) {
+      return { ok: false, error: 'GAD-7 cannot be recorded before the first round' };
     }
     if (callsRes.value.length > 0) {
       return { ok: false, error: 'Call cannot be recorded before the first round' };
@@ -217,6 +279,11 @@ export function validatePatientHistory(input: unknown): ValidationResult<Patient
     for (let i = 0; i < phq9sRes.value.length; i++) {
       if (phq9sRes.value[i].date < firstRoundDate) {
         return { ok: false, error: `PHQ-9 at index ${i} is dated before the first round's date` };
+      }
+    }
+    for (let i = 0; i < gad7sRes.value.length; i++) {
+      if (gad7sRes.value[i].date < firstRoundDate) {
+        return { ok: false, error: `GAD-7 at index ${i} is dated before the first round's date` };
       }
     }
     for (let i = 0; i < callsRes.value.length; i++) {
@@ -231,7 +298,9 @@ export function validatePatientHistory(input: unknown): ValidationResult<Patient
     value: {
       rounds: roundsRes.value,
       phq9s: phq9sRes.value,
+      gad7s: gad7sRes.value,
       calls: callsRes.value,
+      ...(questionnairesRes.value !== undefined ? { questionnaires: questionnairesRes.value } : {}),
     },
   };
 }

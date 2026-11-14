@@ -9,9 +9,9 @@ object, ask, or claim a workstream. `docs/general-plan.md` and
 file is the newer proposal.
 
 Related: the Entire side challenge and a map of the others (`docs/side-challenges.md`).
-Two more proposals are on other open trails, each with its own question for the team:
-research on everyday behaviour as flags (`docs/research/7-behaviour-flags.md`) and an
-agent guide from Entire Brain (`.entire/agent-guide.md`).
+A proposal on an open trail has its own question for the team: an agent guide from
+Entire Brain (`.entire/agent-guide.md`). Research on everyday behaviour as flags
+(`docs/research/7-behaviour-flags.md`) is merged.
 
 ## What we build
 
@@ -126,9 +126,10 @@ Why both simple things and re-treatment, in steps:
 2. The recipient sets the complexity. A patient who is unwell gets one simple thing. The
    healthcare system can take detail.
 3. Measure cheaply first, and spend more effort only when the cheap signals are unclear.
-4. Aim and claim differ. We build for real detection. We say only that the system
-   supports the clinic's judgment about when to act, since a claim to detect or predict
-   relapse makes software a medical device and the evidence for any one signal is early.
+4. Aim and claim differ. The product raises a flag for possible relapse risk and
+   passes it to a nurse or doctor, who makes the judgement. It makes no diagnosis
+   and no treatment claim, and it never tells the patient that it has detected or
+   predicted a relapse.
 5. Safety: a crisis path to a person and to emergency help, with nothing automated in
    between, wherever mood or self-harm is asked about; the patient knows and agrees to
    what the clinic sees; no real patient data; simulated data is labelled as simulated.
@@ -152,7 +153,7 @@ A flag describes a change for this person, never an illness. The patient switche
 method of measuring on separately, sees what it records, and can switch it off again.
 Home and money signals, if any are added, never raise a flag alone: they must agree
 with the patient's own check-in and last a week or more
-(`research/7-behaviour-flags.md`, on another open trail).
+(`research/7-behaviour-flags.md`, merged).
 
 ## Measurement ladder
 
@@ -204,10 +205,11 @@ same code computes the numbers in both cases.
 
 ## Stack
 
-One TypeScript web app: Next.js with strict TypeScript and Tailwind; SQLite through
-Prisma; Zod for input; MediaPipe in the browser for the camera, so video never leaves
-the device; the rhythm, regularity and baseline calculations as plain tested functions;
-Vitest for the calculations and Playwright for the two main screens.
+One TypeScript web app: Next.js with strict TypeScript and Tailwind; PostgreSQL through
+Prisma (with embedded PostgreSQL for local dev and tests; D19); Zod for input; MediaPipe
+in the browser for the camera, so video never leaves the device; the rhythm, regularity
+and baseline calculations as plain tested functions; Vitest for the calculations and
+Playwright for the two main screens.
 
 ## Workstreams
 
@@ -215,10 +217,10 @@ Each is its own trail. Nobody is assigned yet: claim one in a comment.
 
 | # | Workstream | Delivers | Needs |
 |---|---|---|---|
-| 1 | Foundation | App skeleton, the whole data model (check-in answers, ring days, camera readings) so later streams do not edit it at once, a generator for one simulated person's weeks | Nothing; goes first |
+| 1 | Foundation (done) | App skeleton, the whole data model (check-in answers, ring days, camera readings) so later streams do not edit it at once, a generator for one simulated person's weeks | Nothing; goes first |
 | 2 | Questions | The twice-weekly questions and the fortnightly PHQ-9 on the phone, with the crisis path always in view | 1 |
-| 3 | Signal maths | Rhythm, sleep regularity and personal-baseline functions, with tests; the routing rule (what counts as a small dip, a dip that does not recover, and silence); loading the open activity data | 1 |
-| 4 | Camera check | A page measuring facial expressivity and head movement | 1 |
+| 3 | Signal maths (done) | Rhythm, sleep regularity and personal-baseline functions, with tests; the routing rule (what counts as a small dip, a dip that does not recover, and silence); loading the open activity data | 1 |
+| 4 | Camera check (done) | A page measuring facial expressivity and head movement | 1 |
 | 5 | The two screens | The clinic's screen and the patient's one-suggestion screen | 2-4 for real numbers; can start on simulated ones |
 | 6 | Pitch and demo | Demo script, the talk with the Aalto mentors, the submission text | The doctor's input |
 
