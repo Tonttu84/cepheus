@@ -1,4 +1,8 @@
 import { CameraCheckSession } from "@/components/camera-check-session";
+import {
+  ForestCanopyArtwork,
+  ForestDivider,
+} from "@/components/forest-divider";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
 
@@ -8,9 +12,9 @@ export default function CameraPage() {
     dataset.cameraReadings[dataset.cameraReadings.length - 1] ?? null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12 sm:space-y-16">
       {/* Header */}
-      <section className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7">
+      <section className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="On-device MediaPipe summary numbers only" />
           <span className="rounded-full border border-accent-sage-border bg-accent-sage-soft px-3 py-1 text-xs font-medium text-accent-sage-hover">
@@ -27,21 +31,24 @@ export default function CameraPage() {
           measuring movement of the face and head are saved — never video
           recordings, never image frames, and never audio.
         </p>
+
+        <ForestCanopyArtwork className="mt-6 w-full text-accent-sage" />
       </section>
+
+      <ForestDivider variant="clearing" label="Live on-device session" />
 
       {/* Live Interactive Camera Check-in Component */}
       <CameraCheckSession />
 
+      <ForestDivider variant="grove" label="How on-device privacy works" />
+
       {/* Privacy & On-Device Processing Guarantee */}
       <section
         aria-label="On-device privacy guarantee"
-        className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+        className="grid grid-cols-1 gap-6 sm:grid-cols-3"
       >
-        <div className="rounded-2xl border border-border-hairline bg-surface-card p-5 shadow-xs">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-sage">
-            Step 1 · Local WebAssembly
-          </span>
-          <h2 className="font-display mt-1.5 text-base font-semibold text-ink-primary">
+        <div className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7">
+          <h2 className="font-display text-base font-semibold text-ink-primary">
             Processed on your device
           </h2>
           <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
@@ -51,11 +58,8 @@ export default function CameraPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-border-hairline bg-surface-card p-5 shadow-xs">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-sage">
-            Step 2 · Derived Numbers Only
-          </span>
-          <h2 className="font-display mt-1.5 text-base font-semibold text-ink-primary">
+        <div className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7">
+          <h2 className="font-display text-base font-semibold text-ink-primary">
             Movement of the face and head
           </h2>
           <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
@@ -64,11 +68,8 @@ export default function CameraPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-border-hairline bg-surface-card p-5 shadow-xs">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-sage">
-            Step 3 · No Model Judges Mood or Health
-          </span>
-          <h2 className="font-display mt-1.5 text-base font-semibold text-ink-primary">
+        <div className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7">
+          <h2 className="font-display text-base font-semibold text-ink-primary">
             Supporting context only
           </h2>
           <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
@@ -80,10 +81,12 @@ export default function CameraPage() {
 
       {/* Simulated Derived Reading Preview */}
       {latestCamera ? (
-        <section
-          aria-label="Derived numerical summary preview"
-          className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7"
-        >
+        <>
+          <ForestDivider variant="treeline" label="Stored summary format" />
+          <section
+            aria-label="Derived numerical summary preview"
+            className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
+          >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="font-display text-lg font-semibold text-ink-primary">
@@ -99,7 +102,7 @@ export default function CameraPage() {
             <SimulatedBadge subtitle={`Day ${latestCamera.dayIndex} derived record`} />
           </div>
 
-          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <dl className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="rounded-xl border border-border-hairline bg-surface-subtle p-3.5">
               <dt className="text-xs text-ink-muted">Clip duration</dt>
               <dd className="tabular-nums mt-1 text-sm font-semibold text-ink-primary">
@@ -129,6 +132,7 @@ export default function CameraPage() {
             </div>
           </dl>
         </section>
+        </>
       ) : null}
     </div>
   );

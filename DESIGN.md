@@ -2,10 +2,10 @@
 name: "Cepheus"
 description: "Warm Nordic clinical design system for post-TMS home wellbeing check-ins and outer-loop clinic follow-up."
 colors:
-  accent-sage: "#255748"
-  accent-sage-hover: "#1c4438"
-  accent-sage-soft: "#eaf2ef"
-  accent-sage-border: "#d6e4de"
+  accent-sage: "#1b4d38"
+  accent-sage-hover: "#123828"
+  accent-sage-soft: "#dfeee6"
+  accent-sage-border: "#bcd6c8"
   amber-notice-bg: "#fffbeb"
   amber-notice-border: "#fcd34d"
   amber-notice-ink: "#451a03"
@@ -14,15 +14,15 @@ colors:
   rose-urgent-border: "#fda4af"
   rose-urgent-ink: "#4c0519"
   rose-urgent-dot: "#be123c"
-  surface-canvas: "#f7f4ef"
+  surface-canvas: "#f1f6f3"
   surface-card: "#ffffff"
-  surface-subtle: "#faf8f5"
-  surface-muted: "#f1ece4"
-  border-hairline: "#e4ddd2"
-  border-tactile: "#d6cfc4"
-  ink-primary: "#1a2421"
-  ink-secondary: "#515d58"
-  ink-muted: "#4e5a55"
+  surface-subtle: "#e8f1ec"
+  surface-muted: "#dce9e1"
+  border-hairline: "#c8d9cf"
+  border-tactile: "#b0c7ba"
+  ink-primary: "#11241b"
+  ink-secondary: "#2f473c"
+  ink-muted: "#3f594d"
 typography:
   display:
     fontFamily: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
@@ -123,16 +123,17 @@ components:
 
 **Creative North Star: "The Quiet Nordic Study"**
 
-Cepheus is a warm, domestic-first clinical design system built for people recovering at home after TMS treatment and the clinic staff who follow their outer-loop trajectories. Rather than sterile hospital telemetry or gamified wellness trackers, every surface rests on a warm birch-paper canvas (`#f7f4ef`) paired with crisp white cards, stone hairlines, and literary old-style serif headings.
+Cepheus is a warm, domestic-first clinical design system built for people recovering at home after TMS treatment and the clinic staff who follow their outer-loop trajectories. Rather than sterile hospital telemetry or gamified wellness trackers, every surface rests on a soft Nordic forest-paper canvas (`#f1f6f3`) paired with crisp white cards, sage-tinted hairlines, calming Nordic pine/spruce SVG section dividers (`ForestDivider` and `ForestCanopyArtwork`), and literary old-style serif headings.
 
-The system is intentionally low-effort and non-punitive. For patients who may be fatigued or unwell, reading columns stay narrow (`672px` max), touch targets are generous (`40px` × `40px`), and skipping a check-in ("Not today") is treated with quiet neutrality—never red error states, streaks, or scores. For clinic staff, the same warm paper grammar scales to structured three-column overview grids with tabular clinical figures and broad-area trajectory indicators.
+The system is intentionally low-effort and non-punitive. For patients who may be fatigued or unwell, reading columns stay narrow (`672px` max), touch targets are generous (`40px` × `40px`), vertical spacing is generous (`space-y-12` to `space-y-16` with `p-7` to `p-10` card padding), and skipping a check-in ("Not today") is treated with quiet neutrality—never red error states, streaks, or scores. For clinic staff, the same calm forest-paper grammar scales to structured three-column overview grids with tabular clinical figures and broad-area trajectory indicators.
 
 **Key Characteristics:**
-- Warm birch-paper ground (`#f7f4ef`) with crisp white card surfaces (`#ffffff`) and subtle alabaster wells (`#faf8f5`).
-- Deep Nordic Forest Sage (`#255748`) as the sole primary action and consent accent.
+- Soft Nordic forest-paper ground (`#f1f6f3`) with crisp white card surfaces (`#ffffff`) and subtle sage-mist wells (`#e8f1ec`).
+- Deep Nordic Forest Green (`#1b4d38`) as the sole primary action and consent accent.
 - Literary old-style serif headings paired with clean system sans-serif controls and tabular numerals.
+- Generous vertical breathing room (`space-y-12` to `space-y-16`, `p-7` to `p-10`) punctuated by calming Nordic pine/spruce SVG dividers (`ForestDivider` and `ForestCanopyArtwork`).
 - Non-punitive interaction model: missed or skipped check-ins use neutral stone tones, reserving rose strictly for `112` emergency crisis paths and urgent trajectory dots.
-- Hybrid hairline-first depth: `1px` warm stone borders (`#e4ddd2`) do the structural work, supported by whisper-light resting shadows.
+- Hybrid hairline-first depth: `1px` sage-tinted borders (`#c8d9cf`) do the structural work, supported by whisper-light resting shadows.
 
 ## Colors
 
@@ -179,7 +180,7 @@ A grounded, low-glare Nordic palette built around warm paper neutrals, forest sa
 - **Headline** (`600`, `1.5rem` / `24px`, `line-height: 1.25`, `letter-spacing: -0.02em`): Major section headers and view titles.
 - **Title** (`600`, `1.125rem` / `18px`, `line-height: 1.35`): Card titles and sub-section headings.
 - **Body** (`400`, `0.875rem` / `14px`, `line-height: 1.625`): Patient prompts, clinical summaries, and general copy (`60ch–72ch` comfortable reading measure).
-- **Label** (`600`, `0.6875rem` / `11px`, `line-height: 1.4`, `letter-spacing: 0.08em`): Uppercase section eyebrows, status pills, and form labels.
+- **Label** (`600`, `0.6875rem` / `11px`, `line-height: 1.4`, `letter-spacing: 0.08em`): Status pills, metadata captions, and form labels.
 - **Mono** (`500`, `0.75rem` / `12px`, `line-height: 1.5`): Derived camera metrics, day indices, and technical identifiers.
 
 ### Named Rules
@@ -191,11 +192,11 @@ A grounded, low-glare Nordic palette built around warm paper neutrals, forest sa
 
 The global shell stacks a persistent `CrisisHelpBar` at the very top, followed by a sticky frosted `SiteNav`, a centered `<main class="max-w-6xl">` container (`1152px`), and a quiet footer.
 
-Patient-facing check-in flows on `/patient` constrain content to a narrow, low-effort reading column (`max-w-2xl` / `672px`) so fatigued users never scan wide dashboards. Clinic follow-up and overview screens expand to the full `max-w-6xl` (`1152px`) container using responsive three-column grids (`grid-cols-1 lg:grid-cols-3`). Vertical rhythm uses `32px` (`space-y-8`) between major sections and `24px` to `28px` (`p-6 sm:p-7`) internal card padding.
+Patient-facing check-in flows on `/patient` constrain content to a narrow, low-effort reading column (`max-w-2xl` / `672px`) so fatigued users never scan wide dashboards. Clinic follow-up and overview screens expand to the full `max-w-6xl` (`1152px`) container using responsive three-column grids (`grid-cols-1 lg:grid-cols-3`). Vertical rhythm uses generous breathing room (`space-y-12` to `space-y-16`) between major sections—punctuated by `ForestDivider` pine/spruce horizons—and `28px` to `40px` (`p-7` to `p-10`) internal card padding.
 
 ## Elevation & Depth
 
-Cepheus uses hybrid tonal paper layering (`#f7f4ef` canvas → `#ffffff` card → `#faf8f5` inner well) paired with `1px` warm stone hairlines and whisper-light resting shadows (`shadow-xs`, `shadow-2xs`).
+Cepheus uses hybrid tonal paper layering (`#f1f6f3` canvas → `#ffffff` card → `#e8f1ec` inner well) paired with `1px` sage-tinted hairlines and whisper-light resting shadows (`shadow-xs`, `shadow-2xs`).
 
 ### Shadow Vocabulary
 - **Card Rest** (`box-shadow: 0 1px 2px 0 rgba(26, 36, 33, 0.05)`): Subtle resting lift on primary white cards.
@@ -236,10 +237,13 @@ Softly rounded domestic geometry softens every clinical surface: `16px` (`rounde
 ### Broad-Area Clinic Flag Card
 - **Signature Component:** Combines a `16px` white card surface, tabular day-index metadata, and a compact broad-area flag chip (`amber-notice` or `rose-urgent` dot + pill) to surface outer-loop trajectory shifts without diagnostic or relapse-prediction claims.
 
+### Forest Dividers & Canopy Artwork
+- **Calming Section Separators:** `ForestDivider` (`clearing`, `grove`, and `treeline` variants) and `ForestCanopyArtwork` render delicate Nordic pine/spruce SVG silhouettes in `accent-sage` to pace long pages with quiet visual rests.
+
 ## Do's and Don'ts
 
 ### Do:
-- **Do** ground every screen on Warm Birch Paper (`#f7f4ef`) and separate cards with `1px` Warm Stone Hairlines (`#e4ddd2`).
+- **Do** ground every screen on Warm Birch Paper (`#f1f6f3`) and separate cards with `1px` Sage-Tinted Hairlines (`#c8d9cf`).
 - **Do** use literary old-style serif (`font-display`) for page titles, section headers, and the Cepheus wordmark.
 - **Do** apply `tabular-nums` to all dates, day indices, `1`–`5` scale buttons, phone numbers, and derived camera metrics.
 - **Do** keep patient check-in flows in a narrow `max-w-2xl` (`672px`) column with `40px` × `40px` touch targets.

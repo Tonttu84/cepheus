@@ -7,26 +7,26 @@
       "accent-sage": {
         "role": "primary",
         "displayName": "Nordic Forest Sage",
-        "canonical": "#255748",
-        "tonalRamp": ["#112821", "#18392f", "#1e483c", "#255748", "#3d7262", "#659385", "#9dbeb4", "#eaf2ef"]
+        "canonical": "#1b4d38",
+        "tonalRamp": ["#112821", "#18392f", "#1e483c", "#1b4d38", "#3d7262", "#659385", "#9dbeb4", "#dfeee6"]
       },
       "accent-sage-hover": {
         "role": "primary",
         "displayName": "Deep Forest Sage",
-        "canonical": "#1c4438",
-        "tonalRamp": ["#0d201a", "#132e26", "#18392f", "#1c4438", "#315f51", "#578376", "#8fb3a8", "#e2ede9"]
+        "canonical": "#123828",
+        "tonalRamp": ["#0d201a", "#132e26", "#18392f", "#123828", "#315f51", "#578376", "#8fb3a8", "#e2ede9"]
       },
       "accent-sage-soft": {
         "role": "primary",
         "displayName": "Soft Sage Mist",
-        "canonical": "#eaf2ef",
-        "tonalRamp": ["#162e27", "#23463c", "#356356", "#4f8475", "#76a698", "#a4c8bd", "#cde2db", "#eaf2ef"]
+        "canonical": "#dfeee6",
+        "tonalRamp": ["#162e27", "#23463c", "#356356", "#4f8475", "#76a698", "#a4c8bd", "#cde2db", "#dfeee6"]
       },
       "accent-sage-border": {
         "role": "primary",
         "displayName": "Sage Mist Border",
-        "canonical": "#d6e4de",
-        "tonalRamp": ["#162b23", "#244237", "#365f50", "#4f7e6d", "#749e8f", "#9ec0b4", "#bfd6ce", "#d6e4de"]
+        "canonical": "#bcd6c8",
+        "tonalRamp": ["#162b23", "#244237", "#365f50", "#4f7e6d", "#749e8f", "#9ec0b4", "#bfd6ce", "#bcd6c8"]
       },
       "amber-notice-bg": {
         "role": "secondary",
@@ -79,8 +79,8 @@
       "surface-canvas": {
         "role": "neutral",
         "displayName": "Warm Birch Paper",
-        "canonical": "#f7f4ef",
-        "tonalRamp": ["#262420", "#3d3933", "#59544b", "#787166", "#999184", "#bab2a5", "#dbd4c9", "#f7f4ef"]
+        "canonical": "#f1f6f3",
+        "tonalRamp": ["#262420", "#3d3933", "#59544b", "#787166", "#999184", "#bab2a5", "#dbd4c9", "#f1f6f3"]
       },
       "surface-card": {
         "role": "neutral",
@@ -91,44 +91,44 @@
       "surface-subtle": {
         "role": "neutral",
         "displayName": "Warm Alabaster",
-        "canonical": "#faf8f5",
-        "tonalRamp": ["#262523", "#3d3b38", "#595651", "#78746d", "#99948c", "#bab4ab", "#ded9d1", "#faf8f5"]
+        "canonical": "#e8f1ec",
+        "tonalRamp": ["#262523", "#3d3b38", "#595651", "#78746d", "#99948c", "#bab4ab", "#ded9d1", "#e8f1ec"]
       },
       "surface-muted": {
         "role": "neutral",
         "displayName": "Muted Oat Linen",
-        "canonical": "#f1ece4",
-        "tonalRamp": ["#26231f", "#3d3932", "#595349", "#787063", "#998f80", "#bab0a1", "#dad2c5", "#f1ece4"]
+        "canonical": "#dce9e1",
+        "tonalRamp": ["#26231f", "#3d3932", "#595349", "#787063", "#998f80", "#bab0a1", "#dad2c5", "#dce9e1"]
       },
       "border-hairline": {
         "role": "neutral",
         "displayName": "Warm Stone Hairline",
-        "canonical": "#e4ddd2",
-        "tonalRamp": ["#26231e", "#3d3830", "#595246", "#786e5f", "#998e7c", "#b8ad9b", "#d1c8b9", "#e4ddd2"]
+        "canonical": "#c8d9cf",
+        "tonalRamp": ["#26231e", "#3d3830", "#595246", "#786e5f", "#998e7c", "#b8ad9b", "#d1c8b9", "#c8d9cf"]
       },
       "border-tactile": {
         "role": "neutral",
         "displayName": "Tactile Sand Border",
-        "canonical": "#d6cfc4",
-        "tonalRamp": ["#24211d", "#3b3630", "#575047", "#756c60", "#948a7c", "#b0a698", "#c4bbb0", "#d6cfc4"]
+        "canonical": "#b0c7ba",
+        "tonalRamp": ["#24211d", "#3b3630", "#575047", "#756c60", "#948a7c", "#b0a698", "#c4bbb0", "#b0c7ba"]
       },
       "ink-primary": {
         "role": "neutral",
         "displayName": "Deep Pine Ink",
-        "canonical": "#1a2421",
-        "tonalRamp": ["#0c1210", "#131b19", "#1a2421", "#2e3d38", "#485953", "#6b7d77", "#99aba5", "#d9e2df"]
+        "canonical": "#11241b",
+        "tonalRamp": ["#0c1210", "#131b19", "#11241b", "#2e3d38", "#485953", "#6b7d77", "#99aba5", "#d9e2df"]
       },
       "ink-secondary": {
         "role": "neutral",
         "displayName": "Muted Slate Moss",
-        "canonical": "#515d58",
-        "tonalRamp": ["#161a18", "#272e2b", "#3b4541", "#515d58", "#6d7a74", "#8e9c96", "#b5c2bc", "#e1e7e4"]
+        "canonical": "#2f473c",
+        "tonalRamp": ["#161a18", "#272e2b", "#3b4541", "#2f473c", "#6d7a74", "#8e9c96", "#b5c2bc", "#e1e7e4"]
       },
       "ink-muted": {
         "role": "neutral",
         "displayName": "Quiet Lichen Gray",
-        "canonical": "#4e5a55",
-        "tonalRamp": ["#191d1b", "#2c3330", "#424a47", "#57615d", "#4e5a55", "#899691", "#b0bcb7", "#dfe5e2"]
+        "canonical": "#3f594d",
+        "tonalRamp": ["#191d1b", "#2c3330", "#424a47", "#57615d", "#3f594d", "#899691", "#b0bcb7", "#dfe5e2"]
       }
     },
     "typographyMeta": {
@@ -150,7 +150,7 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Uppercase section eyebrows, status pills, and form labels."
+        "purpose": "Status pills, metadata captions, and form labels."
       },
       "mono": {
         "displayName": "Mono",
@@ -256,13 +256,14 @@
   ],
   "narrative": {
     "northStar": "The Quiet Nordic Study",
-    "overview": "Cepheus is a warm, domestic-first clinical design system built for people recovering at home after TMS treatment and the clinic staff who follow their outer-loop trajectories. Rather than sterile hospital telemetry or gamified wellness trackers, every surface rests on a warm birch-paper canvas (#f7f4ef) paired with crisp white cards, stone hairlines, and literary old-style serif headings.\n\nThe system is intentionally low-effort and non-punitive. For patients who may be fatigued or unwell, reading columns stay narrow (672px max), touch targets are generous (40px × 40px), and skipping a check-in (\"Not today\") is treated with quiet neutrality—never red error states, streaks, or scores. For clinic staff, the same warm paper grammar scales to structured three-column overview grids with tabular clinical figures and broad-area trajectory indicators.",
+    "overview": "Cepheus is a warm, domestic-first clinical design system built for people recovering at home after TMS treatment and the clinic staff who follow their outer-loop trajectories. Rather than sterile hospital telemetry or gamified wellness trackers, every surface rests on a soft Nordic forest-paper canvas (#f1f6f3) paired with crisp white cards, sage-tinted hairlines, calming Nordic pine/spruce SVG section dividers (ForestDivider and ForestCanopyArtwork), and literary old-style serif headings.\n\nThe system is intentionally low-effort and non-punitive. For patients who may be fatigued or unwell, reading columns stay narrow (672px max), touch targets are generous (40px × 40px), vertical spacing is generous (space-y-12 to space-y-16 with p-7 to p-10 card padding), and skipping a check-in (\"Not today\") is treated with quiet neutrality—never red error states, streaks, or scores. For clinic staff, the same calm forest-paper grammar scales to structured three-column overview grids with tabular clinical figures and broad-area trajectory indicators.",
     "keyCharacteristics": [
-      "Warm birch-paper ground (#f7f4ef) with crisp white card surfaces (#ffffff) and subtle alabaster wells (#faf8f5).",
-      "Deep Nordic Forest Sage (#255748) as the sole primary action and consent accent.",
+      "Soft Nordic forest-paper ground (#f1f6f3) with crisp white card surfaces (#ffffff) and subtle sage-mist wells (#e8f1ec).",
+      "Deep Nordic Forest Green (#1b4d38) as the sole primary action and consent accent.",
       "Literary old-style serif headings paired with clean system sans-serif controls and tabular numerals.",
+      "Generous vertical breathing room (space-y-12 to space-y-16, p-7 to p-10) punctuated by calming Nordic pine/spruce SVG dividers (ForestDivider and ForestCanopyArtwork).",
       "Non-punitive interaction model: missed or skipped check-ins use neutral stone tones, reserving rose strictly for 112 emergency crisis paths and urgent trajectory dots.",
-      "Hybrid hairline-first depth: 1px warm stone borders (#e4ddd2) do the structural work, supported by whisper-light resting shadows."
+      "Hybrid hairline-first depth: 1px sage-tinted borders (#c8d9cf) do the structural work, supported by whisper-light resting shadows."
     ],
     "rules": [
       {
@@ -292,7 +293,7 @@
       }
     ],
     "dos": [
-      "Do ground every screen on Warm Birch Paper (#f7f4ef) and separate cards with 1px Warm Stone Hairlines (#e4ddd2).",
+      "Do ground every screen on Warm Birch Paper (#f1f6f3) and separate cards with 1px Sage-Tinted Hairlines (#c8d9cf).",
       "Do use literary old-style serif (font-display) for page titles, section headers, and the Cepheus wordmark.",
       "Do apply tabular-nums to all dates, day indices, 1–5 scale buttons, phone numbers, and derived camera metrics.",
       "Do keep patient check-in flows in a narrow max-w-2xl (672px) column with 40px × 40px touch targets.",

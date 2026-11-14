@@ -8,19 +8,16 @@ export function CameraIdleView({ onStart }: CameraIdleViewProps) {
   return (
     <section
       aria-labelledby="camera-check-title"
-      className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-8"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-8 shadow-xs sm:p-10"
     >
       <div className="max-w-2xl">
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-accent-sage">
-          On-Device Session
-        </span>
         <h2
           id="camera-check-title"
-          className="font-display mt-1 text-xl font-semibold tracking-tight text-ink-primary sm:text-2xl"
+          className="font-display text-xl font-semibold tracking-tight text-ink-primary sm:text-2xl"
         >
           Start camera check-in
         </h2>
-        <div className="mt-3 space-y-2 text-sm leading-relaxed text-ink-secondary">
+        <div className="mt-4 space-y-3 text-sm leading-relaxed text-ink-secondary">
           <p>
             The camera looks at movement of the face and head for about 20
             seconds.
@@ -35,7 +32,7 @@ export function CameraIdleView({ onStart }: CameraIdleViewProps) {
           </p>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-4">
+        <div className="mt-8 flex flex-wrap items-center gap-4">
           <button
             type="button"
             data-testid="start-camera-button"

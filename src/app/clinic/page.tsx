@@ -3,6 +3,7 @@ import { toSafeClinicFlagView } from "@/lib/schemas";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { ClinicFlagCard } from "@/components/clinic-flag-card";
+import { ForestDivider } from "@/components/forest-divider";
 
 export default function ClinicPage() {
   const dataset = generateSimulatedPersonWeeks({ throughDay: 56 });
@@ -24,9 +25,9 @@ export default function ClinicPage() {
     : null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12 sm:space-y-14">
       {/* Header */}
-      <section className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7">
+      <section className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Day 56 · Week 8 clinic outer-loop view" />
           <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
@@ -45,6 +46,8 @@ export default function ClinicPage() {
         </p>
       </section>
 
+      <ForestDivider variant="treeline" label="Active follow-up flag" />
+
       {/* Active Broad-Area Flag Card */}
       {safeFlag ? (
         <ClinicFlagCard
@@ -57,8 +60,10 @@ export default function ClinicPage() {
         />
       ) : null}
 
+      <ForestDivider variant="clearing" />
+
       {/* Privacy & Clinical Boundary Footer Note */}
-      <section className="rounded-2xl border border-border-hairline bg-surface-muted/70 p-4.5 text-xs leading-relaxed text-ink-secondary">
+      <section className="rounded-2xl border border-border-hairline bg-surface-muted/70 p-7 text-xs leading-relaxed text-ink-secondary sm:p-10">
         <p>
           <strong className="font-semibold text-ink-primary">
             Privacy &amp; clinical boundary:

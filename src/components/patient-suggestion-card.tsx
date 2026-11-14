@@ -17,7 +17,7 @@ export function PatientSuggestionCard({
     <section
       aria-label="Today's low-effort step"
       data-testid="patient-suggestion-card"
-      className="rounded-2xl border border-accent-sage-border bg-surface-card p-6 shadow-xs sm:p-8"
+      className="rounded-2xl border border-accent-sage-border bg-surface-card p-8 shadow-xs sm:p-10"
     >
       <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-sage-border bg-accent-sage-soft px-3 py-1 text-xs font-semibold text-accent-sage-hover">
         Gentle option · ~10 minutes
@@ -25,15 +25,15 @@ export function PatientSuggestionCard({
 
       <h2
         data-testid="patient-suggestion-title"
-        className="font-display mt-4 text-2xl font-semibold tracking-tight text-ink-primary"
+        className="font-display mt-5 text-2xl font-semibold tracking-tight text-ink-primary"
       >
         {actionTitle}
       </h2>
-      <p className="mt-2.5 text-sm leading-relaxed text-ink-secondary">
+      <p className="mt-3 text-sm leading-relaxed text-ink-secondary">
         {actionDetail}
       </p>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-8 flex flex-wrap items-center gap-3">
         <button
           type="button"
           data-testid="patient-suggestion-accept"
@@ -72,7 +72,7 @@ export function PatientSuggestionCard({
           <button
             type="button"
             onClick={() => setChoice(null)}
-            className="underline underline-offset-2 hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
+            className="inline-flex min-h-11 items-center px-3.5 underline underline-offset-2 hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
           >
             Change response
           </button>
@@ -90,7 +90,7 @@ export function PatientSuggestionCard({
           <button
             type="button"
             onClick={() => setChoice(null)}
-            className="underline underline-offset-2 hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
+            className="inline-flex min-h-11 items-center px-3.5 underline underline-offset-2 hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
           >
             Change response
           </button>

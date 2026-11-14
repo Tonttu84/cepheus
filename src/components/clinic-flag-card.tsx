@@ -29,7 +29,7 @@ export function ClinicFlagCard({
     <section
       aria-label="Broad-area clinic flag"
       data-testid="clinic-flag-card"
-      className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-surface-muted pb-5">
         <div>
@@ -60,7 +60,7 @@ export function ClinicFlagCard({
       </div>
 
       {/* Broad Life Areas */}
-      <div className="mt-5">
+      <div className="mt-7">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
           Broad areas shifted since{" "}
           <span className="tabular-nums">{sinceDate}</span>
@@ -79,7 +79,7 @@ export function ClinicFlagCard({
       </div>
 
       {/* Silence + Ring Active Signal */}
-      <div className="mt-5 rounded-xl border border-amber-200/90 bg-amber-50/70 p-4.5">
+      <div className="mt-7 rounded-xl border border-amber-200/90 bg-amber-50/70 p-5">
         <p className="text-sm font-semibold text-amber-950">
           Check-in silence with active wearable contact
         </p>
@@ -96,7 +96,7 @@ export function ClinicFlagCard({
       </div>
 
       {/* Clinician / Nurse Actions */}
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-8 flex flex-wrap items-center gap-3">
         <button
           type="button"
           data-testid="clinic-action-nurse-call"
@@ -133,7 +133,7 @@ export function ClinicFlagCard({
           <button
             type="button"
             onClick={() => setActionTaken(null)}
-            className="min-h-9 rounded-lg border border-accent-sage-border bg-surface-card px-3 text-xs font-semibold text-accent-sage-hover transition hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
+            className="min-h-11 rounded-lg border border-accent-sage-border bg-surface-card px-3.5 text-xs font-semibold text-accent-sage-hover transition hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
           >
             Undo
           </button>
@@ -152,7 +152,7 @@ export function ClinicFlagCard({
           <button
             type="button"
             onClick={() => setActionTaken(null)}
-            className="min-h-9 rounded-lg border border-accent-sage-border bg-surface-card px-3 text-xs font-semibold text-accent-sage-hover transition hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
+            className="min-h-11 rounded-lg border border-accent-sage-border bg-surface-card px-3.5 text-xs font-semibold text-accent-sage-hover transition hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
           >
             Undo
           </button>

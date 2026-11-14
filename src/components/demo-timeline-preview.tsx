@@ -75,14 +75,11 @@ export function DemoTimelinePreview({
     <section
       aria-label="Interactive post-TMS demo timeline"
       data-testid="demo-timeline-preview"
-      className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-accent-sage">
-            Interactive Trajectory
-          </span>
-          <h2 className="font-display mt-1 text-xl font-semibold tracking-tight text-ink-primary sm:text-2xl">
+          <h2 className="font-display text-xl font-semibold tracking-tight text-ink-primary sm:text-2xl">
             8-Week Post-TMS Demo Trajectory
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-secondary">
@@ -100,7 +97,7 @@ export function DemoTimelinePreview({
       <div
         role="tablist"
         aria-label="Select demo moment"
-        className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3"
+        className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3"
       >
         {moments.map((moment, idx) => {
           const isSelected = moment.key === active.key;
@@ -138,7 +135,7 @@ export function DemoTimelinePreview({
                     isSelected ? "text-white/80" : "text-ink-muted"
                   }`}
                 >
-                  0{idx + 1} · {moment.buttonLabel}
+                  {moment.buttonLabel}
                 </span>
                 <span
                   aria-hidden="true"
@@ -161,7 +158,7 @@ export function DemoTimelinePreview({
         role="tabpanel"
         aria-labelledby={`moment-tab-${active.key}`}
         data-testid={`moment-panel-${active.key}`}
-        className="mt-5 rounded-xl border border-border-hairline bg-surface-subtle/80 p-5 sm:p-6"
+        className="mt-8 rounded-xl border border-border-hairline bg-surface-subtle/80 p-6 sm:p-8"
       >
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border-hairline pb-4">
           <div>
@@ -185,9 +182,9 @@ export function DemoTimelinePreview({
           </span>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="mt-7 grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Column 1: Twice-weekly Check-in & Ring Rhythm */}
-          <div className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-card p-4.5 shadow-2xs">
+          <div className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-card p-5 shadow-2xs sm:p-6">
             <div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
@@ -213,7 +210,7 @@ export function DemoTimelinePreview({
           </div>
 
           {/* Column 2: Patient View (Low-effort step, zero scores/streaks) */}
-          <div className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-card p-4.5 shadow-2xs">
+          <div className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-card p-5 shadow-2xs sm:p-6">
             <div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
@@ -248,7 +245,7 @@ export function DemoTimelinePreview({
           </div>
 
           {/* Column 3: Clinic View (Broad life areas only) */}
-          <div className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-card p-4.5 shadow-2xs">
+          <div className="flex flex-col justify-between rounded-xl border border-border-hairline bg-surface-card p-5 shadow-2xs sm:p-6">
             <div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">

@@ -92,7 +92,7 @@ function PromptCard({
 }: PromptCardProps) {
   const promptId = `checkin-prompt-${item.key}`;
   return (
-    <div className="rounded-xl border border-border-hairline bg-surface-subtle/75 p-4.5 sm:p-5">
+    <div className="rounded-xl border border-border-hairline bg-surface-subtle/75 p-6 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
           {indexLabel} · {item.label}
@@ -153,23 +153,22 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
   return (
     <section
       aria-label="Twice-weekly check-in prompts"
-      className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7"
+      className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-accent-sage">
-              Twice-Weekly Check-In
-            </span>
+            <h2 className="font-display text-xl font-semibold text-ink-primary">
+              {mode === "single_overall"
+                ? "Single overall check-in (1 quick tap)"
+                : "Twice-weekly check-in prompts (4 quick taps)"}
+            </h2>
             {mode === "four_prompts" ? (
               <span className="tabular-nums rounded-full border border-accent-sage-border bg-accent-sage-soft px-2.5 py-0.5 text-xs font-medium text-accent-sage-hover">
                 {answeredCount} of {items.length} answered
               </span>
             ) : null}
           </div>
-          <h2 className="font-display mt-1 text-xl font-semibold text-ink-primary">
-            Twice-weekly check-in prompts (4 quick taps)
-          </h2>
           <p className="mt-1 max-w-2xl text-sm text-ink-secondary">
             If 4 taps feel like too much today, you can answer a single overall
             check-in question or choose &ldquo;Not today&rdquo;.
@@ -231,7 +230,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
         </div>
       ) : null}
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-8 space-y-6">
         {mode === "single_overall" ? (
           <PromptCard
             item={SINGLE_OVERALL_PROMPT}

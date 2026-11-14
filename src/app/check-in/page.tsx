@@ -6,14 +6,18 @@ import {
 } from "@/lib/constants";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { CheckInInteractive } from "@/components/check-in-interactive";
+import {
+  ForestCanopyArtwork,
+  ForestDivider,
+} from "@/components/forest-divider";
 
 export default function CheckInPage() {
   const coreMethods = MEASUREMENT_METHODS.filter((m) => m.core);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12 sm:space-y-14">
       {/* Header */}
-      <section className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7">
+      <section className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Twice-weekly check-in & fortnightly PHQ-9" />
           <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
@@ -33,15 +37,20 @@ export default function CheckInPage() {
           at any time. A skipped or missed check-in is recorded simply as a
           missed round — never scored as zero and never punished.
         </p>
+        <ForestCanopyArtwork className="mt-6 w-full text-accent-sage" />
       </section>
+
+      <ForestDivider variant="clearing" label="Your check-in space" />
 
       {/* 4 Low-Effort Check-In Prompts (Interactive) */}
       <CheckInInteractive items={CHECK_IN_ITEMS} />
 
+      <ForestDivider variant="grove" label="Consent & privacy controls" />
+
       {/* Active Consent Transparency Note */}
       <section
         aria-label="Active consent transparency"
-        className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7"
+        className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
       >
         <h2 className="font-display text-lg font-semibold text-ink-primary">
           What is recorded &amp; your consent controls
@@ -73,10 +82,15 @@ export default function CheckInPage() {
         </div>
       </section>
 
+      <ForestDivider
+        variant="treeline"
+        label="Fortnightly PHQ-9 & human support"
+      />
+
       {/* Fortnightly PHQ-9 & Prominent Crisis Support Reminder */}
       <section
         aria-label="Fortnightly PHQ-9 and immediate human support"
-        className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7"
+        className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
       >
         <h2 className="font-display text-lg font-semibold text-ink-primary">
           Fortnightly PHQ-9 &amp; Immediate Human Crisis Path

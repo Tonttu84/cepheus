@@ -2,6 +2,10 @@ import { PATIENT_SUGGESTIONS } from "@/lib/constants";
 import { generateSimulatedPersonWeeks } from "@/lib/simulation";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { PatientSuggestionCard } from "@/components/patient-suggestion-card";
+import {
+  ForestCanopyArtwork,
+  ForestDivider,
+} from "@/components/forest-divider";
 
 export default function PatientPage() {
   const dataset = generateSimulatedPersonWeeks({ throughDay: 29 });
@@ -10,9 +14,9 @@ export default function PatientPage() {
     PATIENT_SUGGESTIONS[0];
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-10 sm:space-y-12">
       {/* Header */}
-      <section className="rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-7">
+      <section className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Day 29 · Week 5 gentle check-in view" />
           <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
@@ -28,13 +32,18 @@ export default function PatientPage() {
           offers one simple, low-effort option for today. You can try it now or
           leave it for later — whatever feels manageable.
         </p>
+        <ForestCanopyArtwork className="mt-6 w-full text-accent-sage" />
       </section>
+
+      <ForestDivider variant="clearing" />
 
       {/* Single One-Button Low-Effort Suggestion Card */}
       <PatientSuggestionCard
         actionTitle={activeSuggestion.actionTitle}
         actionDetail={activeSuggestion.actionDetail}
       />
+
+      <ForestDivider variant="grove" />
 
       {/* Reassurance note */}
       <section className="rounded-2xl border border-border-hairline bg-surface-muted/70 p-4.5 text-xs leading-relaxed text-ink-secondary">

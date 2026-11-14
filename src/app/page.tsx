@@ -15,6 +15,10 @@ import {
 } from "@/lib/simulation";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import {
+  ForestCanopyArtwork,
+  ForestDivider,
+} from "@/components/forest-divider";
+import {
   DemoTimelinePreview,
   type DemoMomentSummary,
 } from "@/components/demo-timeline-preview";
@@ -196,9 +200,9 @@ export default async function HomePage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12 sm:space-y-16">
       {/* Top Hero Banner */}
-      <section className="relative overflow-hidden rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs sm:p-8">
+      <section className="relative overflow-hidden rounded-2xl border border-border-hairline bg-surface-card p-8 shadow-xs sm:p-11">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-accent-sage/6 blur-2xl"
@@ -228,8 +232,10 @@ export default async function HomePage() {
           when to check in after sustained drift.
         </p>
 
-        <dl className="relative mt-6 grid grid-cols-1 gap-3 border-t border-surface-muted pt-5 sm:grid-cols-3">
-          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 px-4 py-3">
+        <ForestCanopyArtwork className="mt-8 w-full text-accent-sage" />
+
+        <dl className="relative mt-8 grid grid-cols-1 gap-4 border-t border-surface-muted pt-7 sm:grid-cols-3">
+          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
             <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
               Participant
             </dt>
@@ -237,7 +243,7 @@ export default async function HomePage() {
               {participantLabel}
             </dd>
           </div>
-          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 px-4 py-3">
+          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
             <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
               TMS Course Completed
             </dt>
@@ -245,7 +251,7 @@ export default async function HomePage() {
               {tmsCompletedDate}
             </dd>
           </div>
-          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 px-4 py-3">
+          <div className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-5">
             <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
               Active Consented Channels
             </dt>
@@ -257,12 +263,19 @@ export default async function HomePage() {
       </section>
 
       {/* Interactive 3-Moment Switcher */}
+      <ForestDivider
+        variant="treeline"
+        label="Three moments across eight weeks"
+      />
+
       <DemoTimelinePreview
         moments={momentSummaries}
         initialMoment="small_dip"
       />
 
       {/* Workstream Entrypoint Cards (Workstreams 2–5) */}
+      <ForestDivider variant="grove" label="Core modules & views" />
+
       <section aria-label="Workstream modules" className="space-y-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-display text-xl font-semibold text-ink-primary">
@@ -273,17 +286,14 @@ export default async function HomePage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <Link
             href="/check-in"
             data-testid="card-check-in"
-            className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm"
+            className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
           >
             <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-sage">
-                Twice-Weekly Check-In &amp; Fortnightly PHQ-9
-              </span>
-              <h3 className="font-display mt-1.5 text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+              <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
                 Low-effort wellbeing check-in
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
@@ -300,13 +310,10 @@ export default async function HomePage() {
           <Link
             href="/camera"
             data-testid="card-camera"
-            className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm"
+            className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
           >
             <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-sage">
-                On-Device Sensing
-              </span>
-              <h3 className="font-display mt-1.5 text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+              <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
                 On-device camera wellbeing check
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
@@ -323,13 +330,10 @@ export default async function HomePage() {
           <Link
             href="/patient"
             data-testid="card-patient"
-            className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm"
+            className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
           >
             <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-sage">
-                Inner Loop · Day 29 Small Dip
-              </span>
-              <h3 className="font-display mt-1.5 text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+              <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
                 Patient view: One small step for today
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
@@ -346,13 +350,10 @@ export default async function HomePage() {
           <Link
             href="/clinic"
             data-testid="card-clinic"
-            className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-6 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm"
+            className="group flex flex-col justify-between rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs transition hover:-translate-y-0.5 hover:border-accent-sage/50 hover:shadow-sm sm:p-8"
           >
             <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-sage">
-                Outer Loop · Day 56 Sustained Drift
-              </span>
-              <h3 className="font-display mt-1.5 text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
+              <h3 className="font-display text-lg font-semibold text-ink-primary group-hover:text-accent-sage">
                 Clinic view: Broad-area flag &amp; nurse outreach
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
