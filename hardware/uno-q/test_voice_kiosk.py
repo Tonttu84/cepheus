@@ -561,6 +561,73 @@ class BluetoothAndSimultaneousVoiceCameraTests(unittest.TestCase):
         mock_ingest.assert_called_once()
         self.assertTrue(any("No problem, moving on with no penalty." in s for s in spoken))
 
+    def test_audio_route_logging_uses_generic_label_without_device_name(self) -> None:
+        device_name = "User's Custom Headphones"
+        bt_route = bluetooth_audio.AudioRoute(
+            bt_connected=True,
+            bt_sink_ready=True,
+            bt_device_name=device_name,
+            output_backend="pulse",
+            output_sink="bluez_output.AA_BB.1",
+            input_backend="pulse",
+            input_source="bluez_input.AA_BB.0",
+        )
+
+        stdout_buf = io.StringIO()
+        with (
+            mock.patch("sys.stdout", stdout_buf),
+            mock.patch.object(voice_kiosk, "speak_text_on_device"),
+            mock.patch.object(voice_kiosk, "_start_simultaneous_camera", return_value=None),
+            mock.patch.object(
+                voice_kiosk,
+                "_ask_single_voice_question",
+                return_value=("unclear", None),
+            ),
+            mock.patch.object(voice_kiosk, "post_checkin_result"),
+            mock.patch.object(voice_kiosk, "post_derived_metrics"),
+            mock.patch.object(voice_kiosk, "poll_mcu_button_event", return_value=None),
+            mock.patch.object(voice_kiosk, "send_mcu_command"),
+        ):
+            voice_kiosk.run_simultaneous_bedside_cycle(
+                route=bt_route, vosk_model=object()
+            )
+
+        output = stdout_buf.getvalue()
+        self.assertNotIn(device_name, output)
+        self.assertIn("[Audio] Route (bluetooth):", output)
+
+        local_route = bluetooth_audio.AudioRoute(
+            bt_connected=False,
+            bt_sink_ready=False,
+            bt_device_name="Internal Audio",
+            output_backend="pulse",
+            output_sink="alsa_output.pci",
+            input_backend="pulse",
+            input_source="alsa_input.pci",
+        )
+        stdout_local = io.StringIO()
+        with (
+            mock.patch("sys.stdout", stdout_local),
+            mock.patch.object(voice_kiosk, "speak_text_on_device"),
+            mock.patch.object(voice_kiosk, "_start_simultaneous_camera", return_value=None),
+            mock.patch.object(
+                voice_kiosk,
+                "_ask_single_voice_question",
+                return_value=("unclear", None),
+            ),
+            mock.patch.object(voice_kiosk, "post_checkin_result"),
+            mock.patch.object(voice_kiosk, "post_derived_metrics"),
+            mock.patch.object(voice_kiosk, "poll_mcu_button_event", return_value=None),
+            mock.patch.object(voice_kiosk, "send_mcu_command"),
+        ):
+            voice_kiosk.run_simultaneous_bedside_cycle(
+                route=local_route, vosk_model=object()
+            )
+
+        output_local = stdout_local.getvalue()
+        self.assertNotIn("Internal Audio", output_local)
+        self.assertIn("[Audio] Route (local):", output_local)
+
 
 if __name__ == "__main__":
     unittest.main()

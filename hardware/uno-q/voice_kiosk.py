@@ -637,7 +637,7 @@ def run_simultaneous_bedside_cycle(
     simultaneously measuring facial expressivity & head movement on the USB camera.
     """
     active_route = route or detect_audio_route()
-    label = active_route.bt_device_name if active_route.bt_connected else "local"
+    label = "bluetooth" if active_route.bt_connected else "local"
     print(
         f"[Audio] Route ({label}): out={active_route.output_sink}, mic={active_route.input_source}",
         flush=True,
