@@ -93,7 +93,7 @@ describe("parseRequests", () => {
     ]);
   });
 
-  it.fails("parses a table cell containing an escaped pipe (\\|)", () => {
+  it("parses a table cell containing an escaped pipe (\\|)", () => {
     // Bug in scripts/requests-core.mjs:12: splitCells naively splits on '|' even when escaped as '\|' in input "| 14 Nov 2026 | user | team | fix a \| b | open |"
     const docWithEscapedPipe = [
       "| Date | From | To | Request | Status |",

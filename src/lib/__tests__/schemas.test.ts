@@ -420,7 +420,7 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
       expect(CheckInSubmissionSchema.safeParse({ ...baseSingle, singleItemScore: "3" }).success).toBe(false);
     });
 
-    it.fails("rejects an unknown extra field in CheckInSubmissionSchema", () => {
+    it("rejects an unknown extra field in CheckInSubmissionSchema", () => {
       // Bug in src/lib/schemas.ts:23: CheckInSubmissionSchema lacks .strict() to reject unknown properties
       const res = CheckInSubmissionSchema.safeParse({
         ...baseCheckIn,
@@ -510,7 +510,7 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
       }
     });
 
-    it.fails("rejects an unknown extra field in Phq9SubmissionSchema", () => {
+    it("rejects an unknown extra field in Phq9SubmissionSchema", () => {
       // Bug in src/lib/schemas.ts:143: Phq9SubmissionSchema lacks .strict() to reject unknown properties
       const res = Phq9SubmissionSchema.safeParse({
         ...basePhq9,

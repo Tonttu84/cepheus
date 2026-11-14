@@ -11,8 +11,8 @@ function splitCells(line) {
   if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) return null;
   return trimmed
     .slice(1, -1)
-    .split("|")
-    .map((cell) => cell.trim());
+    .split(/(?<!\\)\|/)
+    .map((cell) => cell.replace(/\\\|/g, "|").trim());
 }
 
 /**
