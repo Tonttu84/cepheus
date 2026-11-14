@@ -1,9 +1,12 @@
 import { RuleConfig } from '../config';
+import type { RoundStatus } from '../rounds';
+
+export type { RoundStatus };
 
 export type RoundAnswer = 
-  | { status: 'answered'; mood: number; interest: number }
-  | { status: 'missed' }
-  | { status: 'not_today' };
+  | { status: Extract<RoundStatus, 'answered'>; mood: number; interest: number }
+  | { status: Extract<RoundStatus, 'missed'> }
+  | { status: Extract<RoundStatus, 'not_today'> };
 
 export type RoundKind = 'normal' | 'low' | 'no_answer';
 

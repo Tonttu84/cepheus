@@ -1,8 +1,85 @@
 import { describe, it, expect } from 'vitest';
-import { calculateTapBaseline, calculatePhq9Baseline } from '../index';
+import { calculateTapBaseline, calculateTapBaselines, calculatePhq9Baseline } from '../index';
 import { DEFAULT_RULE_CONFIG } from '../../config';
 
 describe('Baseline', () => {
+  describe('Tap baselines summary', () => {
+    it('returns how many answered rounds are still needed when fewer than required', () => {
+      const answers = [
+        { mood: 4, interest: 4 },
+        { mood: null, interest: null },
+        { mood: 3, interest: 3 },
+      ];
+      const res = calculateTapBaselines(answers, DEFAULT_RULE_CONFIG);
+      expect(res).toEqual({
+        ok: true,
+        exists: false,
+        hasBaseline: false,
+        mood: null,
+        interest: null,
+        roundsNeeded: 6,
+        answeredRoundsCount: 2,
+        requiredRounds: 8,
+      });
+    });
+
+    it('returns baselines when required answered rounds are reached', () => {
+      const answers = [
+        { mood: 4, interest: 4 },
+        { mood: 4, interest: 4 },
+        { mood: 4, interest: 4 },
+        { mood: 4, interest: 4 },
+        { mood: 2, interest: 2 },
+        { mood: 2, interest: 2 },
+        { mood: 2, interest: 2 },
+        { mood: 2, interest: 2 },
+      ];
+      const res = calculateTapBaselines(answers, DEFAULT_RULE_CONFIG);
+      expect(res).toEqual({
+        ok: true,
+        exists: true,
+        hasBaseline: true,
+        mood: 3,
+        interest: 3,
+        roundsNeeded: 0,
+        answeredRoundsCount: 8,
+        requiredRounds: 8,
+      });
+    });
+
+    it('ignores unanswered rounds and later rounds do not change the baseline', () => {
+      const answers = [
+        { mood: 4, interest: 4 },
+        { mood: null, interest: null },
+        { mood: 4, interest: 4 },
+        { mood: 4, interest: 4 },
+        { mood: 4, interest: 4 },
+        { mood: 4, interest: 4 },
+        { mood: 4, interest: 4 },
+        { mood: 4, interest: 4 },
+        { mood: 4, interest: 4 }, // 8th answered round
+        { mood: 0, interest: 0 }, // 9th answered round (should not change baseline)
+      ];
+      const res = calculateTapBaselines(answers, DEFAULT_RULE_CONFIG);
+      expect(res).toEqual({
+        ok: true,
+        exists: true,
+        hasBaseline: true,
+        mood: 4,
+        interest: 4,
+        roundsNeeded: 0,
+        answeredRoundsCount: 9,
+        requiredRounds: 8,
+      });
+    });
+
+    it('refuses invalid scores', () => {
+      expect(calculateTapBaselines([{ mood: -1, interest: 2 }], DEFAULT_RULE_CONFIG).ok).toBe(false);
+      expect(calculateTapBaselines([{ mood: 5, interest: 2 }], DEFAULT_RULE_CONFIG).ok).toBe(false);
+      expect(calculateTapBaselines([{ mood: 2, interest: 2.5 }], DEFAULT_RULE_CONFIG).ok).toBe(false);
+    });
+  });
+
   describe('Tap baseline', () => {
     it('median of the person\'s first eight answered rounds', () => {
       const answers = [3, 1, 4, 1, 5, 9, 2, 6].map(x => (x > 4 ? 4 : x)); 
