@@ -13,6 +13,7 @@ import zipfile
 from xml.sax.saxutils import escape
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
+STL_DIR = os.path.join(OUT_DIR, "stl")
 
 
 def read_binary_stl(path):
@@ -78,7 +79,7 @@ def make_3mf(out_path):
     plate2_instances_xml = []
 
     for idx, (fname, label, plate_id, ext_id, rot90, (bx, by)) in enumerate(parts_spec, start=1):
-        stl_path = os.path.join(OUT_DIR, fname)
+        stl_path = os.path.join(STL_DIR, fname)
         verts, tris = read_binary_stl(stl_path)
         if rot90:
             verts = rotate_z_90(verts)
@@ -211,5 +212,5 @@ def make_3mf(out_path):
 
 
 if __name__ == "__main__":
-    make_3mf(os.path.join(OUT_DIR, "cepheus_desk_buddy.3mf"))
-    make_3mf(os.path.join(OUT_DIR, "stl", "cepheus_desk_buddy.3mf"))
+    os.makedirs(STL_DIR, exist_ok=True)
+    make_3mf(os.path.join(STL_DIR, "cepheus_desk_buddy.3mf"))

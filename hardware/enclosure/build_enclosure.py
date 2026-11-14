@@ -80,6 +80,7 @@ VISOR_PIN_D = 8.0        # Compliant split snap-pin diameter on HingeNub
 VISOR_HOLE_D = 8.4       # Matching bore in VisorPivot (0.2 mm radial clearance)
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
+STL_DIR = os.path.join(OUT_DIR, "stl")
 
 
 # ==============================================================================
@@ -1117,11 +1118,12 @@ def assign_enclosure_materials(tray, shell, visor):
     set_obj_material(visor, mat_white)
 
 
-def export_stl_object(obj, filename):
+def export_stl_object(obj, filename, target_dir=STL_DIR):
+    os.makedirs(target_dir, exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
-    path = os.path.join(OUT_DIR, filename)
+    path = os.path.join(target_dir, filename)
     bpy.ops.wm.stl_export(
         filepath=path,
         export_selected_objects=True,
@@ -1303,7 +1305,7 @@ def export_combined_plates(tray, shell, visor, arms, pins, uno_pins_stl, flat_pa
 
     def clone_split_flat_arms(src, x_split, rot_z_deg, target_xy):
         # Reuse already-exported flat STL cleanly via import so exact flat orientation is preserved
-        bpy.ops.wm.stl_import(filepath=os.path.join(OUT_DIR, src))
+        bpy.ops.wm.stl_import(filepath=os.path.join(STL_DIR, src))
         d = bpy.context.selected_objects[0]
         d.rotation_euler = Euler((0.0, 0.0, math.radians(rot_z_deg)), "XYZ")
         bpy.ops.object.select_all(action="DESELECT")
@@ -1325,12 +1327,12 @@ def export_combined_plates(tray, shell, visor, arms, pins, uno_pins_stl, flat_pa
     w_paws = clone_at(flat_paws, 0.0, (86.0, -68.0))
 
     white_plate = join_objects([w_tray, w_visor, w_arms, w_pins, w_uno, w_paws], "Cepheus_White_Plate")
-    export_stl_object(white_plate, "cepheus_white_plate.stl")
+    export_stl_object(white_plate, "cepheus_white_plate.stl", target_dir=OUT_DIR)
 
     # Combined single-STL of ALL parts (Peach Shell_Top beside White Plate):
     a_shell = clone_at(shell, 0.0, (-212.0, 0.0))
     all_parts = join_objects([white_plate, a_shell], "Cepheus_All_Parts")
-    export_stl_object(all_parts, "cepheus_all_parts.stl")
+    export_stl_object(all_parts, "cepheus_all_parts.stl", target_dir=OUT_DIR)
     bpy.data.objects.remove(all_parts, do_unlink=True)
 
 
