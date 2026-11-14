@@ -8,8 +8,8 @@ export function CrisisHelpBar() {
       data-testid="crisis-help-bar"
       className="border-b border-border-hairline bg-surface-subtle text-ink-primary"
     >
-      <div className="mx-auto flex max-w-5xl flex-col gap-1.5 px-4 py-2 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:overflow-x-auto sm:whitespace-nowrap sm:px-6 sm:py-1.5 lg:overflow-x-visible">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 sm:flex-nowrap">
+      <div className="mx-auto flex max-w-5xl flex-col gap-1.5 px-4 py-2 text-xs sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-1.5 sm:px-6 sm:py-1.5 lg:flex-nowrap">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className="inline-flex items-center gap-1.5 font-semibold text-ink-primary">
             <span
               aria-hidden="true"
@@ -22,7 +22,7 @@ export function CrisisHelpBar() {
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:flex-nowrap">
+        <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0">
           <a
             href="tel:112"
             data-testid="crisis-link-112"

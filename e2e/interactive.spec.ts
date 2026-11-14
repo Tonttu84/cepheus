@@ -71,22 +71,26 @@ test.describe("Interactive Redesign Fixes & Invariants", () => {
     await expect(page.getByRole("status")).toContainText("simulated");
   });
 
-  test("4. / and /check-in show both crisis links at 375px phone viewport", async ({
+  test("4. / and /check-in show all crisis links in viewport at 375px, 640px, and 768px", async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 375, height: 667 });
+    for (const width of [375, 640, 768]) {
+      await page.setViewportSize({ width, height: 667 });
 
-    for (const path of ["/", "/check-in"]) {
-      await page.goto(path);
-      const emergencyLink = page.getByTestId("crisis-link-112");
-      const helplineLink = page.getByTestId("crisis-link-mieli");
+      for (const path of ["/", "/check-in"]) {
+        await page.goto(path);
+        const emergencyLink = page.getByTestId("crisis-link-112");
+        const helplineLink = page.getByTestId("crisis-link-mieli");
+        const clinicLink = page.getByTestId("crisis-link-clinic");
 
-      await expect(emergencyLink).toBeVisible();
-      await expect(emergencyLink).toBeInViewport({ ratio: 1 });
-      await expect(helplineLink).toBeVisible();
-      await expect(helplineLink).toBeInViewport({ ratio: 1 });
-      await expect(emergencyLink).toHaveAttribute("href", "tel:112");
-      await expect(helplineLink).toHaveAttribute("href", /^tel:/);
+        for (const link of [emergencyLink, helplineLink, clinicLink]) {
+          await expect(link).toBeVisible();
+          await expect(link).toBeInViewport({ ratio: 1 });
+        }
+        await expect(emergencyLink).toHaveAttribute("href", "tel:112");
+        await expect(helplineLink).toHaveAttribute("href", /^tel:/);
+        await expect(clinicLink).toHaveAttribute("href", /^tel:/);
+      }
     }
   });
 });

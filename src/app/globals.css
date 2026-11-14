@@ -166,8 +166,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-@view-transition {
-  navigation: auto;
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
 }
 
 main {
