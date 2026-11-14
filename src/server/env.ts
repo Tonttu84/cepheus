@@ -18,6 +18,11 @@ export interface AppEnv {
   ARDUINO_DEVICE_KEYS_JSON: string;
   HEALTH_CONNECT_WEBHOOK_SECRET: string;
   TRUST_PROXY_HEADERS: boolean;
+  VERDA_AI_ENABLED: boolean;
+  VERDA_PATIENT_STEP_ENABLED: boolean;
+  VERDA_INFERENCE_URL: string;
+  VERDA_API_KEY: string;
+  VERDA_GEMMA_MODEL: string;
 }
 
 const optionalTrimmedString = z
@@ -73,23 +78,23 @@ function validateDatabaseUrl(
   }
 }
 
-function validateFitbitRedirect(redirectUri: string, ctx: z.RefinementCtx): void {
-  if (redirectUri.length === 0) return;
+function validateOptionalHttpUrl(
+  urlVal: string,
+  field: string,
+  ctx: z.RefinementCtx
+): void {
+  if (urlVal.length === 0) return;
   try {
-    const parsed = new URL(redirectUri);
+    const parsed = new URL(urlVal);
     if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
       addCustomIssue(
         ctx,
-        "FITBIT_REDIRECT_URI",
-        "Invalid environment variable: FITBIT_REDIRECT_URI (must be http:// or https://)"
+        field,
+        `Invalid environment variable: ${field} (must be http:// or https://)`
       );
     }
   } catch {
-    addCustomIssue(
-      ctx,
-      "FITBIT_REDIRECT_URI",
-      "Invalid environment variable: FITBIT_REDIRECT_URI (must be a valid URL)"
-    );
+    addCustomIssue(ctx, field, `Invalid environment variable: ${field} (must be a valid URL)`);
   }
 }
 
@@ -101,6 +106,9 @@ function validateProductionSecrets(
     FITBIT_REDIRECT_URI: string;
     ARDUINO_INGEST_TOKEN: string;
     HEALTH_CONNECT_WEBHOOK_SECRET: string;
+    VERDA_AI_ENABLED: string;
+    VERDA_INFERENCE_URL: string;
+    VERDA_API_KEY: string;
   },
   ctx: z.RefinementCtx
 ): void {
@@ -111,7 +119,6 @@ function validateProductionSecrets(
       "Missing required environment variable: FITBIT_CLIENT_SECRET (required when FITBIT_CLIENT_ID is set in production)"
     );
   }
-
   if (val.FITBIT_CLIENT_ID.length > 0 && val.FITBIT_REDIRECT_URI.length === 0) {
     addCustomIssue(
       ctx,
@@ -119,7 +126,6 @@ function validateProductionSecrets(
       "Missing required environment variable: FITBIT_REDIRECT_URI (required when FITBIT_CLIENT_ID is set in production)"
     );
   }
-
   if (
     (val.FITBIT_CLIENT_ID.length > 0 || val.APP_SESSION_SECRET.length > 0) &&
     val.APP_SESSION_SECRET.length < 32
@@ -130,7 +136,6 @@ function validateProductionSecrets(
       "Invalid environment variable: APP_SESSION_SECRET (must be at least 32 characters in production)"
     );
   }
-
   if (val.ARDUINO_INGEST_TOKEN.length > 0 && val.ARDUINO_INGEST_TOKEN.length < 16) {
     addCustomIssue(
       ctx,
@@ -138,7 +143,6 @@ function validateProductionSecrets(
       "Invalid environment variable: ARDUINO_INGEST_TOKEN (must be at least 16 characters in production)"
     );
   }
-
   if (
     val.HEALTH_CONNECT_WEBHOOK_SECRET.length > 0 &&
     val.HEALTH_CONNECT_WEBHOOK_SECRET.length < 16
@@ -147,6 +151,28 @@ function validateProductionSecrets(
       ctx,
       "HEALTH_CONNECT_WEBHOOK_SECRET",
       "Invalid environment variable: HEALTH_CONNECT_WEBHOOK_SECRET (must be at least 16 characters in production)"
+    );
+  }
+  if (val.VERDA_AI_ENABLED.toLowerCase() === "true") {
+    if (val.VERDA_INFERENCE_URL.length === 0) {
+      addCustomIssue(
+        ctx,
+        "VERDA_INFERENCE_URL",
+        "Missing required environment variable: VERDA_INFERENCE_URL (required when VERDA_AI_ENABLED=true in production)"
+      );
+    }
+    if (val.VERDA_API_KEY.length === 0) {
+      addCustomIssue(
+        ctx,
+        "VERDA_API_KEY",
+        "Missing required environment variable: VERDA_API_KEY (required when VERDA_AI_ENABLED=true in production)"
+      );
+    }
+  } else if (val.VERDA_INFERENCE_URL.length > 0 && val.VERDA_API_KEY.length === 0) {
+    addCustomIssue(
+      ctx,
+      "VERDA_API_KEY",
+      "Missing required environment variable: VERDA_API_KEY (required when VERDA_INFERENCE_URL is set in production)"
     );
   }
 }
@@ -165,13 +191,19 @@ const rawEnvSchema = z
     ARDUINO_DEVICE_KEYS_JSON: optionalTrimmedString,
     HEALTH_CONNECT_WEBHOOK_SECRET: optionalTrimmedString,
     TRUST_PROXY_HEADERS: optionalTrimmedString,
+    VERDA_AI_ENABLED: optionalTrimmedString,
+    VERDA_PATIENT_STEP_ENABLED: optionalTrimmedString,
+    VERDA_INFERENCE_URL: optionalTrimmedString,
+    VERDA_API_KEY: optionalTrimmedString,
+    VERDA_GEMMA_MODEL: optionalTrimmedString,
   })
   .superRefine((val, ctx) => {
     const isProduction = val.NODE_ENV === "production";
     const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 
     validateDatabaseUrl(val.DATABASE_URL, isProduction, isBuildPhase, ctx);
-    validateFitbitRedirect(val.FITBIT_REDIRECT_URI, ctx);
+    validateOptionalHttpUrl(val.FITBIT_REDIRECT_URI, "FITBIT_REDIRECT_URI", ctx);
+    validateOptionalHttpUrl(val.VERDA_INFERENCE_URL, "VERDA_INFERENCE_URL", ctx);
     if (isProduction && !isBuildPhase) {
       validateProductionSecrets(val, ctx);
     }
@@ -179,10 +211,9 @@ const rawEnvSchema = z
 
 /**
  * Parses and validates environment variables with Zod without ever leaking
- * variable values in exception messages.
+ * secret values in exception messages.
  */
 export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
-  // Preserve explicit NEXT_PHASE passed in test inputs
   const savedPhase = process.env.NEXT_PHASE;
   if (rawEnv.NEXT_PHASE !== undefined) {
     process.env.NEXT_PHASE = rawEnv.NEXT_PHASE;
@@ -220,6 +251,12 @@ export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
     ARDUINO_DEVICE_KEYS_JSON: result.data.ARDUINO_DEVICE_KEYS_JSON,
     HEALTH_CONNECT_WEBHOOK_SECRET: result.data.HEALTH_CONNECT_WEBHOOK_SECRET,
     TRUST_PROXY_HEADERS: result.data.TRUST_PROXY_HEADERS.toLowerCase() === "true",
+    VERDA_AI_ENABLED: result.data.VERDA_AI_ENABLED.toLowerCase() === "true",
+    VERDA_PATIENT_STEP_ENABLED:
+      result.data.VERDA_PATIENT_STEP_ENABLED.toLowerCase() === "true",
+    VERDA_INFERENCE_URL: result.data.VERDA_INFERENCE_URL,
+    VERDA_API_KEY: result.data.VERDA_API_KEY,
+    VERDA_GEMMA_MODEL: result.data.VERDA_GEMMA_MODEL || "google/gemma-3-27b-it",
   };
 }
 

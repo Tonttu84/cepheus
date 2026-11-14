@@ -41,7 +41,6 @@ describe("Environment Check (src/server/env.ts)", () => {
   });
 
   it("refuses the documented local-only password when NODE_ENV is production", () => {
-    // Documented local password
     expect(() =>
       parseEnv({
         NODE_ENV: "production",
@@ -49,7 +48,6 @@ describe("Environment Check (src/server/env.ts)", () => {
       })
     ).toThrowError(/DATABASE_URL/);
 
-    // Fallback/legacy local password
     expect(() =>
       parseEnv({
         NODE_ENV: "production",
@@ -104,6 +102,8 @@ describe("Environment Check (src/server/env.ts)", () => {
     expect(parsed1.DATABASE_URL).toBe(
       "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus"
     );
+    expect(parsed1.VERDA_AI_ENABLED).toBe(false);
+    expect(parsed1.VERDA_PATIENT_STEP_ENABLED).toBe(false);
 
     const parsed2 = parseEnv({
       NODE_ENV: "development",
@@ -172,7 +172,7 @@ describe("Environment Check (src/server/env.ts)", () => {
     }
   });
 
-  it("validates optional Fitbit, session secret, and Arduino ingest token rules in production without leaking secrets", () => {
+  it("validates optional Fitbit, session secret, Arduino, Health Connect, and Verda rules in production without leaking secrets", () => {
     const baseProd = {
       NODE_ENV: "production",
       DATABASE_URL:
@@ -234,6 +234,31 @@ describe("Environment Check (src/server/env.ts)", () => {
       })
     ).toThrowError(/HEALTH_CONNECT_WEBHOOK_SECRET/);
 
+    expect(() =>
+      parseEnv({
+        ...baseProd,
+        VERDA_INFERENCE_URL: "ftp://invalid.verda.example",
+      })
+    ).toThrowError(/VERDA_INFERENCE_URL/);
+
+    expect(() =>
+      parseEnv({
+        ...baseProd,
+        VERDA_AI_ENABLED: "true",
+        VERDA_INFERENCE_URL: "",
+        VERDA_API_KEY: "verda-key",
+      })
+    ).toThrowError(/VERDA_INFERENCE_URL/);
+
+    expect(() =>
+      parseEnv({
+        ...baseProd,
+        VERDA_AI_ENABLED: "true",
+        VERDA_INFERENCE_URL: "https://inference.verda.example/v1/chat/completions",
+        VERDA_API_KEY: "",
+      })
+    ).toThrowError(/VERDA_API_KEY/);
+
     const ok = parseEnv({
       ...baseProd,
       FITBIT_CLIENT_ID: "fitbit-id-123",
@@ -242,9 +267,14 @@ describe("Environment Check (src/server/env.ts)", () => {
       APP_SESSION_SECRET: "0123456789abcdef0123456789abcdef",
       ARDUINO_INGEST_TOKEN: "unoq-prod-token-123456",
       HEALTH_CONNECT_WEBHOOK_SECRET: "hc-webhook-prod-secret-999",
+      VERDA_AI_ENABLED: "true",
+      VERDA_INFERENCE_URL: "https://inference.verda.example/v1/chat/completions",
+      VERDA_API_KEY: "verda-prod-secret",
     });
     expect(ok.FITBIT_CLIENT_ID).toBe("fitbit-id-123");
     expect(ok.ARDUINO_INGEST_TOKEN).toBe("unoq-prod-token-123456");
     expect(ok.HEALTH_CONNECT_WEBHOOK_SECRET).toBe("hc-webhook-prod-secret-999");
+    expect(ok.VERDA_AI_ENABLED).toBe(true);
+    expect(ok.VERDA_GEMMA_MODEL).toBe("google/gemma-3-27b-it");
   });
 });

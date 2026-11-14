@@ -208,6 +208,165 @@ describe("Phq9SubmissionSchema & evaluatePhq9Submission", () => {
     });
     expect(unfinishedWithTotalScore.success).toBe(false);
   });
+
+  describe("CheckInSubmissionSchema numeric field boundary and type tests", () => {
+    const baseCheckIn = {
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed" as const,
+      moodScore: 2,
+      interestScore: 2,
+    };
+
+    it("dayIndex boundaries (nonnegative int): below min, at min, fraction, null, missing, numeric string", () => {
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, dayIndex: -1 }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, dayIndex: 0 }).success).toBe(true);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, dayIndex: 0.5 }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, dayIndex: null }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, dayIndex: undefined }).success).toBe(true);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, dayIndex: "0" }).success).toBe(false);
+    });
+
+    it("weekNumber boundaries (positive int): below min, at min, fraction, null, missing, numeric string", () => {
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, weekNumber: 0 }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, weekNumber: 1 }).success).toBe(true);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, weekNumber: 1.5 }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, weekNumber: null }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, weekNumber: undefined }).success).toBe(true);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, weekNumber: "1" }).success).toBe(false);
+    });
+
+    it("roundNumber boundaries (positive int): below min, at min, fraction, null, missing, numeric string", () => {
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, roundNumber: 0 }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, roundNumber: 1 }).success).toBe(true);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, roundNumber: 1.5 }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, roundNumber: null }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, roundNumber: undefined }).success).toBe(true);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, roundNumber: "1" }).success).toBe(false);
+    });
+
+    it("responseLatencyMs boundaries (nonnegative int, nullable): below min, at min, fraction, null, missing, numeric string", () => {
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, responseLatencyMs: -1 }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, responseLatencyMs: 0 }).success).toBe(true);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, responseLatencyMs: 50.5 }).success).toBe(false);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, responseLatencyMs: null }).success).toBe(true);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, responseLatencyMs: undefined }).success).toBe(true);
+      expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, responseLatencyMs: "100" }).success).toBe(false);
+    });
+
+    it("two-tap moodScore and interestScore boundaries (0..4 int): below min, at min, at max, above max, fraction, null, missing, numeric string", () => {
+      for (const field of ["moodScore", "interestScore"] as const) {
+        expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, [field]: -1 }).success).toBe(false);
+        expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, [field]: 0 }).success).toBe(true);
+        expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, [field]: 4 }).success).toBe(true);
+        expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, [field]: 5 }).success).toBe(false);
+        expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, [field]: 2.5 }).success).toBe(false);
+        expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, [field]: null }).success).toBe(false);
+        const copy: Record<string, unknown> = { ...baseCheckIn };
+        delete copy[field];
+        expect(CheckInSubmissionSchema.safeParse(copy).success).toBe(false);
+        expect(CheckInSubmissionSchema.safeParse({ ...baseCheckIn, [field]: "2" }).success).toBe(false);
+      }
+    });
+
+    it("rejects an unknown extra field in CheckInSubmissionSchema", () => {
+      const res = CheckInSubmissionSchema.safeParse({
+        ...baseCheckIn,
+        unknownInjectedField: "malicious_payload",
+      });
+      expect(res.success).toBe(false);
+    });
+  });
+
+  describe("Phq9SubmissionSchema numeric field boundary and type tests", () => {
+    const basePhq9 = {
+      participantId: "sim-post-tms-01",
+      date: "2026-11-13",
+      status: "completed" as const,
+      item1Interest: 1,
+      item2Mood: 1,
+      item3Sleep: 1,
+      item4Energy: 1,
+      item5Appetite: 1,
+      item6SelfWorth: 1,
+      item7Concentration: 1,
+      item8Psychomotor: 1,
+      item9SelfHarm: 0,
+    };
+
+    it("dayIndex boundaries (nonnegative int): below min, at min, fraction, null, missing, numeric string", () => {
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, dayIndex: -1 }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, dayIndex: 0 }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, dayIndex: 0.5 }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, dayIndex: null }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, dayIndex: undefined }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, dayIndex: "0" }).success).toBe(false);
+    });
+
+    it("weekNumber boundaries (positive int): below min, at min, fraction, null, missing, numeric string", () => {
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, weekNumber: 0 }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, weekNumber: 1 }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, weekNumber: 1.5 }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, weekNumber: null }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, weekNumber: undefined }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, weekNumber: "1" }).success).toBe(false);
+    });
+
+    it("totalScore boundaries (0..27 int, nullable): below min, at min, at max, above max, fraction, null, missing, numeric string", () => {
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, totalScore: -1 }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, totalScore: 0 }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, totalScore: 27 }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, totalScore: 28 }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, totalScore: 12.5 }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, totalScore: null }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, totalScore: undefined }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, totalScore: "10" }).success).toBe(false);
+    });
+
+    it("baselineDelta (int, nullable): fraction, null, missing, numeric string", () => {
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, baselineDelta: 2.5 }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, baselineDelta: null }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, baselineDelta: undefined }).success).toBe(true);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, baselineDelta: "2" }).success).toBe(false);
+      expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, baselineDelta: 3 }).success).toBe(true);
+    });
+
+    it("all nine PHQ-9 items (0..3 int): below min, at min, at max, above max, fraction, null, missing, numeric string", () => {
+      const items = [
+        "item1Interest",
+        "item2Mood",
+        "item3Sleep",
+        "item4Energy",
+        "item5Appetite",
+        "item6SelfWorth",
+        "item7Concentration",
+        "item8Psychomotor",
+        "item9SelfHarm",
+      ] as const;
+
+      for (const item of items) {
+        expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, [item]: -1 }).success).toBe(false);
+        expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, [item]: 0 }).success).toBe(true);
+        expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, [item]: 3 }).success).toBe(true);
+        expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, [item]: 4 }).success).toBe(false);
+        expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, [item]: 1.5 }).success).toBe(false);
+        expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, [item]: null }).success).toBe(false);
+        const copy: Record<string, unknown> = { ...basePhq9 };
+        delete copy[item];
+        expect(Phq9SubmissionSchema.safeParse(copy).success).toBe(false);
+        expect(Phq9SubmissionSchema.safeParse({ ...basePhq9, [item]: "2" }).success).toBe(false);
+      }
+    });
+
+    it("rejects an unknown extra field in Phq9SubmissionSchema", () => {
+      // Bug in src/lib/schemas.ts:143: Phq9SubmissionSchema lacks .strict() to reject unknown properties
+      const res = Phq9SubmissionSchema.safeParse({
+        ...basePhq9,
+        unknownInjectedField: "malicious_payload",
+      });
+      expect(res.success).toBe(false);
+    });
+  });
 });
 
 describe("NurseCallOutcomeSchema (no free text)", () => {

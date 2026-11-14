@@ -29,6 +29,52 @@ export interface CameraCheckSessionProps {
   config?: CameraSessionConfig;
 }
 
+function SessionStateBody({
+  state,
+  errorMessage,
+  sessionResult,
+  onStart,
+  onStop,
+  onReset,
+}: {
+  state: SessionState;
+  errorMessage: string | null;
+  sessionResult: ReturnType<typeof useCameraSession>["sessionResult"];
+  onStart: () => void;
+  onStop: () => void;
+  onReset: () => void;
+}) {
+  switch (state) {
+    case "idle":
+      return <CameraIdleView onStart={onStart} />;
+    case "loading_model":
+    case "requesting_camera":
+      return <CameraPreparingView state={state} onCancel={onStop} />;
+    case "completed":
+      return sessionResult && sessionResult.hasNumbers ? (
+        <CameraCompletedView sessionResult={sessionResult} onReset={onReset} />
+      ) : null;
+    case "stopped":
+      return <CameraStoppedView onReset={onReset} />;
+    case "permission_denied":
+      return <CameraPermissionDeniedView onRetry={onStart} />;
+    case "no_camera":
+      return <CameraNotFoundView onRetry={onStart} />;
+    case "model_error":
+      return (
+        <CameraModelErrorView onRetry={onStart} errorMessage={errorMessage} />
+      );
+    case "no_face_found":
+      return <CameraNoFaceFoundView onRetry={onStart} />;
+    case "error":
+      return (
+        <CameraGenericErrorView onRetry={onStart} errorMessage={errorMessage} />
+      );
+    default:
+      return null;
+  }
+}
+
 export function CameraCheckSession({
   durationMs: propDurationMs = 20_000,
   config = DEFAULT_CAMERA_SESSION_CONFIG,
@@ -74,15 +120,7 @@ export function CameraCheckSession({
         {liveAnnouncement}
       </div>
 
-      {/* State 1: IDLE */}
-      {state === "idle" && <CameraIdleView onStart={handleStart} />}
-
-      {/* State 2 & 3: Loading or Requesting */}
-      {(state === "loading_model" || state === "requesting_camera") && (
-        <CameraPreparingView state={state} onCancel={handleStop} />
-      )}
-
-      {/* State 4: Recording */}
+      {/* Recording stays mounted so videoRef remains attached */}
       <div className={state === "recording" ? "" : "hidden"}>
         <CameraRecordingView
           videoRef={videoRef}
@@ -92,45 +130,14 @@ export function CameraCheckSession({
         />
       </div>
 
-      {/* State 5: COMPLETED */}
-      {state === "completed" && sessionResult && sessionResult.hasNumbers && (
-        <CameraCompletedView
-          sessionResult={sessionResult}
-          onReset={handleReset}
-        />
-      )}
-
-      {/* State 6: STOPPED */}
-      {state === "stopped" && <CameraStoppedView onReset={handleReset} />}
-
-      {/* State 7: PERMISSION DENIED */}
-      {state === "permission_denied" && (
-        <CameraPermissionDeniedView onRetry={handleStart} />
-      )}
-
-      {/* State 8: NO CAMERA FOUND */}
-      {state === "no_camera" && <CameraNotFoundView onRetry={handleStart} />}
-
-      {/* State 9: MODEL ERROR */}
-      {state === "model_error" && (
-        <CameraModelErrorView
-          onRetry={handleStart}
-          errorMessage={errorMessage}
-        />
-      )}
-
-      {/* State 10: NO FACE FOUND FOR MOST OF SESSION */}
-      {state === "no_face_found" && (
-        <CameraNoFaceFoundView onRetry={handleStart} />
-      )}
-
-      {/* State 11: GENERIC ERROR */}
-      {state === "error" && (
-        <CameraGenericErrorView
-          onRetry={handleStart}
-          errorMessage={errorMessage}
-        />
-      )}
+      <SessionStateBody
+        state={state}
+        errorMessage={errorMessage}
+        sessionResult={sessionResult}
+        onStart={handleStart}
+        onStop={handleStop}
+        onReset={handleReset}
+      />
     </div>
   );
 }

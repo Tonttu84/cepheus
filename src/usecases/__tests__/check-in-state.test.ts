@@ -41,7 +41,7 @@ describe('CheckInState and Taps Status (Points 4 and 5)', () => {
     if (!res.ok) return;
 
     const keys = Object.keys(res.value).sort();
-    const expectedKeys = ['hasSuggestionWaiting', 'isPhq9Due', 'openRound', 'phq9Progress', 'taps'].sort();
+    const expectedKeys = ['extraItem', 'hasSuggestionWaiting', 'isPhq9Due', 'openRound', 'phq9Progress', 'taps'].sort();
     expect(keys).toEqual(expectedKeys);
 
     // Duplicated and legacy keys must be removed

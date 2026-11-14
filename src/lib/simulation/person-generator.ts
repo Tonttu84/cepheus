@@ -1085,7 +1085,7 @@ export function generateSimulatedPersonWeeks(
       actionKey: "short_walk",
       actionTitle: "Take a 10-minute walk outside",
       actionDetail:
-        "No targets or pace — step outside for fresh air and come back whenever ready.",
+        "Step outside for some fresh air and come back whenever you are ready. No pace or distance to hit.",
       effortTier: "low",
       status: "completed",
       respondedAt: makeTimestamp(day28Date, 14, 30),

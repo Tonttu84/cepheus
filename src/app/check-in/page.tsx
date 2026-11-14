@@ -5,63 +5,76 @@ import {
   PHQ9_ITEMS,
 } from "@/lib/constants";
 import { SimulatedBadge } from "@/components/simulated-badge";
+import { CheckInInteractive } from "@/components/check-in-interactive";
+import {
+  ForestCanopyArtwork,
+  ForestDivider,
+} from "@/components/forest-divider";
 
 export default function CheckInPage() {
   const coreMethods = MEASUREMENT_METHODS.filter((m) => m.core);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12 sm:space-y-14">
       {/* Header */}
-      <section className="rounded-xl border border-stone-200 bg-white p-6 shadow-xs">
+      <section className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SimulatedBadge subtitle="Twice-weekly check-in & fortnightly PHQ-9" />
-          <span className="rounded-md bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-700">
-            Takes ~20 seconds · Zero effort when unwell
+          <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
+            About 20 seconds · Skip whenever you need to
           </span>
         </div>
 
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
-          Twice-weekly wellbeing check-in &amp; fortnightly PHQ-9
+        <h1 className="font-display mt-4 text-2xl font-semibold tracking-tight text-ink-primary sm:text-3xl">
+          Twice-weekly wellbeing check-in
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700">
-          Designed for low effort after TMS treatment. You can answer two brief
-          0–4 tap questions twice a week, or tap{" "}
-          <strong className="font-semibold text-stone-900">
+        <p className="mt-2.5 max-w-3xl text-sm leading-relaxed text-ink-secondary">
+          You can answer two quick 0 to 4 tap questions twice a week, or tap{" "}
+          <strong className="font-semibold text-ink-primary">
             &ldquo;Not today&rdquo;
           </strong>{" "}
-          at any time. A skipped or missed check-in is recorded simply as a
-          missed round — never scored as zero and never punished.
+          whenever you want to rest. This is a preview of a simulated round and
+          nothing is sent yet. It is never scored as zero and never held against
+          you.
         </p>
+        <ForestCanopyArtwork className="mt-6 w-full text-accent-sage" />
       </section>
+
+      <ForestDivider variant="clearing" label="Your check-in space" />
+
+      {/* 4 Low-Effort Check-In Prompts (Interactive) */}
+      <CheckInInteractive items={CHECK_IN_ITEMS} />
+
+      <ForestDivider variant="grove" label="Consent & privacy controls" />
 
       {/* Active Consent Transparency Note */}
       <section
         aria-label="Active consent transparency"
-        className="rounded-xl border border-stone-200 bg-white p-6 shadow-xs"
+        className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
       >
-        <h2 className="text-base font-semibold text-stone-900">
-          What is recorded &amp; your consent controls
+        <h2 className="font-display text-lg font-semibold text-ink-primary">
+          Data handling and your consent choices
         </h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Every wellbeing check-in channel states in plain language what is
-          recorded and which broad life area it belongs to.
+        <p className="mt-1 text-sm text-ink-secondary">
+          Each channel below explains in plain words what it collects and which
+          broad area of daily life it belongs to.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {coreMethods.map((method) => (
             <div
               key={method.method}
-              className="rounded-lg border border-stone-200 bg-stone-50/70 p-4"
+              className="rounded-xl border border-border-hairline bg-surface-subtle/80 p-4"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-stone-900">
+                <span className="text-sm font-semibold text-ink-primary">
                   {method.label}
                 </span>
-                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-900">
+                <span className="rounded-full border border-accent-sage-border bg-accent-sage-soft px-2.5 py-0.5 text-xs font-medium text-accent-sage-hover">
                   Consented
                 </span>
               </div>
-              <p className="mt-1.5 text-xs leading-relaxed text-stone-600">
+              <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
                 {method.recordedDescription}
               </p>
             </div>
@@ -69,102 +82,51 @@ export default function CheckInPage() {
         </div>
       </section>
 
-      {/* 2 Low-Effort Check-In Prompts Preview */}
-      <section
-        aria-label="Twice-weekly check-in prompts"
-        className="rounded-xl border border-stone-200 bg-white p-6 shadow-xs"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-stone-900">
-              Twice-weekly check-in prompts (2 quick taps)
-            </h2>
-            <p className="mt-0.5 text-sm text-stone-600">
-              Two taps, zero typing — or choose &ldquo;Not today&rdquo; at no
-              cost when unwell.
-            </p>
-          </div>
-          <button
-            type="button"
-            data-testid="not-today-button"
-            className="rounded-lg border border-stone-300 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-800 transition hover:bg-stone-100"
-          >
-            Not today (skip without penalty)
-          </button>
-        </div>
-
-        <div className="mt-5 space-y-4">
-          {CHECK_IN_ITEMS.map((item, idx) => (
-            <div
-              key={item.key}
-              className="rounded-lg border border-stone-200 bg-stone-50/60 p-4"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                  Prompt {idx + 1} · {item.label}
-                </span>
-                <span className="text-xs text-stone-500">
-                  {item.lowAnchor} &rarr; {item.highAnchor}
-                </span>
-              </div>
-              <p className="mt-1.5 text-sm font-medium text-stone-900">
-                {item.prompt}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[0, 1, 2, 3, 4].map((choice) => (
-                  <span
-                    key={choice}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-stone-300 bg-white text-xs font-semibold text-stone-700"
-                  >
-                    {choice}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <ForestDivider
+        variant="treeline"
+        label="Fortnightly PHQ-9 & human support"
+      />
 
       {/* Fortnightly PHQ-9 & Prominent Crisis Support Reminder */}
       <section
         aria-label="Fortnightly PHQ-9 and immediate human support"
-        className="rounded-xl border border-stone-200 bg-white p-6 shadow-xs"
+        className="rounded-2xl border border-border-hairline bg-surface-card p-7 shadow-xs sm:p-10"
       >
-        <h2 className="text-base font-semibold text-stone-900">
-          Fortnightly PHQ-9 &amp; Immediate Human Crisis Path
+        <h2 className="font-display text-lg font-semibold text-ink-primary">
+          Fortnightly PHQ-9 and direct human support
         </h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Every two weeks, the standard {PHQ9_ITEMS.length}-item PHQ-9
-          questionnaire checks in on sleep, energy, appetite, concentration, and
-          safety. Any response indicating thoughts of self-harm (Item 9) brings
-          up direct connection to a human and emergency services immediately —
+        <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">
+          Every two weeks, the standard {PHQ9_ITEMS.length}-question PHQ-9 asks
+          about sleep, energy, appetite, concentration, and safety. Any answer
+          above zero on question 9 (thoughts of hurting yourself) brings up
+          direct phone links to a real person and emergency help right away,
           with nothing automated in between.
         </p>
 
-        <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50/70 p-4">
-          <p className="text-sm font-semibold text-stone-900">
-            Direct human support is always available right now
+        <div className="mt-5 rounded-xl border border-amber-300/80 bg-amber-50/70 p-5">
+          <p className="text-sm font-semibold text-ink-primary">
+            Talk with a person right now
           </p>
-          <p className="mt-1 text-xs text-stone-700">
-            Whether or not you complete a check-in, you can reach a person
-            directly at any hour:
+          <p className="mt-1 text-xs text-ink-secondary">
+            You do not need to finish or start a check-in to call any of these
+            numbers:
           </p>
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
             {CRISIS_RESOURCES.map((resource) => (
               <a
                 key={resource.id}
                 href={resource.href}
-                className="flex flex-col justify-between rounded-md border border-stone-300 bg-white p-3 transition hover:bg-stone-50"
+                className="flex min-h-11 flex-col justify-between rounded-xl border border-border-tactile bg-surface-card p-3.5 shadow-2xs transition hover:border-accent-sage/50 hover:bg-surface-subtle"
               >
                 <div>
-                  <p className="text-xs font-semibold text-stone-900">
+                  <p className="text-xs font-semibold text-ink-secondary">
                     {resource.label}
                   </p>
-                  <p className="mt-0.5 text-sm font-bold text-stone-900">
+                  <p className="tabular-nums mt-1 text-sm font-bold text-ink-primary">
                     {resource.phone}
                   </p>
                 </div>
-                <p className="mt-1 text-xs text-stone-600">
+                <p className="mt-1.5 text-xs text-ink-muted">
                   {resource.availability}
                 </p>
               </a>
