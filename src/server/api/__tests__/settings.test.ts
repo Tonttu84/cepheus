@@ -3,6 +3,7 @@ import {
   getSwitches,
   isCountersEnabled,
   isDemoEnabled,
+  isExpressivityShowcaseEnabled,
   isExtraQuestionEnabled,
   isRewardsEnabled,
   resetSettings,
@@ -28,16 +29,20 @@ describe("Runtime settings module (src/server/api/settings.ts)", () => {
     expect(typeof switches.rewards).toBe("boolean");
     expect(typeof switches.counters).toBe("boolean");
     expect(typeof switches.extraQuestion).toBe("boolean");
+    expect(typeof switches.expressivityShowcase).toBe("boolean");
+    expect(switches.expressivityShowcase).toBe(false);
 
     expect(isRewardsEnabled()).toBe(switches.rewards);
     expect(isCountersEnabled()).toBe(switches.counters);
     expect(isExtraQuestionEnabled()).toBe(switches.extraQuestion);
+    expect(isExpressivityShowcaseEnabled()).toBe(false);
   });
 
   it("reads defaults from env variables when present", () => {
     process.env.REWARDS_ENABLED = "false";
     process.env.COUNTERS_ENABLED = "true";
     process.env.EXTRA_QUESTION_ENABLED = "true";
+    process.env.EXPRESSIVITY_SHOWCASE_ENABLED = "true";
     process.env.DEMO_SESSION_ENABLED = "false";
 
     resetSettings();
@@ -45,6 +50,7 @@ describe("Runtime settings module (src/server/api/settings.ts)", () => {
     expect(isRewardsEnabled()).toBe(false);
     expect(isCountersEnabled()).toBe(true);
     expect(isExtraQuestionEnabled()).toBe(true);
+    expect(isExpressivityShowcaseEnabled()).toBe(true);
     expect(isDemoEnabled()).toBe(false);
   });
 
@@ -64,20 +70,26 @@ describe("Runtime settings module (src/server/api/settings.ts)", () => {
     setSwitch("extraQuestion", true);
     expect(isExtraQuestionEnabled()).toBe(true);
     expect(getSwitches().extraQuestion).toBe(true);
+
+    setSwitch("expressivityShowcase", true);
+    expect(isExpressivityShowcaseEnabled()).toBe(true);
+    expect(getSwitches().expressivityShowcase).toBe(true);
   });
 
   it("resetSettings puts switches back to their defaults", () => {
     setSwitch("rewards", false);
     setSwitch("counters", true);
     setSwitch("extraQuestion", true);
+    setSwitch("expressivityShowcase", true);
     setDemoEnabled(false);
 
     resetSettings();
 
-    // Default env (empty) -> rewards: true, counters: false, extraQuestion: false
+    // Default env (empty) -> rewards: true, counters: false, extraQuestion: false, expressivityShowcase: false
     expect(isRewardsEnabled()).toBe(true);
     expect(isCountersEnabled()).toBe(false);
     expect(isExtraQuestionEnabled()).toBe(false);
+    expect(isExpressivityShowcaseEnabled()).toBe(false);
   });
 
   it("allows setting demo enabled on and off", () => {

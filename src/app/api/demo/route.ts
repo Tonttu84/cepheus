@@ -40,7 +40,7 @@ const PostActionSchema = z.discriminatedUnion("action", [
   }),
   z.object({
     action: z.literal("switch"),
-    key: z.enum(["rewards", "counters", "extraQuestion"]),
+    key: z.enum(["rewards", "counters", "extraQuestion", "expressivityShowcase"]),
     enabled: z.boolean(),
   }),
 ]);

@@ -36,6 +36,7 @@ export {
   isRewardsEnabled,
   isCountersEnabled,
   isExtraQuestionEnabled,
+  isExpressivityShowcaseEnabled,
   setSwitch,
   resetSettings,
   type DemoSwitchKey,
