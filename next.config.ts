@@ -1,4 +1,32 @@
+import os from "node:os";
 import type { NextConfig } from "next";
+
+function detectLocalDevHosts(): string[] {
+  const hosts = new Set<string>([
+    "localhost",
+    "127.0.0.1",
+    "*.localhost",
+    "*.local",
+    "192.168.*.*",
+    "10.*.*.*",
+  ]);
+  for (let second = 16; second <= 31; second++) {
+    hosts.add(`172.${second}.*.*`);
+  }
+
+  for (const entries of Object.values(os.networkInterfaces())) {
+    for (const entry of entries ?? []) {
+      if (entry.family === "IPv4" && !entry.internal) {
+        hosts.add(entry.address);
+      }
+    }
+  }
+  return Array.from(hosts);
+}
+
+export function buildAllowedDevOrigins(): string[] {
+  return detectLocalDevHosts();
+}
 
 // NOTE (CSP): 'unsafe-inline' is retained for Next.js App Router hydration and
 // component inline styling. 'wasm-unsafe-eval' is required for local MediaPipe
@@ -28,6 +56,7 @@ export function buildContentSecurityPolicy(
 }
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: buildAllowedDevOrigins(),
   async headers() {
     return [
       {

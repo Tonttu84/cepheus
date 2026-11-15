@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import nextConfig, { buildContentSecurityPolicy } from "../../../../next.config";
+import nextConfig, {
+  buildAllowedDevOrigins,
+  buildContentSecurityPolicy,
+} from "../../../../next.config";
 
 function parseDirectives(csp: string): Map<string, string> {
   const directives = csp.split(";").map((d) => d.trim()).filter(Boolean);
@@ -170,5 +173,15 @@ describe("HTTP Security Headers Configuration (next.config.ts)", () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  it("allows local network origins in dev mode for phone testing", () => {
+    const origins = buildAllowedDevOrigins();
+    expect(origins).toContain("localhost");
+    expect(origins).toContain("127.0.0.1");
+    expect(origins).toContain("*.local");
+    expect(origins).toContain("192.168.*.*");
+    expect(origins).toContain("10.*.*.*");
+    expect(nextConfig.allowedDevOrigins).toEqual(origins);
   });
 });
