@@ -1,4 +1,10 @@
-import { expect, test, signInAsPatient, signInAsStaff } from "./helpers";
+import {
+  expect,
+  test,
+  signInAsPatient,
+  signInAsStaff,
+  signOutSession,
+} from "./helpers";
 
 const PHONE_VIEWPORT = { width: 390, height: 844 };
 
@@ -40,11 +46,13 @@ test.describe("Phone demo paired workflow", () => {
     page,
     context,
   }) => {
-    await signInAsPatient(page, context);
+    await signOutSession(context);
+    await signInAsPatient(page, context, "P-SIM-001");
 
     for (const route of PATIENT_ROUTES) {
       await page.goto(route);
-      await page.waitForLoadState("domcontentloaded");
+      await page.waitForLoadState("load");
+      await page.locator("main").waitFor({ state: "visible" });
 
       const scrollWidth = await page.evaluate(
         () => document.documentElement.scrollWidth
@@ -60,8 +68,11 @@ test.describe("Phone demo paired workflow", () => {
     page,
     context,
   }) => {
-    await signInAsPatient(page, context);
+    await signOutSession(context);
+    await signInAsPatient(page, context, "P-SIM-001");
     await page.goto("/check-in");
+    await page.waitForLoadState("load");
+    await page.locator("main").waitFor({ state: "visible" });
 
     const notTodayBtn = page.getByTestId("not-today-button");
     await expect(notTodayBtn).toBeVisible();
