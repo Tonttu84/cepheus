@@ -20,8 +20,40 @@ import {
   WearableSection,
   type FitbitStatus,
 } from "@/components/monitoring/wearable-section";
-import type { MonitoringSummaryPayload } from "@/server/monitoring/store";
+import type {
+  DeviceConnectionsMap,
+  MonitoringSummaryPayload,
+} from "@/server/monitoring/store";
 import { ArduinoBedsideControls } from "./arduino-bedside-controls";
+
+function resolveDeviceConnections(
+  summary: MonitoringSummaryPayload | null,
+  fitbitStatus: FitbitStatus | null,
+  hcPairingStatus: HealthConnectPairingStatus | null
+): DeviceConnectionsMap {
+  const base: DeviceConnectionsMap = summary?.deviceConnections ?? {
+    ring_rhythm: { connected: false, label: "No device connected" },
+    camera_expressivity: { connected: false, label: "No device connected" },
+    home_routine: { connected: false, label: "No device connected" },
+  };
+
+  if (fitbitStatus?.connected) {
+    return {
+      ...base,
+      ring_rhythm: {
+        connected: true,
+        label: hcPairingStatus?.paired ? "Fitbit & phone connected" : "Fitbit connected",
+      },
+    };
+  }
+  if (hcPairingStatus?.paired && !base.ring_rhythm.connected) {
+    return {
+      ...base,
+      ring_rhythm: { connected: true, label: "Phone paired" },
+    };
+  }
+  return base;
+}
 
 export function MonitoringDashboard() {
   const [fitbitStatus, setFitbitStatus] = useState<FitbitStatus | null>(null);
@@ -94,6 +126,12 @@ export function MonitoringDashboard() {
     setFeedback,
   });
 
+  const deviceConnections = resolveDeviceConnections(
+    summary,
+    fitbitStatus,
+    hcPairingStatus
+  );
+
   return (
     <div className="space-y-8">
       {feedback ? (
@@ -113,6 +151,7 @@ export function MonitoringDashboard() {
       <ForestDivider variant="clearing" />
       <ConsentSection
         consents={summary?.consents ?? []}
+        deviceConnections={deviceConnections}
         busyAction={busyAction}
         onToggleConsent={(method, nextEnabled) =>
           void runAction(`consent-${method}`, async () => {

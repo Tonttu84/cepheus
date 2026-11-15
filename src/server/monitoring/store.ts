@@ -31,6 +31,22 @@ export const ALL_CONSENT_METHODS = [
   "home_routine",
 ] as const;
 export type MonitoredMethodKey = (typeof ALL_CONSENT_METHODS)[number];
+export type PassiveMethodKey = (typeof MONITORED_METHODS)[number];
+
+/**
+ * Passive sensing channels start paused (`false`) until the patient opts in (D13,
+ * `INITIAL_CONSENT_STATE`). Core check-in participation starts active (`true`).
+ */
+export function isDefaultEnabledForMethod(methodKey: MonitoredMethodKey): boolean {
+  return methodKey === "check_in" || methodKey === "phq9";
+}
+
+export interface DeviceConnectionStatus {
+  connected: boolean;
+  label: string;
+}
+
+export type DeviceConnectionsMap = Record<PassiveMethodKey, DeviceConnectionStatus>;
 
 export interface WearableDayInput {
   readonly date: string;
@@ -67,6 +83,7 @@ export interface MonitoringSummaryPayload {
   viewerKind: "patient" | "staff";
   readingsRedactedForStaff: boolean;
   consents: MonitoringConsentSummary[];
+  deviceConnections: DeviceConnectionsMap;
   latestRhythmWindow: {
     windowEndDate: string;
     validDays: number;
@@ -232,6 +249,7 @@ export async function ensureHomeDemoParticipant(prisma: PrismaClient = getPrisma
 
   for (const methodKey of ALL_CONSENT_METHODS) {
     const meta = MEASUREMENT_METHODS.find((m) => m.method === methodKey);
+    const defaultEnabled = isDefaultEnabledForMethod(methodKey);
     await prisma.measurementConsent.upsert({
       where: {
         participantId_method: {
@@ -248,9 +266,9 @@ export async function ensureHomeDemoParticipant(prisma: PrismaClient = getPrisma
         recordedDescription:
           meta?.recordedDescription ??
           "Derived numerical summaries only; video/audio never leave the device.",
-        enabled: true,
+        enabled: defaultEnabled,
         isPersonalSign: meta?.isPersonalSignDefault ?? false,
-        consentedAt: new Date(),
+        consentedAt: defaultEnabled ? new Date() : null,
       },
     });
   }
@@ -624,9 +642,54 @@ function formatConsentSummaries(
       label: meta?.label ?? methodKey,
       broadArea: row?.broadArea ?? meta?.broadArea ?? "daily_routine",
       recordedDescription: row?.recordedDescription ?? meta?.recordedDescription ?? "",
-      enabled: row?.enabled ?? true,
+      enabled: row?.enabled ?? false,
     };
   });
+}
+
+function emptyDeviceConnections(): DeviceConnectionsMap {
+  return {
+    ring_rhythm: { connected: false, label: "No device connected" },
+    camera_expressivity: { connected: false, label: "No device connected" },
+    home_routine: { connected: false, label: "No device connected" },
+  };
+}
+
+async function loadDeviceConnections(
+  participantId: string,
+  prisma: PrismaClient
+): Promise<DeviceConnectionsMap> {
+  const [cred, liveRingCount, liveCameraCount, liveRoutineCount] = await Promise.all([
+    prisma.webhookCredential.findUnique({
+      where: { participantId },
+      select: { revokedAt: true },
+    }),
+    prisma.ringDay.count({ where: { participantId, isSimulated: false } }),
+    prisma.cameraReading.count({ where: { participantId, isSimulated: false } }),
+    prisma.routineSignalReading.count({ where: { participantId, isSimulated: false } }),
+  ]);
+
+  const phonePaired = Boolean(cred && cred.revokedAt === null);
+  const ringConnected = phonePaired || liveRingCount > 0;
+
+  return {
+    ring_rhythm: {
+      connected: ringConnected,
+      label: phonePaired
+        ? "Phone paired"
+        : liveRingCount > 0
+          ? "Wearable connected"
+          : "No device connected",
+    },
+    camera_expressivity: {
+      connected: liveCameraCount > 0,
+      label: liveCameraCount > 0 ? "UNO Q camera connected" : "No device connected",
+    },
+    home_routine: {
+      connected: liveRoutineCount > 0,
+      label: liveRoutineCount > 0 ? "UNO Q sensor connected" : "No device connected",
+    },
+  };
 }
 
 async function loadStaffSummary(
@@ -663,6 +726,7 @@ async function loadStaffSummary(
       viewerKind: "staff",
       readingsRedactedForStaff: true,
       consents: formatConsentSummaries(consentsRows),
+      deviceConnections: emptyDeviceConnections(),
       latestRhythmWindow: null,
       recentWearableDays: [],
       recentCameraReadings: [],
@@ -704,6 +768,7 @@ async function loadStaffSummary(
     viewerKind: "staff",
     readingsRedactedForStaff: true,
     consents: formatConsentSummaries([]),
+    deviceConnections: emptyDeviceConnections(),
     latestRhythmWindow: null,
     recentWearableDays: [],
     recentCameraReadings: [],
@@ -769,35 +834,37 @@ export async function getMonitoringSummary(
   });
   const consents = formatConsentSummaries(consentsRows);
 
-  const [rhythmWindow, ringDays, cameraReadings, routineReadings] = await Promise.all([
-    ringRead.allowed
-      ? prisma.rhythmWindow.findFirst({
-          where: { participantId: participant.id },
-          orderBy: { windowEndDate: "desc" },
-        })
-      : Promise.resolve(null),
-    ringRead.allowed
-      ? prisma.ringDay.findMany({
-          where: { participantId: participant.id },
-          orderBy: { date: "desc" },
-          take: 7,
-        })
-      : Promise.resolve([]),
-    cameraRead.allowed
-      ? prisma.cameraReading.findMany({
-          where: { participantId: participant.id },
-          orderBy: { recordedAt: "desc" },
-          take: 5,
-        })
-      : Promise.resolve([]),
-    cameraRead.allowed
-      ? prisma.routineSignalReading.findMany({
-          where: { participantId: participant.id },
-          orderBy: { id: "desc" },
-          take: 6,
-        })
-      : Promise.resolve([]),
-  ]);
+  const [deviceConnections, rhythmWindow, ringDays, cameraReadings, routineReadings] =
+    await Promise.all([
+      loadDeviceConnections(participant.id, prisma),
+      ringRead.allowed
+        ? prisma.rhythmWindow.findFirst({
+            where: { participantId: participant.id },
+            orderBy: { windowEndDate: "desc" },
+          })
+        : Promise.resolve(null),
+      ringRead.allowed
+        ? prisma.ringDay.findMany({
+            where: { participantId: participant.id },
+            orderBy: { date: "desc" },
+            take: 7,
+          })
+        : Promise.resolve([]),
+      cameraRead.allowed
+        ? prisma.cameraReading.findMany({
+            where: { participantId: participant.id },
+            orderBy: { recordedAt: "desc" },
+            take: 5,
+          })
+        : Promise.resolve([]),
+      cameraRead.allowed
+        ? prisma.routineSignalReading.findMany({
+            where: { participantId: participant.id },
+            orderBy: { id: "desc" },
+            take: 6,
+          })
+        : Promise.resolve([]),
+    ]);
 
   return {
     demoOnly: Boolean(
@@ -808,6 +875,7 @@ export async function getMonitoringSummary(
     viewerKind: "patient",
     readingsRedactedForStaff: false,
     consents,
+    deviceConnections,
     latestRhythmWindow: rhythmWindow
       ? {
           windowEndDate: rhythmWindow.windowEndDate,
