@@ -1,55 +1,67 @@
-import { PATIENT_SUGGESTIONS } from "@/lib/constants";
-import { generateSimulatedPersonWeeks } from "@/lib/simulation";
 import { requirePatientPageSession } from "@/server/auth";
+import { getRouteDeps } from "@/server/api";
+import { getPatientSuggestion, getPatientConsent } from "@/usecases";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { SessionContextPill } from "@/components/session-context-banner";
 import { PatientSuggestionCard } from "@/components/patient-suggestion-card";
+import { PatientConsentSection } from "@/components/patient-consent-section";
 import {
   ForestCanopyArtwork,
   ForestDivider,
 } from "@/components/forest-divider";
 
 export default async function PatientPage() {
-  await requirePatientPageSession();
-  const dataset = generateSimulatedPersonWeeks({ throughDay: 29 });
-  const activeSuggestion =
-    dataset.patientSuggestions[dataset.patientSuggestions.length - 1] ??
-    PATIENT_SUGGESTIONS[0];
+  const session = await requirePatientPageSession();
+  const { ports } = getRouteDeps();
+
+  const suggestionRes = await getPatientSuggestion(
+    session.actor,
+    { patientId: session.actor.patientId },
+    ports
+  );
+  const suggestion = suggestionRes.ok ? suggestionRes.value.suggestion : null;
+
+  const consentRes = await getPatientConsent(
+    session.actor,
+    { patientId: session.actor.patientId },
+    ports
+  );
+  const consent = consentRes.ok
+    ? consentRes.value.consent
+    : {
+        taking_part: true,
+        methods: { ring: true, camera: false },
+        rule_check: true,
+      };
 
   return (
     <div className="space-y-12 sm:space-y-16">
       <header className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <SimulatedBadge subtitle="Day 29 · Week 5 gentle check-in view" />
-          <div className="flex flex-wrap items-center gap-2">
-            <SessionContextPill expectedRole="patient" />
-            <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
-              Patient View
-            </span>
-          </div>
+          <SimulatedBadge subtitle={`${session.participantCode ?? "Patient"} · gentle check-in view`} />
+          <SessionContextPill expectedRole="patient" />
         </div>
-
-        <div className="max-w-3xl space-y-2.5">
+        <ForestCanopyArtwork className="h-40 w-full" />
+        <div className="space-y-2">
           <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-primary sm:text-4xl">
-            One small step for today
+            Gentle steps between check-ins
           </h1>
-          <p className="text-base leading-relaxed text-ink-secondary">
-            Your last check-in looked a bit heavier than usual. Here is one
-            small thing to try today, if you feel up for it. If not, leave it
-            for another day and rest.
+          <p className="max-w-2xl text-base leading-relaxed text-ink-secondary">
+            Low-effort actions suggested only when check-ins dip or for gentle
+            practice. Each step is completely optional. If you prefer to rest
+            today, skipping is a normal answer.
           </p>
         </div>
-
-        <ForestCanopyArtwork className="w-full pt-2 text-accent-sage" />
       </header>
 
       <PatientSuggestionCard
-        actionKey={activeSuggestion.actionKey}
-        actionTitle={activeSuggestion.actionTitle}
-        actionDetail={activeSuggestion.actionDetail}
+        suggestion={suggestion}
+        actionKey={suggestion?.actionKey}
       />
 
       <ForestDivider variant="grove" />
+
+      <PatientConsentSection initialConsent={consent} />
 
       <p className="border-t border-border-hairline pt-6 text-xs leading-relaxed text-ink-secondary">
         Skipping a suggestion or a check-in is always fine, and nothing is

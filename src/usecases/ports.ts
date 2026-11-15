@@ -230,6 +230,38 @@ export interface ExtraAnswerRepository {
   saveExtraAnswer(answer: StoredExtraAnswer): Promise<void>;
 }
 
+export type SuggestionStatus = 'shown' | 'accepted' | 'completed' | 'skipped';
+
+export interface StoredSuggestion {
+  readonly id: string;
+  readonly patientId: string;
+  readonly clinicId?: string | null;
+  readonly createdAt: string;
+  readonly date: string;
+  readonly dayIndex?: number | null;
+  readonly reason: string;
+  readonly actionKey: string;
+  readonly actionTitle: string;
+  readonly actionDetail: string | null;
+  readonly effortTier: string;
+  readonly status: SuggestionStatus;
+  readonly respondedAt?: string | null;
+  readonly armType?: string;
+  readonly nextCheckInDelta?: number | null;
+  readonly isSimulated?: boolean;
+}
+
+export interface SuggestionRepository {
+  getLatestSuggestion(patientId: string): Promise<StoredSuggestion | null>;
+  getSuggestion(suggestionId: string): Promise<StoredSuggestion | null>;
+  saveSuggestion(suggestion: StoredSuggestion): Promise<void>;
+  updateSuggestionChoice(
+    suggestionId: string,
+    status: SuggestionStatus,
+    respondedAt: string
+  ): Promise<void>;
+}
+
 /**
  * The real implementation must give a use case a consistent view for one patient 
  * (for example by locking that patient's row), so two requests for one patient cannot interleave.
@@ -274,6 +306,7 @@ export interface Ports {
   readonly extraItemsConfig?: ExtraItemsConfig;
   readonly homeMonitoring?: HomeMonitoringRepository;
   readonly unitOfWork: UnitOfWork;
+  readonly suggestions: SuggestionRepository;
 }
 
 export interface OpenRoundInfo {

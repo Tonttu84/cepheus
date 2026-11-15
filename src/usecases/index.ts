@@ -21,4 +21,25 @@ export {
   type RecordNurseCallOutcomeInput,
   type RecordNurseCallOutcomeResult,
 } from './record-nurse-call-outcome';
+export {
+  getPatientSuggestion,
+  type GetPatientSuggestionInput,
+  type GetPatientSuggestionResult,
+} from './get-patient-suggestion';
+export {
+  recordSuggestionChoice,
+  type RecordSuggestionChoiceInput,
+  type RecordSuggestionChoiceResult,
+} from './record-suggestion-choice';
+export {
+  getPatientConsent,
+  type GetPatientConsentInput,
+  type GetPatientConsentResult,
+} from './get-patient-consent';
+export {
+  updateMethodConsent,
+  type AllowedConsentMethod,
+  type UpdateMethodConsentInput,
+  type UpdateMethodConsentResult,
+} from './update-method-consent';
 export type * from './ports';

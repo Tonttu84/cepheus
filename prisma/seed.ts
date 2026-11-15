@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { pathToFileURL } from "node:url";
 import { addDays, getOpenRound, listRounds, type Schedule } from "../src/domain/rounds";
 import { SIMULATED_STAFF_PRESETS } from "../src/lib/auth-types";
+import { PATIENT_SUGGESTIONS } from "../src/lib/constants";
 import {
   DEFAULT_SIMULATION_SEED,
   generateSimulatedPersonWeeks,
@@ -145,13 +146,39 @@ export function consentEventRows(participantId: string, clinicId: string) {
   }));
 }
 
+export async function createSampleSuggestion(
+  tx: Prisma.TransactionClient,
+  participantId: string,
+  clinicId: string,
+  now: Date,
+  actionIndex = 0
+): Promise<void> {
+  const template = PATIENT_SUGGESTIONS[actionIndex % PATIENT_SUGGESTIONS.length];
+  await tx.patientSuggestion.create({
+    data: {
+      participantId,
+      clinicId,
+      createdAt: now,
+      date: localDateIn(TIME_ZONE, now),
+      reason: "practice",
+      actionKey: template.actionKey,
+      actionTitle: template.actionTitle,
+      actionDetail: template.actionDetail,
+      effortTier: template.effortTier,
+      status: "shown",
+      armType: "intervention",
+      isSimulated: true,
+    },
+  });
+}
+
 export async function createSampleParticipants(
   tx: Prisma.TransactionClient,
   clinicId: string,
   now: Date
 ): Promise<string[]> {
   const ids: string[] = [];
-  for (const sample of SAMPLE_PARTICIPANTS) {
+  for (const [index, sample] of SAMPLE_PARTICIPANTS.entries()) {
     const row = await tx.participant.create({
       data: {
         clinicId,
@@ -167,6 +194,7 @@ export async function createSampleParticipants(
       },
     });
     await tx.consentEvent.createMany({ data: consentEventRows(row.id, clinicId) });
+    await createSampleSuggestion(tx, row.id, clinicId, now, index);
     ids.push(row.id);
   }
   return ids;

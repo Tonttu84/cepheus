@@ -17,6 +17,7 @@ import { createHomeMonitoringRepository } from "./home-monitoring";
 import { createPatientRepository, getClinicPatientIds } from "./patients";
 import { createPhq9Repository } from "./phq9";
 import { createRoundRepository } from "./rounds";
+import { createSuggestionRepository } from "./suggestions";
 
 export { getClinicPatientIds };
 
@@ -47,6 +48,7 @@ export function createPrismaPorts(
     extraAnswers: createExtraAnswerRepository(ctx),
     homeMonitoring: createHomeMonitoringRepository(ctx),
     unitOfWork: ctx.unitOfWork,
+    suggestions: createSuggestionRepository(ctx),
   };
 }
 

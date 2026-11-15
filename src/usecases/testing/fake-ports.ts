@@ -23,6 +23,9 @@ import type {
   AccessLogRepository,
   StoredExtraAnswer,
   ExtraAnswerRepository,
+  StoredSuggestion,
+  SuggestionStatus,
+  SuggestionRepository,
   UnitOfWork,
   Ports,
   HomeMonitoringFacts,
@@ -58,6 +61,7 @@ interface FakeStorageState {
   baselineNotWell: Record<string, StoredBaselineNotWellNotice[]>;
   accessLogs: StoredAccessLogEntry[];
   extraAnswers: Record<string, StoredExtraAnswer[]>;
+  suggestions: Record<string, StoredSuggestion[]>;
 }
 
 function createEmptyState(): FakeStorageState {
@@ -75,6 +79,7 @@ function createEmptyState(): FakeStorageState {
     baselineNotWell: {},
     accessLogs: [],
     extraAnswers: {},
+    suggestions: {},
   };
 }
 
@@ -389,6 +394,57 @@ export class FakeExtraAnswerRepository implements ExtraAnswerRepository {
   }
 }
 
+export class FakeSuggestionRepository implements SuggestionRepository {
+  constructor(private ctx: FakeStorageContext) {}
+
+  async getLatestSuggestion(patientId: string): Promise<StoredSuggestion | null> {
+    const list = this.ctx.state.suggestions[patientId] ?? [];
+    if (list.length === 0) return null;
+    return structuredClone(list[list.length - 1]);
+  }
+
+  async getSuggestion(suggestionId: string): Promise<StoredSuggestion | null> {
+    for (const list of Object.values(this.ctx.state.suggestions)) {
+      const found = list.find((s) => s.id === suggestionId);
+      if (found) return structuredClone(found);
+    }
+    return null;
+  }
+
+  async saveSuggestion(suggestion: StoredSuggestion): Promise<void> {
+    if (!this.ctx.state.suggestions[suggestion.patientId]) {
+      this.ctx.state.suggestions[suggestion.patientId] = [];
+    }
+    const list = this.ctx.state.suggestions[suggestion.patientId];
+    const idx = list.findIndex((s) => s.id === suggestion.id);
+    if (idx >= 0) {
+      list[idx] = structuredClone(suggestion);
+    } else {
+      list.push(structuredClone(suggestion));
+    }
+  }
+
+  async updateSuggestionChoice(
+    suggestionId: string,
+    status: SuggestionStatus,
+    respondedAt: string
+  ): Promise<void> {
+    for (const list of Object.values(this.ctx.state.suggestions)) {
+      const found = list.find((s) => s.id === suggestionId);
+      if (found) {
+        const updated: StoredSuggestion = {
+          ...found,
+          status,
+          respondedAt,
+        };
+        const idx = list.indexOf(found);
+        list[idx] = updated;
+        return;
+      }
+    }
+  }
+}
+
 export class FakeUnitOfWork implements UnitOfWork {
   public failNext = false;
   private activePromise: Promise<void> | null = null;
@@ -528,6 +584,7 @@ export function createFakePorts(
     extraItemsConfig,
     homeMonitoring: new FakeHomeMonitoringRepository(),
     unitOfWork,
+    suggestions: new FakeSuggestionRepository(ctx),
   };
 
   return { ports, clock, ctx, unitOfWork };
