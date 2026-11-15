@@ -1,6 +1,10 @@
+import { z } from "zod";
 import type { CallRepository, StoredCall } from "@/usecases/ports";
 import type { DbContext } from "./context";
 import { loadParticipantScope } from "./participant-scope";
+import { parseStoredEnum } from "./stored-data";
+
+const STORED_CALL_POSITION: z.ZodType<NonNullable<StoredCall["position"]>> = z.enum(["before", "after"]);
 
 export function createCallRepository(ctx: DbContext): CallRepository {
   return {
@@ -28,7 +32,7 @@ export function createCallRepository(ctx: DbContext): CallRepository {
         (row): StoredCall => ({
           patientId,
           date: row.date as string,
-          ...(row.position ? { position: row.position as StoredCall["position"] } : {}),
+          ...(row.position ? { position: parseStoredEnum(row.position, STORED_CALL_POSITION, "position") } : {}),
         })
       );
     },

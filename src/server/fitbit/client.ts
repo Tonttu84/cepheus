@@ -13,6 +13,8 @@ const FITBIT_AUTH_URL = "https://www.fitbit.com/oauth2/authorize";
 const FITBIT_TOKEN_URL = "https://api.fitbit.com/oauth2/token";
 const FITBIT_API_BASE = "https://api.fitbit.com";
 
+export const FITBIT_TIMEOUT_MS = 8000;
+
 export const FITBIT_STATE_COOKIE = "cepheus_fitbit_oauth_state";
 export const FITBIT_TOKEN_COOKIE = "cepheus_fitbit_session";
 
@@ -162,6 +164,89 @@ function buildBasicAuthHeader(): string {
   return `Basic ${encoded}`;
 }
 
+function logFitbitFailure(
+  route: string,
+  errorKindOrStatus: number | string,
+  attempts: number
+): void {
+  console.error(
+    `[fitbit] request failed: route=${route} status=${errorKindOrStatus} attempts=${attempts}`
+  );
+}
+
+function isTimeoutError(err: unknown, signal?: AbortSignal): boolean {
+  if (signal?.aborted) return true;
+  if (!err || typeof err !== "object") return false;
+  const anyErr = err as { name?: string; message?: string; cause?: { name?: string } };
+  return (
+    anyErr.name === "TimeoutError" ||
+    (anyErr.name === "AbortError" && anyErr.cause?.name === "TimeoutError") ||
+    (typeof anyErr.message === "string" && /timed?\s*out|timeout/i.test(anyErr.message))
+  );
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 408 || status === 429 || (status >= 500 && status <= 599);
+}
+
+function calculateBackoffDelay(
+  attempt: number,
+  retryAfterHeader: string | null
+): number {
+  if (retryAfterHeader !== null) {
+    const parsedSec = Number(retryAfterHeader);
+    if (Number.isFinite(parsedSec) && parsedSec >= 0) {
+      return Math.min(parsedSec, 10) * 1000;
+    }
+  }
+  const baseDelayMs = 1000;
+  const exponentialMs = Math.min(10_000, baseDelayMs * Math.pow(2, attempt - 1));
+  const jitterMs = Math.random() * 100;
+  return Math.min(10_000, exponentialMs + jitterMs);
+}
+
+async function postFitbitToken(
+  body: URLSearchParams,
+  contextMessage: string
+): Promise<FitbitSealedSession> {
+  const signal = AbortSignal.timeout(FITBIT_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(FITBIT_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        Authorization: buildBasicAuthHeader(),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+      cache: "no-store",
+      signal,
+    });
+  } catch (err) {
+    const isTimeout = isTimeoutError(err, signal);
+    logFitbitFailure(FITBIT_TOKEN_URL, isTimeout ? "timeout" : "network_error", 1);
+    if (isTimeout) {
+      throw new Error(`Fitbit ${contextMessage} timed out`);
+    }
+    throw err;
+  }
+
+  if (!response.ok) {
+    logFitbitFailure(FITBIT_TOKEN_URL, response.status, 1);
+    throw new Error(`Fitbit ${contextMessage} failed with status ${response.status}`);
+  }
+
+  const json: unknown = await response.json();
+  const parsed = fitbitTokenResponseSchema.parse(json);
+
+  return {
+    accessToken: parsed.access_token,
+    refreshToken: parsed.refresh_token,
+    expiresAtMs: Date.now() + parsed.expires_in * 1000,
+    scope: parsed.scope,
+  };
+}
+
 export async function exchangeFitbitCode(params: {
   code: string;
   codeVerifier: string;
@@ -175,30 +260,7 @@ export async function exchangeFitbitCode(params: {
     code: params.code,
     code_verifier: params.codeVerifier,
   });
-
-  const response = await fetch(FITBIT_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      Authorization: buildBasicAuthHeader(),
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Fitbit token exchange failed with status ${response.status}`);
-  }
-
-  const json: unknown = await response.json();
-  const parsed = fitbitTokenResponseSchema.parse(json);
-
-  return {
-    accessToken: parsed.access_token,
-    refreshToken: parsed.refresh_token,
-    expiresAtMs: Date.now() + parsed.expires_in * 1000,
-    scope: parsed.scope,
-  };
+  return postFitbitToken(body, "token exchange");
 }
 
 export async function refreshFitbitToken(
@@ -208,46 +270,53 @@ export async function refreshFitbitToken(
     grant_type: "refresh_token",
     refresh_token: refreshToken,
   });
-
-  const response = await fetch(FITBIT_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      Authorization: buildBasicAuthHeader(),
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Fitbit token refresh failed with status ${response.status}`);
-  }
-
-  const json: unknown = await response.json();
-  const parsed = fitbitTokenResponseSchema.parse(json);
-
-  return {
-    accessToken: parsed.access_token,
-    refreshToken: parsed.refresh_token,
-    expiresAtMs: Date.now() + parsed.expires_in * 1000,
-    scope: parsed.scope,
-  };
+  return postFitbitToken(body, "token refresh");
 }
 
-async function fitbitApiGet(path: string, accessToken: string): Promise<unknown> {
-  const response = await fetch(`${FITBIT_API_BASE}${path}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/json",
-    },
-    cache: "no-store",
-  });
+export async function fitbitApiGet(path: string, accessToken: string): Promise<unknown> {
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const signal = AbortSignal.timeout(FITBIT_TIMEOUT_MS);
+    let response: Response;
+    try {
+      response = await fetch(`${FITBIT_API_BASE}${path}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+        },
+        cache: "no-store",
+        signal,
+      });
+    } catch (err) {
+      const isTimeout = isTimeoutError(err, signal);
+      if (isTimeout && attempt < MAX_ATTEMPTS) {
+        const delayMs = calculateBackoffDelay(attempt, null);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      logFitbitFailure(path, isTimeout ? "timeout" : "network_error", attempt);
+      if (isTimeout) {
+        throw new Error(`Fitbit API GET ${path} timed out`);
+      }
+      throw err;
+    }
 
-  if (!response.ok) {
+    if (response.ok) {
+      return response.json();
+    }
+
+    const retryable = isRetryableStatus(response.status);
+    if (retryable && attempt < MAX_ATTEMPTS) {
+      const retryAfter = response.headers.get("retry-after");
+      const delayMs = calculateBackoffDelay(attempt, retryAfter);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      continue;
+    }
+
+    logFitbitFailure(path, response.status, attempt);
     throw new Error(`Fitbit API GET ${path} failed with status ${response.status}`);
   }
-  return response.json();
 }
 
 function listIsoDatesEndingOn(endDate: string, count: number): string[] {
@@ -276,7 +345,11 @@ export async function fetchFitbitWindowDays(
 }> {
   let activeSession = session;
   if (Date.now() > session.expiresAtMs - 60_000) {
-    activeSession = await refreshFitbitToken(session.refreshToken);
+    const refreshed = await refreshFitbitToken(session.refreshToken);
+    activeSession = {
+      ...refreshed,
+      ...(session.patientId ? { patientId: session.patientId } : {}),
+    };
   }
 
   const dates = listIsoDatesEndingOn(endDate, dayCount);

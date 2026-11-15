@@ -460,4 +460,97 @@ test.describe("Camera Wellbeing Check-in Flow & Safety Invariants", () => {
       )
       .toBe(true);
   });
+
+  test("7. Content Security Policy permits camera page and MediaPipe assets without violations", async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(180_000);
+
+    await signInAsPatient(page, context);
+
+    const violations: Array<{
+      blockedURI?: string;
+      violatedDirective?: string;
+      effectiveDirective?: string;
+      originalPolicy?: string;
+    }> = [];
+    const consoleErrors: string[] = [];
+
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    await page.addInitScript(() => {
+      window.addEventListener("securitypolicyviolation", (event) => {
+        const win = window as unknown as {
+          __cspViolations?: Array<{
+            blockedURI: string;
+            violatedDirective: string;
+            effectiveDirective: string;
+            originalPolicy: string;
+          }>;
+        };
+        win.__cspViolations = win.__cspViolations || [];
+        win.__cspViolations.push({
+          blockedURI: event.blockedURI,
+          violatedDirective: event.violatedDirective,
+          effectiveDirective: event.effectiveDirective,
+          originalPolicy: event.originalPolicy,
+        });
+      });
+    });
+
+    await installMediaSpy(page);
+    await page.goto("/camera");
+    await expect(page).toHaveURL(/\/camera/);
+
+    // Trigger local MediaPipe model loading, WebAssembly compilation, and camera stream start
+    const startButton = page.getByTestId("start-camera-button");
+    await expect(startButton).toBeVisible({ timeout: 30_000 });
+    await startButton.click();
+
+    // Verify progression past model loading (into camera requesting or active recording)
+    await expect(
+      page
+        .getByText(/Opening camera on this device|Check-in in progress/)
+        .first()
+    ).toBeVisible({ timeout: 90_000 });
+
+    // Collect recorded securitypolicyviolation events
+    const pageViolations = await page.evaluate(() => {
+      const win = window as unknown as {
+        __cspViolations?: Array<{
+          blockedURI: string;
+          violatedDirective: string;
+          effectiveDirective: string;
+          originalPolicy: string;
+        }>;
+      };
+      return win.__cspViolations ?? [];
+    });
+    violations.push(...pageViolations);
+
+    // Check for CSP blockages reported in console errors
+    const cspConsoleErrors = consoleErrors.filter((err) =>
+      /content security policy|csp|violates.*directive|blocked by csp/i.test(err)
+    );
+
+    // Fail if any Content Security Policy violation occurred
+    expect(violations).toEqual([]);
+    expect(cspConsoleErrors).toEqual([]);
+
+    // Cleanly cancel/stop camera if active
+    const stopButton = page.getByTestId("stop-camera-button");
+    if (await stopButton.isVisible()) {
+      await stopButton.click();
+    } else {
+      const cancelButton = page.getByRole("button", { name: /cancel/i });
+      if (await cancelButton.isVisible()) {
+        await cancelButton.click();
+      }
+    }
+  });
 });

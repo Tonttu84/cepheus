@@ -12,6 +12,7 @@ import type { FlagArea } from "@/domain/flags";
 import type { DbContext } from "./context";
 import { StoredDataError } from "./errors";
 import { loadParticipantScope } from "./participant-scope";
+import { parseStoredEnum } from "./stored-data";
 
 interface CauseColumns {
   readonly causeType: StoredCause["type"];
@@ -26,6 +27,14 @@ interface StoredCauseColumns {
 }
 
 const CHECK_IN_AREA: FlagArea = "check_in";
+
+const STORED_WARNING_KIND: z.ZodType<StoredWarning["kind"]> = z.enum([
+  "low_answers",
+  "silence",
+  "mixed",
+  "phq9",
+  "gad7",
+]);
 
 function causeToColumns(cause: StoredCause): CauseColumns {
   return {
@@ -81,7 +90,7 @@ export function createWarningRepository(ctx: DbContext): WarningRepository {
       return rows.map(
         (row): StoredWarning => ({
           patientId,
-          kind: row.triggerKind as StoredWarning["kind"],
+          kind: parseStoredEnum(row.triggerKind, STORED_WARNING_KIND, "triggerKind"),
           since: row.sinceDate,
           version: row.ruleVersion,
           causedBy: columnsToCause(row),

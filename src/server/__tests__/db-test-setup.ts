@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { startDb, stopDb } from "../../../scripts/dev-db.mjs";
@@ -7,8 +8,26 @@ import { startDb, stopDb } from "../../../scripts/dev-db.mjs";
 let testDataDir: string | undefined;
 let testLogFile: string | undefined;
 
+/**
+ * Asks the operating system for a port nobody is using. Several worktrees run
+ * the database tests at the same time on one machine; a fixed port made every
+ * run but the first fail to start its database.
+ */
+function findFreePort(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.unref();
+    probe.on("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const address = probe.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      probe.close(() => resolve(String(port)));
+    });
+  });
+}
+
 export async function setup() {
-  const testPort = process.env.TEST_DB_PORT ?? "54333";
+  const testPort = process.env.TEST_DB_PORT ?? (await findFreePort());
   testDataDir = path.join(os.tmpdir(), `cepheus-dbtest-${Date.now()}-${process.pid}`);
   testLogFile = path.join(os.tmpdir(), `cepheus-dbtest-${Date.now()}-${process.pid}.log`);
 
