@@ -92,18 +92,26 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await expect(crisisPath).toContainText("112");
   });
 
-  test("3. shows no voice button when on-device recognition is missing", async ({
+  test("3. shows voice button on load, reports unavailable on click when on-device recognition is missing, and keeps text input", async ({
     page,
     context,
   }) => {
     await signInAsPatient(page, context, "P-SIM-001");
     await page.goto("/check-in");
 
-    // In default browser test environment without on-device Web Speech API confirmation,
-    // the voice answer button is not rendered at all.
-    await expect(page.getByTestId("check-in-speak-button")).toHaveCount(0);
+    // The voice button is visible on load
+    await expect(page.getByTestId("check-in-speak-button")).toBeVisible();
+    await expect(page.getByTestId("check-in-text-input")).toBeVisible();
 
-    // Text typing input remains available for everyone
+    // Clicking it triggers the on-device availability check; when missing, message is shown
+    await page.getByTestId("check-in-speak-button").click();
+    await expect(page.getByTestId("check-in-voice-feedback")).toBeVisible();
+    await expect(page.getByTestId("check-in-voice-feedback")).toContainText(
+      "On-device speech recognition is not available on this device."
+    );
+
+    // The button no longer starts listening (hidden) and text typing stays available
+    await expect(page.getByTestId("check-in-speak-button")).toHaveCount(0);
     await expect(page.getByTestId("check-in-text-input")).toBeVisible();
   });
 
