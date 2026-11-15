@@ -5,6 +5,7 @@ export type ConsentState = {
   methods: Record<MeasuringMethod, boolean>;
   rule_check: boolean;
   detailed_answers?: boolean;
+  facial_movement_usual_range?: boolean;
 };
 
 export const INITIAL_CONSENT_STATE: ConsentState = {
@@ -15,6 +16,7 @@ export const INITIAL_CONSENT_STATE: ConsentState = {
   },
   rule_check: false,
   detailed_answers: false,
+  facial_movement_usual_range: false,
 };
 
 export type ConsentPurpose =
@@ -23,7 +25,8 @@ export type ConsentPurpose =
   | 'method:ring'
   | 'method:camera'
   | 'detailed_answers'
-  | 'personalisation';
+  | 'personalisation'
+  | 'facial_movement_usual_range';
 
 export function isPurposeAllowed(state: ConsentState, purpose: ConsentPurpose): boolean {
   if (!state.taking_part) return false;
@@ -34,6 +37,9 @@ export function isPurposeAllowed(state: ConsentState, purpose: ConsentPurpose): 
   if (purpose === 'method:camera') return state.methods.camera;
   if (purpose === 'detailed_answers' || purpose === 'personalisation') {
     return Boolean(state.detailed_answers);
+  }
+  if (purpose === 'facial_movement_usual_range') {
+    return Boolean(state.facial_movement_usual_range);
   }
 
   return false;

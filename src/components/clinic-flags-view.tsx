@@ -14,6 +14,7 @@ interface FlagItem {
   warningKind?: string;
   facts?: ClinicFlagFacts;
   supportingLines?: string[];
+  isSimulated?: boolean;
 }
 
 interface NurseCallApiItem {
@@ -141,6 +142,7 @@ export function ClinicFlagsView() {
                 warningKind={flag.warningKind}
                 facts={flag.facts}
                 supportingLines={flag.supportingLines}
+                isSimulated={flag.isSimulated ?? flag.facts?.isSimulated}
                 initialRequestedCall={nurseCalls[flag.patientId] ?? null}
                 onCallRequested={(info) =>
                   setNurseCalls((prev) => ({ ...prev, [flag.patientId]: info }))

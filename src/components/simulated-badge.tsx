@@ -1,3 +1,5 @@
+import React from "react";
+
 export interface SimulatedBadgeProps {
   subtitle?: string;
   className?: string;

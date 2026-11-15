@@ -45,11 +45,17 @@ function consentOf(row: ParticipantRow): ConsentState {
   const enabled = (method: string) =>
     row.consents.some((consent) => consent.method === method && consent.enabled);
   const hasDetailedAnswers = row.consents.some((consent) => consent.method === "detailed_answers");
+  const hasFacialMovementUsualRange = row.consents.some(
+    (consent) => consent.method === "facial_movement_usual_range"
+  );
   return {
     taking_part: row.takingPart,
     methods: { ring: enabled(RING_METHOD), camera: enabled(CAMERA_METHOD) },
     rule_check: row.ruleCheckConsent,
     ...(hasDetailedAnswers ? { detailed_answers: enabled("detailed_answers") } : {}),
+    ...(hasFacialMovementUsualRange
+      ? { facial_movement_usual_range: enabled("facial_movement_usual_range") }
+      : {}),
   };
 }
 
@@ -92,6 +98,16 @@ function consentEventsFor(stored: ConsentState | null, record: PatientRecord) {
           },
         ]
       : []),
+    ...(consent.facial_movement_usual_range !== undefined
+      ? [
+          {
+            layer: "facial_movement_usual_range",
+            method: null,
+            before: stored?.facial_movement_usual_range,
+            enabled: consent.facial_movement_usual_range,
+          },
+        ]
+      : []),
   ];
   return switches
     .filter((change) => change.before !== change.enabled)
@@ -117,6 +133,9 @@ async function savePatientRecord(ctx: DbContext, record: PatientRecord): Promise
     consentRow(CAMERA_METHOD, record.clinicId, record.consent.methods.camera),
     ...(record.consent.detailed_answers !== undefined
       ? [consentRow("detailed_answers", record.clinicId, record.consent.detailed_answers)]
+      : []),
+    ...(record.consent.facial_movement_usual_range !== undefined
+      ? [consentRow("facial_movement_usual_range", record.clinicId, record.consent.facial_movement_usual_range)]
       : []),
   ];
 

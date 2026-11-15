@@ -1,7 +1,7 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { SimulatedBadge } from "@/components/simulated-badge";
 
 interface SimulatedPatientSummary {
@@ -12,13 +12,14 @@ interface SimulatedPatientSummary {
   readonly openWarnings: readonly string[];
 }
 
-interface DemoSwitches {
+export interface DemoSwitches {
   readonly rewards: boolean;
   readonly counters: boolean;
   readonly extraQuestion: boolean;
+  readonly expressivityShowcase: boolean;
 }
 
-interface DemoState {
+export interface DemoState {
   readonly ok: boolean;
   readonly isSimulated: true;
   readonly now: string;
@@ -192,7 +193,7 @@ function SwitchCard({
   );
 }
 
-function SwitchesSection({
+export function SwitchesSection({
   switches,
   isPending,
   onToggle,
@@ -216,7 +217,7 @@ function SwitchesSection({
         Changeable while the server runs. Resets to environment defaults on Reset.
       </p>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SwitchCard
           title="Rewards"
           description="Simulated rewards for check-ins and tasks (D48)."
@@ -240,6 +241,14 @@ function SwitchesSection({
           status={switches.extraQuestion}
           isPending={isPending}
           onToggle={() => onToggle("extraQuestion", !switches.extraQuestion)}
+        />
+        <SwitchCard
+          title="Expressivity showcase"
+          description="Whether this is worth it is doubtful: it needs a camera in the home, and it adds privacy and data-security cost for an uncertain benefit. It is off by default."
+          statusKey="expressivity"
+          status={switches.expressivityShowcase}
+          isPending={isPending}
+          onToggle={() => onToggle("expressivityShowcase", !switches.expressivityShowcase)}
         />
       </div>
     </section>
@@ -337,9 +346,13 @@ function PatientsSection({ patients }: { patients: readonly SimulatedPatientSumm
   );
 }
 
-export function DemoControls() {
-  const [state, setState] = useState<DemoState | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export interface DemoControlsProps {
+  initialState?: DemoState;
+}
+
+export function DemoControls({ initialState }: DemoControlsProps = {}) {
+  const [state, setState] = useState<DemoState | null>(initialState ?? null);
+  const [isLoading, setIsLoading] = useState(!initialState);
   const [isPending, setIsPending] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
 

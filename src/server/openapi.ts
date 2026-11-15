@@ -86,6 +86,12 @@ export const API_ROUTES: readonly RouteEntry[] = [
     summary: "Record the outcome of a nurse call about a flag",
     body: RecordNurseCallRequestSchema,
   },
+  {
+    path: "/api/clinic/expressivity-showcase",
+    method: "get",
+    caller: "staff",
+    summary: "Facial movement comparison against person's own usual range for one patient",
+  },
   { path: "/api/rounds/close", method: "post", caller: "system", summary: "Close one patient's elapsed rounds", body: RoundsCloseRequestSchema },
   {
     path: "/api/patients/{patientId}/evaluate",

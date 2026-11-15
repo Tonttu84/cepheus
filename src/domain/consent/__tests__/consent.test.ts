@@ -9,6 +9,7 @@ describe('Consent', () => {
     expect(INITIAL_CONSENT_STATE.methods.ring).toBe(false);
     expect(INITIAL_CONSENT_STATE.methods.camera).toBe(false);
     expect(INITIAL_CONSENT_STATE.detailed_answers).toBe(false);
+    expect(INITIAL_CONSENT_STATE.facial_movement_usual_range).toBe(false);
   });
 
   it('Nothing is allowed when taking_part is off', () => {
@@ -53,6 +54,17 @@ describe('Consent', () => {
 
     const stateNoTakingPart = { ...INITIAL_CONSENT_STATE, taking_part: false, detailed_answers: true };
     expect(isPurposeAllowed(stateNoTakingPart, 'detailed_answers')).toBe(false);
+  });
+
+  it('facial_movement_usual_range needs taking_part and facial_movement_usual_range switch', () => {
+    const stateOff = { ...INITIAL_CONSENT_STATE, taking_part: true, facial_movement_usual_range: false };
+    expect(isPurposeAllowed(stateOff, 'facial_movement_usual_range')).toBe(false);
+
+    const stateOn = { ...INITIAL_CONSENT_STATE, taking_part: true, facial_movement_usual_range: true };
+    expect(isPurposeAllowed(stateOn, 'facial_movement_usual_range')).toBe(true);
+
+    const stateNoTakingPart = { ...INITIAL_CONSENT_STATE, taking_part: false, facial_movement_usual_range: true };
+    expect(isPurposeAllowed(stateNoTakingPart, 'facial_movement_usual_range')).toBe(false);
   });
 
   it('an unknown method must be refused', () => {

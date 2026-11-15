@@ -14,7 +14,7 @@ import { checkDemoNeedsReset, getSimulatedPatientSummaries } from "@/server/db";
 export const dynamic = "force-dynamic";
 
 const SwitchInputSchema = z.object({
-  key: z.enum(["rewards", "counters", "extraQuestion"]),
+  key: z.enum(["rewards", "counters", "extraQuestion", "expressivityShowcase"]),
   enabled: z.boolean(),
 });
 

@@ -15,11 +15,13 @@ const ConsentFormSchema = z
         ring_rhythm: z.boolean().default(false),
         camera_expressivity: z.boolean().default(false),
         home_routine: z.boolean().default(false),
+        facial_movement_usual_range: z.boolean().default(false),
       })
       .default({
         ring_rhythm: false,
         camera_expressivity: false,
         home_routine: false,
+        facial_movement_usual_range: false,
       }),
     detailedAnswers: z.boolean().default(false),
   })
@@ -45,6 +47,7 @@ async function saveConsentChoices(data: ConsentFormData, session: Parameters<typ
         camera: methods.camera_expressivity,
       },
       detailed_answers: detailedAnswers,
+      facial_movement_usual_range: methods.facial_movement_usual_range,
     },
   };
 

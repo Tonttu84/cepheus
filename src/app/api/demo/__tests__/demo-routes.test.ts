@@ -9,6 +9,7 @@ import {
   advanceDemoTime,
   getDemoOffsetDays,
   isCountersEnabled,
+  isExpressivityShowcaseEnabled,
   resetDemoClock,
   resetSettings,
   setDemoEnabled,
@@ -317,6 +318,17 @@ describe("Demo API routes (src/app/api/demo/**)", () => {
       const json = await res.json();
       expect(json.switches.counters).toBe(true);
       expect(isCountersEnabled()).toBe(true);
+
+      const reqExpressivity = createRequest("/api/demo/switch", {
+        method: "POST",
+        body: { key: "expressivityShowcase", enabled: true },
+        session: STAFF_SESSION,
+      });
+      const resExpressivity = await postSwitch(reqExpressivity);
+      expect(resExpressivity.status).toBe(200);
+      const jsonExpressivity = await resExpressivity.json();
+      expect(jsonExpressivity.switches.expressivityShowcase).toBe(true);
+      expect(isExpressivityShowcaseEnabled()).toBe(true);
     });
 
     it("POST /api/demo/reset zeroes offset and restores defaults", async () => {

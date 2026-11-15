@@ -1,12 +1,17 @@
 import { DEFAULT_EXTRA_ITEMS_CONFIG } from "@/domain/extra-items";
 import { DEFAULT_REWARDS_CONFIG } from "@/domain/rewards/config";
 
-export type DemoSwitchKey = "rewards" | "counters" | "extraQuestion";
+export type DemoSwitchKey =
+  | "rewards"
+  | "counters"
+  | "extraQuestion"
+  | "expressivityShowcase";
 
 export interface DemoSwitches {
   readonly rewards: boolean;
   readonly counters: boolean;
   readonly extraQuestion: boolean;
+  readonly expressivityShowcase: boolean;
 }
 
 function parseBooleanEnv(key: string, defaultValue: boolean): boolean {
@@ -27,6 +32,7 @@ function computeDefaultSwitches(): DemoSwitches {
     rewards: parseBooleanEnv("REWARDS_ENABLED", DEFAULT_REWARDS_CONFIG.enabled),
     counters: parseBooleanEnv("COUNTERS_ENABLED", false),
     extraQuestion: parseBooleanEnv("EXTRA_QUESTION_ENABLED", DEFAULT_EXTRA_ITEMS_CONFIG.enabled),
+    expressivityShowcase: parseBooleanEnv("EXPRESSIVITY_SHOWCASE_ENABLED", false),
   };
 }
 
@@ -55,6 +61,10 @@ export function isCountersEnabled(): boolean {
 
 export function isExtraQuestionEnabled(): boolean {
   return currentSwitches.extraQuestion;
+}
+
+export function isExpressivityShowcaseEnabled(): boolean {
+  return currentSwitches.expressivityShowcase;
 }
 
 export function setSwitch(key: DemoSwitchKey, enabled: boolean): void {
