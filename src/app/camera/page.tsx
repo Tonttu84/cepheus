@@ -93,7 +93,7 @@ export default async function CameraPage() {
             </span>
           </summary>
 
-          <div className="mt-5 space-y-6 rounded-2xl border border-border-hairline bg-surface-subtle/70 p-6 text-xs text-ink-secondary">
+          <div className="mt-5 space-y-6 rounded-2xl border border-border-hairline bg-surface-subtle/70 p-6 text-sm text-ink-secondary">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-border-hairline bg-surface-card p-4">
                 <h2 className="font-display text-base font-semibold text-ink-primary">

@@ -109,7 +109,7 @@ export function CameraCompletedView({
           </span>
         </summary>
 
-        <div className="mt-4 space-y-4 border-t border-border-hairline pt-4 text-xs text-ink-secondary">
+        <div className="mt-4 space-y-4 border-t border-border-hairline pt-4 text-sm text-ink-secondary">
           <p>
             These numbers measure movement of the face and head. No model
             judges mood or health.
@@ -124,7 +124,7 @@ export function CameraCompletedView({
               >
                 {sessionResult.expressivity.toFixed(3)}
               </dd>
-              <p className="mt-0.5 text-xs text-ink-muted">
+              <p className="mt-0.5 text-sm text-ink-muted">
                 Mean variation in facial movement across frames
               </p>
             </div>
@@ -137,13 +137,13 @@ export function CameraCompletedView({
               >
                 {sessionResult.headMovement.toFixed(1)} deg/s
               </dd>
-              <p className="mt-0.5 text-xs text-ink-muted">
+              <p className="mt-0.5 text-sm text-ink-muted">
                 Average frame-to-frame change of head rotation angles
               </p>
             </div>
           </dl>
 
-          <div className="tabular-nums pt-1 text-xs text-ink-muted">
+          <div className="tabular-nums pt-1 text-sm text-ink-muted">
             Quality: {sessionResult.quality.analysedFrames} frames evaluated (
             {Math.round(sessionResult.quality.faceShare * 100)}% face
             presence) over{" "}
