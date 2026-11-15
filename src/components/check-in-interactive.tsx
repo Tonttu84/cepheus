@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CheckInVoiceInput } from "@/components/check-in-voice-input";
 
 export interface CheckInPromptItem {
   key: string;
@@ -115,10 +116,22 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
 
   const answeredCount = Object.keys(answers).length;
   const isComplete = answeredCount === items.length;
+  const nextUnanswered =
+    items.find((item) => answers[item.key] === undefined) ??
+    items[items.length - 1] ??
+    null;
 
   function handleSelectFour(key: string, choice: number) {
     setSkippedToday(false);
     setAnswers((prev) => ({ ...prev, [key]: choice }));
+  }
+
+  function handleVoiceOrTextScore(choice: number) {
+    const target = nextUnanswered;
+    if (!target) {
+      return;
+    }
+    handleSelectFour(target.key, choice);
   }
 
   function handleSkip() {
@@ -191,6 +204,14 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
           </p>
         </div>
       ) : null}
+
+      <CheckInVoiceInput
+        activeItemLabel={nextUnanswered?.label ?? null}
+        mode="tap"
+        onSelectScore={handleVoiceOrTextScore}
+        onNotToday={handleSkip}
+        onCrisisHelp={() => {}}
+      />
 
       <div className="mt-7 divide-y divide-border-hairline">
         {items.map((item) => (
