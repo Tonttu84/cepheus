@@ -4,7 +4,8 @@ import { z } from "zod";
 export type SimulatedPatientPresetKey =
   | "P-SIM-001"
   | "P-SIM-DEP-01"
-  | "P-SIM-ANX-01";
+  | "P-SIM-ANX-01"
+  | "P-SIM-NEW-01";
 
 export interface PatientAuthSession {
   kind: "patient";
@@ -49,16 +50,23 @@ export const SIMULATED_PATIENT_PRESETS: readonly SimulatedPatientPreset[] = [
   {
     participantCode: "P-SIM-DEP-01",
     externalId: "sim-sample-depression-01",
-    label: "Sample participant · Depression",
+    label: "Sample participant (has open suggestion) · Depression",
     description: "PHQ-9 follow-up only (D35)",
     avatarInitials: "PD",
   },
   {
     participantCode: "P-SIM-ANX-01",
     externalId: "sim-sample-anxiety-01",
-    label: "Sample participant · Depression & anxiety",
+    label: "Sample participant · Depression & anxiety (gets the GAD-7)",
     description: "PHQ-9 + GAD-7 follow-up (D35)",
     avatarInitials: "PA",
+  },
+  {
+    participantCode: "P-SIM-NEW-01",
+    externalId: "sim-sample-new-01",
+    label: "Sample participant · new, consent not yet given",
+    description: "Consent layer testing",
+    avatarInitials: "PN",
   },
 ] as const;
 
@@ -94,6 +102,7 @@ export const SimulatedPatientPresetKeySchema = z.enum([
   "P-SIM-001",
   "P-SIM-DEP-01",
   "P-SIM-ANX-01",
+  "P-SIM-NEW-01",
 ]);
 
 export const PatientSignInRequestSchema = z.object({

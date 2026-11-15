@@ -133,6 +133,12 @@ export const SAMPLE_PARTICIPANTS: readonly SampleParticipant[] = [
     label: "Sample participant · Depression & anxiety",
     questionnaires: ["phq9", "gad7"],
   },
+  {
+    participantCode: "P-SIM-NEW-01",
+    externalId: "sim-sample-new-01",
+    label: "Sample participant · new, consent not yet given",
+    questionnaires: ["phq9"],
+  },
 ];
 
 export function consentEventRows(participantId: string, clinicId: string) {
@@ -179,6 +185,7 @@ export async function createSampleParticipants(
 ): Promise<string[]> {
   const ids: string[] = [];
   for (const [index, sample] of SAMPLE_PARTICIPANTS.entries()) {
+    const isNew = sample.participantCode === "P-SIM-NEW-01";
     const row = await tx.participant.create({
       data: {
         clinicId,
@@ -188,13 +195,17 @@ export async function createSampleParticipants(
         source: "synthetic",
         isSimulated: true,
         ...liveScheduleAt(now, 1),
-        takingPart: true,
-        ruleCheckConsent: true,
+        takingPart: !isNew,
+        ruleCheckConsent: !isNew,
         questionnairesJson: JSON.stringify(sample.questionnaires),
       },
     });
-    await tx.consentEvent.createMany({ data: consentEventRows(row.id, clinicId) });
-    await createSampleSuggestion(tx, row.id, clinicId, now, index);
+    if (!isNew) {
+      await tx.consentEvent.createMany({ data: consentEventRows(row.id, clinicId) });
+    }
+    if (sample.participantCode === "P-SIM-DEP-01") {
+      await createSampleSuggestion(tx, row.id, clinicId, now, index);
+    }
     ids.push(row.id);
   }
   return ids;
