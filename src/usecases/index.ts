@@ -36,11 +36,5 @@ export {
   type GetPatientConsentInput,
   type GetPatientConsentResult,
 } from './get-patient-consent';
-export {
-  updateMethodConsent,
-  type AllowedConsentMethod,
-  type UpdateMethodConsentInput,
-  type UpdateMethodConsentResult,
-} from './update-method-consent';
 export { storeCameraReading, type StoreCameraReadingInput } from './store-camera-reading';
 export type * from './ports';
