@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { signInAsStaff } from "./helpers";
+import { expect } from "@playwright/test";
+import { signInAsStaff, test } from "./helpers";
 
 const LIMITS_SENTENCE =
   "This is not a reading of mood and not a judgement. No study shows that it warns of relapse. The clinician decides.";
