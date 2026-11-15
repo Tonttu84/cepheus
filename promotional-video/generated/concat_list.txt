@@ -1,0 +1,6 @@
+file 'scene_01_hook.mp4'
+file 'scene_02_hardware_exploded.mp4'
+file 'scene_03_04_day18_extended.mp4'
+file 'scene_05_day29_walk.mp4'
+file 'scene_06_07_day56_nurse_extended.mp4'
+file 'scene_08_closer.mp4'
