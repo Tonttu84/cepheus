@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signInAsStaff } from "./helpers";
+import { signInAsPatient, signInAsStaff } from "./helpers";
 
 test.describe("Demo page: time advance, clinic warning, and reset", () => {
   test("advance two weeks, see the warning on /clinic, reset, see it gone", async ({
@@ -49,5 +49,44 @@ test.describe("Demo page: time advance, clinic warning, and reset", () => {
     await page.goto("/clinic");
     await expect(page.getByTestId("no-flags")).toBeVisible();
     await expect(page.getByTestId("clinic-flag-card")).toHaveCount(0);
+  });
+
+  test("rotating extra question appears on /check-in when switch is on and hides when switch is off", async ({
+    page,
+    context,
+  }) => {
+    // 1. Sign in as staff and ensure clean reset state with extra question switch OFF
+    await signInAsStaff(page, context);
+    await page.goto("/demo");
+    await expect(page.getByTestId("demo-controls-panel")).toBeVisible();
+    await page.getByTestId("btn-reset-demo").click();
+    await expect(page.getByTestId("switch-status-extra")).toContainText("OFF");
+
+    // 2. Visit /check-in as patient with switch OFF: extra question does NOT appear
+    await signInAsPatient(page, context);
+    await page.goto("/check-in");
+    await expect(page.getByTestId("extra-question-section")).toHaveCount(0);
+
+    // 3. Return to /demo as staff and toggle extra question switch ON
+    await signInAsStaff(page, context);
+    await page.goto("/demo");
+    await page.getByTestId("switch-toggle-extra").click();
+    await expect(page.getByTestId("switch-status-extra")).toContainText("ON");
+
+    // 4. Visit /check-in as patient with switch ON: extra question appears after the two taps
+    await signInAsPatient(page, context);
+    await page.goto("/check-in");
+    await expect(page.getByTestId("extra-question-section")).toBeVisible();
+
+    // 5. Turn switch back OFF
+    await signInAsStaff(page, context);
+    await page.goto("/demo");
+    await page.getByTestId("switch-toggle-extra").click();
+    await expect(page.getByTestId("switch-status-extra")).toContainText("OFF");
+
+    // 6. Visit /check-in: extra question does not appear
+    await signInAsPatient(page, context);
+    await page.goto("/check-in");
+    await expect(page.getByTestId("extra-question-section")).toHaveCount(0);
   });
 });

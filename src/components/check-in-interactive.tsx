@@ -13,6 +13,7 @@ import {
 } from "@/lib/check-in-client";
 import { GAD7_TEXT_EN } from "@/domain/instruments";
 import type { VoiceChoiceMode } from "@/domain/arduino/voice";
+import { ExtraQuestion, type ExtraItemData } from "./check-in/extra-question";
 
 export interface CheckInPromptItem {
   key: string;
@@ -489,6 +490,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
   const [isGad7Due, setIsGad7Due] = useState(false);
   const [gad7Answers, setGad7Answers] = useState<Record<string, number>>({});
   const [showCrisisPath, setShowCrisisPath] = useState(false);
+  const [extraItem, setExtraItem] = useState<ExtraItemData | null>(null);
   const rowRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
@@ -499,6 +501,9 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
         if (res.taps === "not_today") setSkippedToday(true);
         setIsPhq9Due(res.isPhq9Due);
         setIsGad7Due(Boolean(res.isGad7Due));
+        if (res.extraItem) {
+          setExtraItem(res.extraItem as ExtraItemData);
+        }
       } else if (res.status === 401) {
         setAuthRequired(true);
       } else if (res.status === 503 || res.saved === false) {
@@ -678,6 +683,8 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
           />
         ))}
       </div>
+
+      <ExtraQuestion extraItem={extraItem} disabled={isSubmitting || skippedToday} />
 
       {isPhq9Due && !skippedToday ? (
         <Phq9Section
