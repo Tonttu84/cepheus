@@ -60,6 +60,8 @@ interface Layer2SectionProps {
   setCameraExpressivity: (val: boolean) => void;
   homeRoutine: boolean;
   setHomeRoutine: (val: boolean) => void;
+  facialMovementUsualRange: boolean;
+  setFacialMovementUsualRange: (val: boolean) => void;
 }
 
 function Layer2Section({
@@ -69,6 +71,8 @@ function Layer2Section({
   setCameraExpressivity,
   homeRoutine,
   setHomeRoutine,
+  facialMovementUsualRange,
+  setFacialMovementUsualRange,
 }: Layer2SectionProps) {
   return (
     <section
@@ -118,6 +122,20 @@ function Layer2Section({
           <span className="text-xs leading-relaxed text-ink-primary">
             <strong className="block font-medium">Camera check:</strong>
             Measures facial expressivity during check-in. Video never leaves your phone, only summary numbers are saved.
+          </span>
+        </label>
+
+        <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-xl border border-border-hairline bg-surface-subtle/60 p-3 transition hover:border-border-tactile hover:bg-surface-subtle">
+          <input
+            type="checkbox"
+            data-testid="checkbox-facial-movement-usual-range"
+            checked={facialMovementUsualRange}
+            onChange={(e) => setFacialMovementUsualRange(e.target.checked)}
+            className="mt-0.5 h-5 w-5 shrink-0 rounded border-border-tactile text-accent-sage focus:ring-accent-sage"
+          />
+          <span className="text-xs leading-relaxed text-ink-primary">
+            <strong className="block font-medium">Facial movement range comparison:</strong>
+            Let my clinic see how my facial movement in the camera check compares with my own usual range (optional, research potential).
           </span>
         </label>
 
@@ -194,6 +212,7 @@ export function ConsentScreen() {
   const router = useRouter();
   const [ringRhythm, setRingRhythm] = useState(false);
   const [cameraExpressivity, setCameraExpressivity] = useState(false);
+  const [facialMovementUsualRange, setFacialMovementUsualRange] = useState(false);
   const [homeRoutine, setHomeRoutine] = useState(false);
   const [detailedAnswers, setDetailedAnswers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -214,6 +233,7 @@ export function ConsentScreen() {
             ring_rhythm: ringRhythm,
             camera_expressivity: cameraExpressivity,
             home_routine: homeRoutine,
+            facial_movement_usual_range: facialMovementUsualRange,
           },
           detailedAnswers,
         }),
@@ -257,6 +277,8 @@ export function ConsentScreen() {
           setCameraExpressivity={setCameraExpressivity}
           homeRoutine={homeRoutine}
           setHomeRoutine={setHomeRoutine}
+          facialMovementUsualRange={facialMovementUsualRange}
+          setFacialMovementUsualRange={setFacialMovementUsualRange}
         />
         <Layer3Section
           detailedAnswers={detailedAnswers}

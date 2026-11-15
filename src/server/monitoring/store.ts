@@ -30,6 +30,7 @@ export const ALL_CONSENT_METHODS = [
   "camera_expressivity",
   "home_routine",
   "detailed_answers",
+  "facial_movement_usual_range",
 ] as const;
 export type MonitoredMethodKey = (typeof ALL_CONSENT_METHODS)[number];
 export type PassiveMethodKey = (typeof MONITORED_METHODS)[number];
@@ -375,12 +376,19 @@ export async function updateMethodConsent(
   if (!existing || existing.enabled !== enabled) {
     const isDetailed = method === "detailed_answers";
     const isTakingPart = method === "check_in";
+    const isFacialMovementRange = method === "facial_movement_usual_range";
     await prisma.consentEvent.create({
       data: {
         participantId: participant.id,
         clinicId: participant.clinicId,
-        layer: isDetailed ? "detailed_answers" : isTakingPart ? "taking_part" : "method",
-        method: isDetailed || isTakingPart ? null : method,
+        layer: isDetailed
+          ? "detailed_answers"
+          : isTakingPart
+          ? "taking_part"
+          : isFacialMovementRange
+          ? "facial_movement_usual_range"
+          : "method",
+        method: isDetailed || isTakingPart || isFacialMovementRange ? null : method,
         enabled,
         noticeVersion: "v1",
       },

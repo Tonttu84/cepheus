@@ -10,7 +10,13 @@ export const dynamic = "force-dynamic";
 
 const ConsentUpdateRequestSchema = z
   .object({
-    method: z.enum(["ring", "camera", "ring_rhythm", "camera_expressivity"]),
+    method: z.enum([
+      "ring",
+      "camera",
+      "ring_rhythm",
+      "camera_expressivity",
+      "facial_movement_usual_range",
+    ]),
     enabled: z.boolean(),
   })
   .strict();

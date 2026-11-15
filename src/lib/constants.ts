@@ -83,6 +83,7 @@ export type MeasurementMethodKey =
   | "phq9"
   | "ring_rhythm"
   | "camera_expressivity"
+  | "facial_movement_usual_range"
   | "speech_rate"
   | "ambiguous_faces"
   | "home_routine"
@@ -139,6 +140,16 @@ export const MEASUREMENT_METHODS: MeasurementMethodDescriptor[] = [
     isPersonalSignDefault: false,
     recordedDescription:
       "Runs in your browser during a short check-in and saves only two summary numbers for face and head movement. Video frames never leave your device.",
+  },
+  {
+    method: "facial_movement_usual_range",
+    label: "Facial movement against usual range",
+    broadArea: "check_in",
+    core: false,
+    defaultEnabled: false,
+    isPersonalSignDefault: false,
+    recordedDescription:
+      "Let my clinic see how my facial movement in the camera check compares with my own usual range (optional, research potential).",
   },
   {
     method: "speech_rate",
