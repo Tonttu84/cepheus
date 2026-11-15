@@ -25,7 +25,11 @@ import type {
   ExtraAnswerRepository,
   UnitOfWork,
   Ports,
+  HomeMonitoringFacts,
+  HomeMonitoringQuery,
+  HomeMonitoringRepository,
 } from '../ports';
+import type { ConsentState } from '../../domain/consent';
 import { DEFAULT_EXTRA_ITEMS_CONFIG, type ExtraItemsConfig } from '../../domain/extra-items';
 
 export class FakeClock implements Clock {
@@ -424,6 +428,77 @@ export class FakeUnitOfWork implements UnitOfWork {
   }
 }
 
+export class FakeHomeMonitoringRepository implements HomeMonitoringRepository {
+  public ringDays: Record<string, { date: string; ringActive: boolean; wearMinutes?: number }[]> = {};
+  public rhythmWindows: Record<
+    string,
+    { windowEndDate: string; sriZScore?: number | null; raZScore?: number | null; isZScore?: number | null }[]
+  > = {};
+  public cameraReadings: Record<string, { date: string; source: string }[]> = {};
+
+  async getSupportingFacts(
+    query: HomeMonitoringQuery,
+    consent: ConsentState
+  ): Promise<HomeMonitoringFacts> {
+    if (!consent.taking_part) return { supportingLines: [] };
+
+    const supportingLines: string[] = [];
+    let wearableWornLine: string | null = null;
+    let rhythmShiftLine: string | null = null;
+    let checkDoneLine: string | null = null;
+
+    if (consent.methods.ring) {
+      const days = this.ringDays[query.patientId]?.filter((d) => d.date >= query.sinceDate) ?? [];
+      if (days.length > 0) {
+        const worn = days.filter((d) => d.ringActive || (d.wearMinutes ?? 0) > 0).length;
+        wearableWornLine = query.isSilenceOrMissed
+          ? `ring worn on ${worn} of ${days.length} days during the missed rounds`
+          : `ring worn on ${worn} of ${days.length} days during the lower rounds`;
+        supportingLines.push(wearableWornLine);
+      }
+
+      const windows = this.rhythmWindows[query.patientId] ?? [];
+      const hasSriShift = windows.some(
+        (w) => w.sriZScore != null && (w.sriZScore <= -1.0 || Math.abs(w.sriZScore) >= 1.0)
+      );
+      const hasRaShift = windows.some(
+        (w) =>
+          (w.raZScore != null && Math.abs(w.raZScore) >= 1.0) ||
+          (w.isZScore != null && Math.abs(w.isZScore) >= 1.0)
+      );
+
+      if (hasSriShift && hasRaShift) {
+        rhythmShiftLine = "day-night rhythm and sleep regularity shifted against earlier weeks";
+        supportingLines.push(rhythmShiftLine);
+      } else if (hasSriShift) {
+        rhythmShiftLine = "sleep regularity shifted against earlier weeks";
+        supportingLines.push(rhythmShiftLine);
+      } else if (hasRaShift) {
+        rhythmShiftLine = "day-night rhythm shifted against earlier weeks";
+        supportingLines.push(rhythmShiftLine);
+      }
+    }
+
+    if (consent.methods.camera) {
+      const readings =
+        this.cameraReadings[query.patientId]?.filter((r) => r.date >= query.sinceDate) ?? [];
+      if (readings.length > 0) {
+        checkDoneLine = readings.some((r) => r.source === "arduino_uno_q")
+          ? "bedside check done during this time"
+          : "camera check done during this time";
+        supportingLines.push(checkDoneLine);
+      }
+    }
+
+    return {
+      wearableWornLine,
+      rhythmShiftLine,
+      checkDoneLine,
+      supportingLines: supportingLines.slice(0, 3),
+    };
+  }
+}
+
 export function createFakePorts(
   initialClockIso: string = '2026-11-16T18:00:00.000Z',
   extraItemsConfig: ExtraItemsConfig = DEFAULT_EXTRA_ITEMS_CONFIG
@@ -451,6 +526,7 @@ export function createFakePorts(
     accessLog: new FakeAccessLogRepository(ctx),
     extraAnswers: new FakeExtraAnswerRepository(ctx),
     extraItemsConfig,
+    homeMonitoring: new FakeHomeMonitoringRepository(),
     unitOfWork,
   };
 

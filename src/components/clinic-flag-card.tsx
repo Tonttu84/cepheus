@@ -3,19 +3,23 @@
 import { useEffect, useState } from "react";
 import { BROAD_AREA_LABELS, type BroadAreaKey } from "@/lib/constants";
 import { SimulatedBadge } from "@/components/simulated-badge";
+import type { ClinicFlagFacts } from "@/server/api/clinic-flags";
 
 export interface RequestedCallInfo {
   readonly requestedBy: string;
   readonly requestedAt: string;
 }
 
-interface ClinicFlagCardProps {
+export interface ClinicFlagCardProps {
   participantLabel: string;
   participantExternalId: string;
   tmsCompletedDate: string;
   sinceDate: string;
   broadAreas: BroadAreaKey[];
-  ringActiveDuringSilence: boolean;
+  ringActiveDuringSilence?: boolean;
+  warningKind?: string;
+  facts?: ClinicFlagFacts;
+  supportingLines?: readonly string[];
   initialRequestedCall?: RequestedCallInfo | null;
   onCallRequested?: (info: RequestedCallInfo) => void;
 }
@@ -34,15 +38,75 @@ function formatCallTime(isoString: string): string {
   }
 }
 
-function FlagAreasSection({
+function FlagFactsSection({
   sinceDate,
   broadAreas,
-  ringActiveDuringSilence,
+  warningKind,
+  facts,
+  supportingLines,
 }: {
   sinceDate: string;
   broadAreas: BroadAreaKey[];
-  ringActiveDuringSilence: boolean;
+  warningKind?: string;
+  facts?: ClinicFlagFacts;
+  supportingLines?: readonly string[];
 }) {
+  const kind = facts?.warningKind ?? warningKind;
+  const factLines: string[] = [];
+  let showSilenceSentence = false;
+
+  if (kind === "phq9") {
+    if (facts?.latestTotal !== undefined) {
+      factLines.push(`PHQ-9 total: ${facts.latestTotal}`);
+    }
+    if (facts?.isFirstMeasurement) {
+      factLines.push("First measurement");
+    } else if (facts?.change !== undefined && facts?.change !== null) {
+      const sign = facts.change > 0 ? "+" : "";
+      factLines.push(`Change from previous total: ${sign}${facts.change}`);
+    }
+  } else if (kind === "gad7") {
+    if (facts?.latestTotal !== undefined) {
+      factLines.push(`GAD-7 total: ${facts.latestTotal}`);
+    }
+    if (facts?.isFirstMeasurement) {
+      factLines.push("First measurement");
+    } else if (facts?.change !== undefined && facts?.change !== null) {
+      const sign = facts.change > 0 ? "+" : "";
+      factLines.push(`Change from previous total: ${sign}${facts.change}`);
+    }
+  } else if (kind === "low_answers" || kind === "sustained_dip") {
+    if (facts?.roundsUnderBaseline !== undefined) {
+      const plural = facts.roundsUnderBaseline === 1 ? "round" : "rounds";
+      factLines.push(`${facts.roundsUnderBaseline} ${plural} under personal baseline`);
+    }
+  } else if (kind === "silence") {
+    if (facts?.missedRoundsCount !== undefined) {
+      const plural = facts.missedRoundsCount === 1 ? "round" : "rounds";
+      const since = facts.missedSince ?? sinceDate;
+      factLines.push(`${facts.missedRoundsCount} ${plural} missed since ${since}`);
+    }
+    showSilenceSentence = true;
+  } else if (kind === "mixed") {
+    if (facts?.roundsUnderBaseline !== undefined) {
+      const plural = facts.roundsUnderBaseline === 1 ? "round" : "rounds";
+      factLines.push(`${facts.roundsUnderBaseline} ${plural} under personal baseline`);
+    }
+    if (facts?.missedRoundsCount !== undefined) {
+      const plural = facts.missedRoundsCount === 1 ? "round" : "rounds";
+      const since = facts.missedSince ?? sinceDate;
+      factLines.push(`${facts.missedRoundsCount} ${plural} missed since ${since}`);
+    }
+    showSilenceSentence = true;
+  }
+
+  if (facts?.hasOpenCrisisEvent) {
+    factLines.push("Open crisis event recorded for this patient");
+  }
+
+  const monitoring = facts?.supportingLines ?? supportingLines ?? [];
+  const hasFactsBox = factLines.length > 0 || monitoring.length > 0 || showSilenceSentence;
+
   return (
     <div className="mt-6 space-y-6">
       <div>
@@ -65,21 +129,71 @@ function FlagAreasSection({
         </div>
       </div>
 
-      <div className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-5">
-        <p className="text-sm font-semibold text-amber-950">
-          Missed check-ins while the smart ring is still worn
-        </p>
-        <p className="mt-1.5 text-sm leading-relaxed text-amber-900">
-          After two lower check-ins, the Week{" "}
-          <span className="tabular-nums">8</span> rounds went unanswered while
-          the smart ring continued to be worn each day (
-          {ringActiveDuringSilence
-            ? "ring worn during missed rounds"
-            : "ring not worn"}
-          ). Unanswered rounds are treated as a reason to check in by phone,
-          never scored as zero.
-        </p>
-      </div>
+      {hasFactsBox ? (
+        <div
+          data-testid="clinic-flag-facts"
+          className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-5"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-amber-950">
+              Reason to call
+            </p>
+            {kind ? (
+              <span
+                data-testid="clinic-flag-kind"
+                className="rounded-full bg-amber-200/80 px-2.5 py-0.5 text-xs font-semibold text-amber-900"
+              >
+                {kind}
+              </span>
+            ) : null}
+          </div>
+
+          {factLines.length > 0 ? (
+            <ul className="mt-2.5 space-y-1 text-sm text-amber-900">
+              {factLines.map((line, idx) => (
+                <li
+                  key={idx}
+                  data-testid="clinic-flag-fact-line"
+                  className="flex items-center gap-2"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-600 shrink-0" />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {monitoring.length > 0 ? (
+            <div className="mt-3 border-t border-amber-200/60 pt-2.5">
+              <p className="text-xs font-semibold text-amber-950">
+                Supporting home-monitoring facts:
+              </p>
+              <ul className="mt-1 space-y-1 text-xs text-amber-800">
+                {monitoring.map((line, idx) => (
+                  <li
+                    key={idx}
+                    data-testid="clinic-flag-supporting-line"
+                    className="flex items-center gap-2"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500/70 shrink-0" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {showSilenceSentence ? (
+            <p
+              data-testid="clinic-flag-silence-note"
+              className="mt-3 border-t border-amber-200/60 pt-2.5 text-xs leading-relaxed text-amber-900"
+            >
+              Unanswered rounds are treated as a reason to check in by phone,
+              never scored as zero.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -90,7 +204,10 @@ export function ClinicFlagCard({
   tmsCompletedDate,
   sinceDate,
   broadAreas,
-  ringActiveDuringSilence,
+  ringActiveDuringSilence: _ringActiveDuringSilence,
+  warningKind,
+  facts,
+  supportingLines,
   initialRequestedCall,
   onCallRequested,
 }: ClinicFlagCardProps) {
@@ -180,10 +297,12 @@ export function ClinicFlagCard({
         </span>
       </div>
 
-      <FlagAreasSection
+      <FlagFactsSection
         sinceDate={sinceDate}
         broadAreas={broadAreas}
-        ringActiveDuringSilence={ringActiveDuringSilence}
+        warningKind={warningKind}
+        facts={facts}
+        supportingLines={supportingLines}
       />
 
       <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-border-hairline pt-6">

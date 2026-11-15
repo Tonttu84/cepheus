@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import { type BroadAreaKey } from "@/lib/constants";
 import { ClinicNurseBriefPanel } from "@/components/clinic-nurse-brief-panel";
 import { ClinicFlagCard, type RequestedCallInfo } from "@/components/clinic-flag-card";
+import type { ClinicFlagFacts } from "@/server/api/clinic-flags";
 
 interface FlagItem {
   patientId: string;
   area: string;
   since: string;
   raisedAt: string;
+  warningKind?: string;
+  facts?: ClinicFlagFacts;
+  supportingLines?: string[];
 }
 
 interface NurseCallApiItem {
@@ -134,6 +138,9 @@ export function ClinicFlagsView() {
                 sinceDate={flag.since}
                 broadAreas={[flag.area as BroadAreaKey]}
                 ringActiveDuringSilence={false}
+                warningKind={flag.warningKind}
+                facts={flag.facts}
+                supportingLines={flag.supportingLines}
                 initialRequestedCall={nurseCalls[flag.patientId] ?? null}
                 onCallRequested={(info) =>
                   setNurseCalls((prev) => ({ ...prev, [flag.patientId]: info }))

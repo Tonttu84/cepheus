@@ -56,4 +56,34 @@ test.describe("Clinic follow-up screen: nurse call requests & crisis alerts", ()
     await page.reload();
     await expect(page.getByTestId("crisis-alert-item")).toHaveCount(0);
   });
+
+  test("as the seeded nurse, the flag of a seeded patient shows its kind and its numbers, and the fixed paragraph is gone", async ({
+    page,
+    context,
+  }) => {
+    // 1. Sign in as nurse with seeded flag
+    await signInAsStaff(page, context, {
+      ensureFlag: true,
+    });
+
+    await page.goto("/clinic");
+
+    // 2. The flag card is visible
+    const flagCard = page.getByTestId("clinic-flag-card").first();
+    await expect(flagCard).toBeVisible();
+
+    // 3. The fixed Week 8 paragraph is gone
+    const cardText = await flagCard.innerText();
+    expect(cardText).not.toContain("the Week 8 rounds went unanswered");
+    expect(cardText).not.toContain("After two lower check-ins");
+
+    // 4. Shows its kind and its numbers
+    const factsSection = page.getByTestId("clinic-flag-facts").first();
+    await expect(factsSection).toBeVisible();
+    await expect(page.getByTestId("clinic-flag-kind").first()).toBeVisible();
+    await expect(page.getByTestId("clinic-flag-fact-line").first()).toBeVisible();
+
+    // 5. Patient remains labeled as simulated
+    await expect(flagCard.getByText("Simulated", { exact: false })).toBeVisible();
+  });
 });

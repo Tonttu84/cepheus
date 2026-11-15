@@ -238,6 +238,26 @@ export interface UnitOfWork {
   execute<T>(work: () => Promise<T>): Promise<T>;
 }
 
+export interface HomeMonitoringFacts {
+  readonly wearableWornLine?: string | null;
+  readonly rhythmShiftLine?: string | null;
+  readonly checkDoneLine?: string | null;
+  readonly supportingLines: readonly string[];
+}
+
+export interface HomeMonitoringQuery {
+  readonly patientId: string;
+  readonly sinceDate: string;
+  readonly isSilenceOrMissed?: boolean;
+}
+
+export interface HomeMonitoringRepository {
+  getSupportingFacts(
+    query: HomeMonitoringQuery,
+    consent: ConsentState
+  ): Promise<HomeMonitoringFacts>;
+}
+
 export interface Ports {
   readonly clock: Clock;
   readonly patients: PatientRepository;
@@ -252,6 +272,7 @@ export interface Ports {
   readonly accessLog: AccessLogRepository;
   readonly extraAnswers: ExtraAnswerRepository;
   readonly extraItemsConfig?: ExtraItemsConfig;
+  readonly homeMonitoring?: HomeMonitoringRepository;
   readonly unitOfWork: UnitOfWork;
 }
 

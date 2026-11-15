@@ -85,13 +85,21 @@ describe("GET /api/clinic/flags", () => {
     expect(body.flags.map((f) => f.patientId)).toEqual(["own-2", "own-1"]);
   });
 
-  it("never contains answers, scores, totals or the rule's trigger", async () => {
+  it("never contains individual answers or item scores (decision D45)", async () => {
     const body = await (await getFlags(flagsRequest(staffCookie()))).json();
     const keys = allKeys(body);
-    for (const forbidden of ["answers", "value", "score", "total", "mood", "interest", "kind", "causedby"]) {
+    for (const forbidden of ["answers", "mood", "interest", "item1", "item9"]) {
       expect(keys).not.toContain(forbidden);
     }
-    expect(Object.keys(body.flags[0]).sort()).toEqual(["area", "patientId", "raisedAt", "since"]);
+    expect(Object.keys(body.flags[0]).sort()).toEqual([
+      "area",
+      "facts",
+      "patientId",
+      "raisedAt",
+      "since",
+      "supportingLines",
+      "warningKind",
+    ]);
   });
 
   it("logs each staff read of a patient's flags", async () => {

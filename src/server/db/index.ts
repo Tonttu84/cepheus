@@ -13,6 +13,7 @@ import {
 } from "./effects";
 import { createExtraAnswerRepository } from "./extra-answers";
 import { createGad7Repository } from "./gad7";
+import { createHomeMonitoringRepository } from "./home-monitoring";
 import { createPatientRepository, getClinicPatientIds } from "./patients";
 import { createPhq9Repository } from "./phq9";
 import { createRoundRepository } from "./rounds";
@@ -44,6 +45,7 @@ export function createPrismaPorts(
     baselineNotWell: createBaselineNotWellRepository(ctx),
     accessLog: createAccessLogRepository(ctx),
     extraAnswers: createExtraAnswerRepository(ctx),
+    homeMonitoring: createHomeMonitoringRepository(ctx),
     unitOfWork: ctx.unitOfWork,
   };
 }
