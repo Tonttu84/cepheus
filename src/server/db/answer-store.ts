@@ -79,6 +79,12 @@ export class InMemoryAnswerStore implements AnswerStoreView {
     }
   }
 
+  deleteForPatients(patientIds: readonly string[]): void {
+    for (const patientId of patientIds) {
+      this.deleteForPatient(patientId);
+    }
+  }
+
   size(): number {
     return this.entries.size;
   }

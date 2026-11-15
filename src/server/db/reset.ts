@@ -342,7 +342,16 @@ export async function resetSimulatedData(
     await createSampleParticipants(tx, clinicId, now);
   });
 
-  for (const id of simulatedIdsToDelete) {
-    answerStore.deleteForPatient(id);
-  }
+  clearSimulatedAnswers(simulatedIdsToDelete, answerStore);
+}
+
+/**
+ * Clears in-memory questionnaire answers for the given simulated patient IDs.
+ * Called when resetting demo data and when advancing the demo clock.
+ */
+export function clearSimulatedAnswers(
+  patientIds: readonly string[],
+  answerStore: InMemoryAnswerStore = sharedAnswerStore
+): void {
+  answerStore.deleteForPatients(patientIds);
 }

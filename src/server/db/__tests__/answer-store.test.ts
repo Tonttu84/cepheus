@@ -86,6 +86,20 @@ describe("In-memory answer store", () => {
     expect(store.get("p2", "phq9", 1)).toEqual([{ id: "1", value: 0 }]);
     expect(store.size()).toBe(1);
   });
+
+  it("deleteForPatients removes all entries for listed patients and leaves other patients untouched", () => {
+    const store = new InMemoryAnswerStore();
+    store.set("p1", "phq9", 1, [{ id: "1", value: 1 }]);
+    store.set("p2", "gad7", 1, [{ id: "2", value: 2 }]);
+    store.set("p3", "phq9", 1, [{ id: "3", value: 3 }]);
+
+    store.deleteForPatients(["p1", "p2"]);
+
+    expect(store.get("p1", "phq9", 1)).toBeUndefined();
+    expect(store.get("p2", "gad7", 1)).toBeUndefined();
+    expect(store.get("p3", "phq9", 1)).toEqual([{ id: "3", value: 3 }]);
+    expect(store.size()).toBe(1);
+  });
 });
 
 describe("Staged answer changes (one unit of work)", () => {

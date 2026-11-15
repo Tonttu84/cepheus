@@ -48,7 +48,7 @@ export function createPrismaPorts(
   };
 }
 
-export { resetSimulatedData, type ResetOptions } from "./reset";
+export { clearSimulatedAnswers, resetSimulatedData, type ResetOptions } from "./reset";
 export {
   getSimulatedPatientSummaries,
   getSimulatedPatientIds,

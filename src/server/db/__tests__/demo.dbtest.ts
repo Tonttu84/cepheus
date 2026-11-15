@@ -1,10 +1,11 @@
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getPrisma } from "@/lib/db";
-import { advanceDemoAndRunSystemWork, getDemoOffsetDays, resetDemoClock } from "@/server/api";
-import { getSimulatedPatientSummaries, resetSimulatedData } from "@/server/db";
+import { advanceDemoAndRunSystemWork, getDemoClock, getDemoOffsetDays, resetDemoClock } from "@/server/api";
+import { createPrismaPorts, getSimulatedPatientSummaries, resetSimulatedData } from "@/server/db";
 import { checkDemoNeedsReset } from "@/server/db/demo-patients";
 import { sharedAnswerStore } from "@/server/db/answer-store";
+import { submitPhq9Answer, submitTaps } from "@/usecases";
 import { seedDatabase } from "../../../../prisma/seed";
 
 describe("Demo advance and reset database integration (*.dbtest.ts)", () => {
@@ -191,5 +192,102 @@ describe("Demo advance and reset database integration (*.dbtest.ts)", () => {
     // 5. Reset restores clean state, so needsReset returns to false
     await resetSimulatedData(prisma);
     expect(await checkDemoNeedsReset(prisma, new Date())).toBe(false);
+  });
+
+  it("advancing demo clock clears in-memory answers of simulated patients without carrying partial totals into new rounds while non-simulated answers survive", async () => {
+    // 1. Identify a seeded simulated participant
+    const simPatient = await prisma.participant.findFirstOrThrow({
+      where: { participantCode: "P-SIM-001", isSimulated: true },
+    });
+
+    // 2. Create a non-simulated participant
+    const nonSimulated = await prisma.participant.create({
+      data: {
+        externalId: "real-test-patient-clock-001",
+        participantCode: "REAL-P-CLOCK-001",
+        label: "Real trial participant (non-simulated)",
+        source: "trial",
+        isSimulated: false,
+        enrolmentDate: "2026-10-01",
+        scheduleDaysJson: JSON.stringify([1, 4]),
+        scheduleTime: "18:00",
+        timeZone: "Europe/Helsinki",
+      },
+    });
+
+    const ports = createPrismaPorts(prisma, undefined, getDemoClock());
+
+    try {
+      // 3. Start a PHQ-9 for the seeded patient in round 2 (open at seed time)
+      const tapsResult = await submitTaps(
+        { kind: "patient", patientId: simPatient.id, clinicId: simPatient.clinicId! },
+        { patientId: simPatient.id, mood: 3, interest: 3 },
+        ports
+      );
+      expect(tapsResult.ok).toBe(true);
+
+      const phq1Result = await submitPhq9Answer(
+        { kind: "patient", patientId: simPatient.id, clinicId: simPatient.clinicId! },
+        { patientId: simPatient.id, itemId: "1", value: 2 },
+        ports
+      );
+      expect(phq1Result.ok).toBe(true);
+
+      const phq2Result = await submitPhq9Answer(
+        { kind: "patient", patientId: simPatient.id, clinicId: simPatient.clinicId! },
+        { patientId: simPatient.id, itemId: "2", value: 3 },
+        ports
+      );
+      expect(phq2Result.ok).toBe(true);
+
+      expect(sharedAnswerStore.get(simPatient.id, "phq9", 2)).toEqual([
+        { id: "1", value: 2 },
+        { id: "2", value: 3 },
+      ]);
+
+      // 4. Place in-progress answers into sharedAnswerStore for the non-simulated patient
+      sharedAnswerStore.set(nonSimulated.id, "phq9", 2, [{ id: "1", value: 1 }]);
+      expect(sharedAnswerStore.get(nonSimulated.id, "phq9", 2)).toEqual([{ id: "1", value: 1 }]);
+
+      // 5. Advance the demo clock by 14 days
+      const advResult = await advanceDemoAndRunSystemWork(14);
+      expect(advResult.ok).toBe(true);
+
+      // 6. Verify simulated patient's in-memory answers are cleared
+      expect(sharedAnswerStore.get(simPatient.id, "phq9", 2)).toBeUndefined();
+
+      // 7. Verify non-simulated patient's in-memory answers survive untouched
+      expect(sharedAnswerStore.get(nonSimulated.id, "phq9", 2)).toEqual([{ id: "1", value: 1 }]);
+
+      // 8. In the newly opened round, answer taps and complete the PHQ-9 fresh (items 1..9 all score 1)
+      const newTapsResult = await submitTaps(
+        { kind: "patient", patientId: simPatient.id, clinicId: simPatient.clinicId! },
+        { patientId: simPatient.id, mood: 3, interest: 3 },
+        ports
+      );
+      expect(newTapsResult.ok).toBe(true);
+
+      for (let item = 1; item <= 9; item++) {
+        const res = await submitPhq9Answer(
+          { kind: "patient", patientId: simPatient.id, clinicId: simPatient.clinicId! },
+          { patientId: simPatient.id, itemId: String(item), value: 1 },
+          ports
+        );
+        expect(res.ok).toBe(true);
+      }
+
+      // Verify no partial total carried over into the new round: total is 9 * 1 = 9
+      const completedPhq = await ports.phq9.getCurrentPhq9(simPatient.id);
+      expect(completedPhq).toBeDefined();
+      expect(completedPhq?.progress).toBe("completed");
+      expect(completedPhq?.total).toBe(9);
+    } finally {
+      sharedAnswerStore.deleteForPatient(nonSimulated.id);
+      await prisma.participant.deleteMany({
+        where: { id: nonSimulated.id },
+      });
+      resetDemoClock();
+      await resetSimulatedData(prisma);
+    }
   });
 });

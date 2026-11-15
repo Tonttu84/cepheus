@@ -89,4 +89,55 @@ test.describe("Demo page: time advance, clinic warning, and reset", () => {
     await page.goto("/check-in");
     await expect(page.getByTestId("extra-question-section")).toHaveCount(0);
   });
+
+  test("advancing demo clock clears unfinished PHQ-9 and questionnaire starts from first question", async ({
+    page,
+    context,
+  }) => {
+    // 1. Sign in as staff and ensure clean reset state
+    await signInAsStaff(page, context);
+    await page.goto("/demo");
+    await expect(page.getByTestId("demo-controls-panel")).toBeVisible();
+    await page.getByTestId("btn-reset-demo").click();
+    await expect(page.getByTestId("current-demo-offset")).toContainText("+0 days");
+
+    // 2. Sign in as patient and open /check-in
+    await signInAsPatient(page, context, "P-SIM-001");
+    await page.goto("/check-in");
+
+    // Complete the two taps to unlock PHQ-9
+    await page.getByRole("button", { name: "Mood: 3 of 4" }).click();
+    await page.getByRole("button", { name: "Interest: 3 of 4" }).click();
+
+    // Verify PHQ-9 section is visible
+    const phq9Section = page.getByTestId("phq9-section");
+    await expect(phq9Section).toBeVisible();
+
+    // Answer two PHQ-9 questions (items 1 and 2)
+    const q1Choice = page.getByRole("button", { name: "Question 1: 1 of 3" });
+    await q1Choice.click();
+    await expect(q1Choice).toHaveAttribute("aria-pressed", "true");
+
+    const q2Choice = page.getByRole("button", { name: "Question 2: 2 of 3" });
+    await q2Choice.click();
+    await expect(q2Choice).toHaveAttribute("aria-pressed", "true");
+
+    // 3. Advance two weeks via /demo as staff
+    await signInAsStaff(page, context);
+    await page.goto("/demo");
+    await page.getByTestId("btn-advance-2w").click();
+    await expect(page.getByTestId("current-demo-offset")).toContainText("+14 days");
+
+    // 4. Open /check-in as patient: the questionnaire starts from its first question
+    await signInAsPatient(page, context, "P-SIM-001");
+    await page.goto("/check-in");
+
+    // Complete the two taps for the newly opened round
+    await page.getByRole("button", { name: "Mood: 3 of 4" }).click();
+    await page.getByRole("button", { name: "Interest: 3 of 4" }).click();
+
+    await expect(page.getByTestId("phq9-section")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Question 1: 1 of 3" })).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByRole("button", { name: "Question 2: 2 of 3" })).toHaveAttribute("aria-pressed", "false");
+  });
 });
