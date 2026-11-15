@@ -1,14 +1,14 @@
 import crypto from "node:crypto";
 import { getEnv } from "@/server/env";
 
-const globalForSecret = globalThis as unknown as {
-  __cepheusEphemeralSecret?: string;
-};
+/** Documented local development/test session secret, matching playwright.config.ts. */
+const LOCAL_DEV_SESSION_SECRET = "0123456789abcdef0123456789abcdef";
 
 /**
  * Returns the cookie-sealing secret.
  * Uses APP_SESSION_SECRET when configured; in local development/test falls back
- * to a process-scoped CSPRNG secret held only in memory (never hardcoded).
+ * to the documented local dev session secret so independent server and test
+ * runner processes can unseal session tokens.
  */
 export function getCookieSecret(): string {
   const env = getEnv();
@@ -20,12 +20,7 @@ export function getCookieSecret(): string {
       "[security] APP_SESSION_SECRET must be at least 32 characters in production."
     );
   }
-  if (!globalForSecret.__cepheusEphemeralSecret) {
-    globalForSecret.__cepheusEphemeralSecret = crypto
-      .randomBytes(32)
-      .toString("base64url");
-  }
-  return globalForSecret.__cepheusEphemeralSecret;
+  return LOCAL_DEV_SESSION_SECRET;
 }
 
 function deriveAesKey(secret: string): Buffer {
