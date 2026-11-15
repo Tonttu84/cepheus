@@ -313,5 +313,6 @@ export interface SubmitCrisisButtonResult {
   readonly showCrisisPath: true;
   readonly crisisResources: readonly CrisisResource[];
   readonly roundNumber: number;
+  readonly duplicate?: boolean;
 }
 

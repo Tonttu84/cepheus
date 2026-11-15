@@ -234,4 +234,27 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await expect(statusMessage).not.toContainText("nothing is sent yet");
     await expect(statusMessage).not.toContainText("preview");
   });
+
+  test("8. typing a help phrase immediately shows the crisis path", async ({
+    page,
+    context,
+  }) => {
+    await signInAsPatient(page, context, "P-SIM-001");
+    await page.goto("/check-in");
+
+    // Before typing help, crisis path is not visible
+    await expect(page.getByTestId("crisis-path")).toHaveCount(0);
+
+    // Type a fixed help phrase ("emergency") into the mood input
+    const moodInput = page.getByTestId("type-input-moodscore");
+    await expect(moodInput).toBeVisible();
+    await moodInput.fill("emergency");
+    await page.getByTestId("type-submit-moodscore").click();
+
+    // The crisis path is displayed immediately on screen without waiting for the server
+    const crisisPath = page.getByTestId("crisis-path");
+    await expect(crisisPath).toBeVisible();
+    await expect(crisisPath).toContainText("Direct connection to a person");
+    await expect(crisisPath).toContainText("112");
+  });
 });

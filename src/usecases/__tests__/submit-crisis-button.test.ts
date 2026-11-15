@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PatientActor, StaffActor } from "@/domain/access";
 import { CRISIS_RESOURCES } from "@/lib/constants";
+import { listUnacknowledgedCrisisEvents } from "../list-unacknowledged-crisis-events";
 import type { PatientRecord } from "../ports";
 import { submitCrisisButton } from "../submit-crisis-button";
 import { createFakePorts } from "../testing";
@@ -254,5 +255,68 @@ describe("Submit Crisis Button Use Case", () => {
     expect(result.saved).toBe(false);
     expect(result.showCrisisPath).toBe(true);
     expect(result.crisisResources).toEqual(CRISIS_RESOURCES);
+  });
+
+  it("does not create a pile of alerts while a prior crisis event is unacknowledged", async () => {
+    const press1 = "2026-11-16T18:00:00.000Z";
+    const press2 = "2026-11-19T18:00:00.000Z"; // round 2 time
+    const { ports } = createFakePorts(press1);
+    await ports.patients.savePatient(sampleRecord);
+
+    const first = await submitCrisisButton(
+      patientActor,
+      { patientId, time: press1 },
+      ports
+    );
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(first.value.duplicate).toBe(false);
+
+    // Second press in later round while first is still unacknowledged
+    const second = await submitCrisisButton(
+      patientActor,
+      { patientId, time: press2 },
+      ports
+    );
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.value.duplicate).toBe(true);
+
+    const events = await ports.crisis.getCrisisEvents(patientId);
+    expect(events).toHaveLength(1);
+    expect(events[0].occurredAt).toBe(press1);
+  });
+
+  it("causes the event to appear in the clinic unacknowledged list for the right clinic only", async () => {
+    const pressTime = "2026-11-16T18:00:00.000Z";
+    const { ports } = createFakePorts(pressTime);
+    await ports.patients.savePatient(sampleRecord);
+
+    const otherClinicNurse: StaffActor = {
+      kind: "staff",
+      staffId: "nurse-other-clinic",
+      clinicId: "clinic-2",
+      role: "nurse",
+    };
+
+    const result = await submitCrisisButton(
+      patientActor,
+      { patientId, time: pressTime },
+      ports
+    );
+    expect(result.ok).toBe(true);
+
+    // Nurse in patient's clinic sees the alert
+    const clinic1List = await listUnacknowledgedCrisisEvents(nurseActor, ports);
+    expect(clinic1List.ok).toBe(true);
+    if (!clinic1List.ok) return;
+    expect(clinic1List.value).toHaveLength(1);
+    expect(clinic1List.value[0].patientId).toBe(patientId);
+
+    // Nurse in a different clinic does NOT see the alert
+    const clinic2List = await listUnacknowledgedCrisisEvents(otherClinicNurse, ports);
+    expect(clinic2List.ok).toBe(true);
+    if (!clinic2List.ok) return;
+    expect(clinic2List.value).toHaveLength(0);
   });
 });

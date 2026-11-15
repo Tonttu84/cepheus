@@ -2,6 +2,7 @@ import type { z } from "zod";
 import { createDocument, type ZodOpenApiOperationObject, type ZodOpenApiPathsObject } from "zod-openapi";
 import {
   AcknowledgeCrisisEventRequestSchema,
+  CheckInCrisisRequestSchema,
   CheckInExtraAnswerRequestSchema,
   CheckInGad7RequestSchema,
   CheckInNotTodayRequestSchema,
@@ -43,6 +44,13 @@ export const API_ROUTES: readonly RouteEntry[] = [
     body: CheckInPhq9RequestSchema,
   },
   { path: "/api/check-in/gad7", method: "post", caller: "patient", summary: "One GAD-7 item (D35)", body: CheckInGad7RequestSchema },
+  {
+    path: "/api/check-in/crisis",
+    method: "post",
+    caller: "patient",
+    summary: "A typed or spoken request for help on the check-in screen",
+    body: CheckInCrisisRequestSchema,
+  },
   {
     path: "/api/check-in/extra-answer",
     method: "post",

@@ -5,6 +5,7 @@ import { CheckInVoiceInput } from "@/components/check-in-voice-input";
 import { CRISIS_RESOURCES, PHQ9_ITEMS } from "@/lib/constants";
 import {
   fetchCheckInState,
+  submitCheckInCrisisAlert,
   submitCheckInGad7,
   submitCheckInNotToday,
   submitCheckInPhq9,
@@ -550,6 +551,11 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
     activeMode = "gad7";
   }
 
+  function handleCrisisHelp() {
+    setShowCrisisPath(true);
+    void submitCheckInCrisisAlert();
+  }
+
   function handleApiFailure(res: { ok: boolean; status: number; saved?: boolean }) {
     if (res.status === 401) setAuthRequired(true);
     else if (res.status === 503 || res.saved === false) setErrorMessage(SAVE_FAILED_COPY);
@@ -590,7 +596,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
 
   function handlePhq9Select(itemNumber: number, choice: number) {
     if (isSubmitting) return;
-    if (itemNumber === 9 && choice > 0) setShowCrisisPath(true);
+    if (itemNumber === 9 && choice > 0) handleCrisisHelp();
     setErrorMessage(null);
     setPhq9Answers((prev) => ({ ...prev, [String(itemNumber)]: choice }));
     setIsSubmitting(true);
@@ -654,7 +660,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
         mode={activeMode}
         onSelectScore={handleVoiceOrTextScore}
         onNotToday={handleSkip}
-        onCrisisHelp={() => setShowCrisisPath(true)}
+        onCrisisHelp={handleCrisisHelp}
       />
 
       <div className="mt-7 divide-y divide-border-hairline">

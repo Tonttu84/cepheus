@@ -97,13 +97,18 @@ async function checkInitialAccess(
   return null;
 }
 
-async function persistCrisisEvent(ports: Ports, patientId: string, now: string): Promise<number> {
+async function persistCrisisEvent(
+  ports: Ports,
+  patientId: string,
+  now: string
+): Promise<{ roundNumber: number; duplicate: boolean }> {
   const patient = await ports.patients.getPatient(patientId);
   if (!patient) throw new Error('Patient not found');
 
   const roundNumber = await resolveCrisisRound(ports, patient.patientId, now);
   const existingEvents = await ports.crisis.getCrisisEvents(patient.patientId);
-  const alreadyHasEvent = existingEvents.some((e) => e.roundNumber === roundNumber);
+  const hasUnacknowledged = existingEvents.some((e) => !e.acknowledgedAt);
+  const alreadyHasEvent = hasUnacknowledged || existingEvents.some((e) => e.roundNumber === roundNumber);
 
   if (!alreadyHasEvent) {
     await ports.crisis.saveCrisisEvent({
@@ -112,9 +117,11 @@ async function persistCrisisEvent(ports: Ports, patientId: string, now: string):
       itemId: 'crisis_button',
       value: 1,
       occurredAt: now,
+      acknowledgedAt: null,
     });
+    return { roundNumber, duplicate: false };
   }
-  return roundNumber;
+  return { roundNumber, duplicate: true };
 }
 
 /**
@@ -133,22 +140,34 @@ export async function submitCrisisButton(
   ports: Ports
 ): Promise<SubmitCrisisButtonOutcome> {
   const now = input?.time ?? ports.clock.now();
-  const target: TargetData = {
+  const initialTarget: TargetData = {
     kind: 'answers',
     patientId: input?.patientId,
     clinicId: actor.kind === 'patient' || actor.kind === 'staff' ? actor.clinicId : undefined,
   };
 
-  const accessError = await checkInitialAccess(actor, target, input, ports, now);
-  if (accessError) return failureResult(accessError);
+  const initialAccessError = await checkInitialAccess(actor, initialTarget, input, ports, now);
+  if (initialAccessError) return failureResult(initialAccessError);
 
   const val = validateInput(input);
   if (!val.ok) return failureResult(val.error);
 
-  let roundNumber = 1;
+  const switches = await ports.patients.getPatientAccessSwitches(input.patientId);
+  if (!switches) return failureResult('Patient not found');
+
+  const target: TargetData = {
+    kind: 'answers',
+    patientId: switches.patientId,
+    clinicId: switches.clinicId,
+  };
+
+  const clinicAccessError = await checkInitialAccess(actor, target, input, ports, now);
+  if (clinicAccessError) return failureResult(clinicAccessError);
+
+  let persisted = { roundNumber: 1, duplicate: false };
   try {
     await ports.unitOfWork.execute(async () => {
-      roundNumber = await persistCrisisEvent(ports, input.patientId, now);
+      persisted = await persistCrisisEvent(ports, input.patientId, now);
     });
   } catch (err) {
     return failureResult(err instanceof Error ? err.message : 'Storage failed');
@@ -163,7 +182,8 @@ export async function submitCrisisButton(
       saved: true,
       showCrisisPath: true,
       crisisResources: CRISIS_RESOURCES,
-      roundNumber,
+      roundNumber: persisted.roundNumber,
+      duplicate: persisted.duplicate,
     },
   };
 }
