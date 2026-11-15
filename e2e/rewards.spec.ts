@@ -1,7 +1,11 @@
 import { expect } from "@playwright/test";
-import { signInAsPatient, resetRewardsState, test } from "./helpers";
+import { signInAsPatient, resetRewardsState, restoreRewardsState, test } from "./helpers";
 
 test.describe("Rewards flow", () => {
+  test.afterAll(async () => {
+    await restoreRewardsState("P-SIM-001");
+  });
+
   test("patient can answer check-in, see balance update and mark task done", async ({ page }) => {
     await resetRewardsState("P-SIM-001", { nonCheckInDay: true });
     await signInAsPatient(page, "P-SIM-001");

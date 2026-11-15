@@ -14,6 +14,8 @@ import {
   simulatedFinnishEidProvider,
 } from "@/server/auth";
 import { getPrisma } from "@/lib/db";
+import { addDays, parseLocalWallClockInTimeZone } from "@/domain/rounds";
+import { liveScheduleAt } from "../prisma/seed";
 
 const BASE_ORIGIN = "http://127.0.0.1:3100";
 
@@ -116,6 +118,48 @@ export async function ensureCrisisEvent() {
   });
 }
 
+interface StoredScheduleColumns {
+  readonly id: string;
+  readonly scheduleDaysJson: string | null;
+  readonly timeZone: string;
+}
+
+/**
+ * Small tasks are offered only on a day that is not a check-in day. When today
+ * is one of the patient's two weekdays, the schedule moves to the two days
+ * before today: round 1 has then elapsed and round 2, opened yesterday, is the
+ * open one, as in the seed. A schedule always holds exactly two ISO weekdays
+ * (1 to 7); storage refuses anything else.
+ */
+async function moveCheckInDaysOffToday(patient: StoredScheduleColumns): Promise<void> {
+  const { localDate, weekday } = parseLocalWallClockInTimeZone(new Date(), patient.timeZone);
+  const stored: unknown = JSON.parse(patient.scheduleDaysJson ?? "[]");
+  if (Array.isArray(stored) && stored.length === 2 && !stored.includes(weekday)) return;
+
+  const twoDaysAgo = ((weekday + 4) % 7) + 1;
+  const yesterday = ((weekday + 5) % 7) + 1;
+  await getPrisma().participant.update({
+    where: { id: patient.id },
+    data: {
+      enrolmentDate: addDays(localDate, -2),
+      scheduleDaysJson: JSON.stringify([twoDaysAgo, yesterday]),
+    },
+  });
+}
+
+/** Puts back what the rewards tests changed: the seeded schedule, an empty ledger, no tasks, no answered round. */
+export async function restoreRewardsState(
+  participantCode: SimulatedPatientPresetKey = "P-SIM-001"
+): Promise<void> {
+  await resetRewardsState(participantCode);
+  const prisma = getPrisma();
+  const patient = await prisma.participant.findFirst({ where: { participantCode } });
+  if (!patient) return;
+  const seeded = liveScheduleAt(new Date(), participantCode === "P-SIM-001" ? 2 : 1);
+  if (patient.scheduleDaysJson === seeded.scheduleDaysJson) return;
+  await prisma.participant.update({ where: { id: patient.id }, data: seeded });
+}
+
 export async function resetRewardsState(
   participantCode: SimulatedPatientPresetKey = "P-SIM-001",
   options: { nonCheckInDay?: boolean; balanceCents?: number } = {}
@@ -133,14 +177,7 @@ export async function resetRewardsState(
   });
 
   if (options.nonCheckInDay) {
-    const todayWeekday = new Date().getDay();
-    const nonTodayWeekday = (todayWeekday + 2) % 7;
-    await prisma.participant.update({
-      where: { id: patient.id },
-      data: {
-        scheduleDaysJson: JSON.stringify([nonTodayWeekday]),
-      },
-    });
+    await moveCheckInDaysOffToday(patient);
   }
 
   if (options.balanceCents && options.balanceCents > 0) {
