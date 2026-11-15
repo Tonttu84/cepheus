@@ -9,20 +9,7 @@ import {
 } from "@/components/auth-forms";
 import { useAuth } from "@/components/auth-provider";
 import type { AuthSession } from "@/lib/auth-types";
-
-function safeReturnUrl(target: string | null): string | null {
-  if (!target) return null;
-  const trimmed = target.trim();
-  if (
-    trimmed.startsWith("/") &&
-    !trimmed.startsWith("//") &&
-    !trimmed.includes("\\") &&
-    !trimmed.includes(":")
-  ) {
-    return trimmed;
-  }
-  return null;
-}
+import { safeReturnUrl } from "@/lib/safe-return-url";
 
 function SignInContent() {
   const router = useRouter();
