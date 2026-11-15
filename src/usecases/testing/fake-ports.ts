@@ -6,7 +6,10 @@ import type {
   RoundRepository,
   StoredPhq9,
   Phq9Repository,
+  StoredGad7,
+  Gad7Repository,
   StoredCall,
+  StoredNurseCallRecord,
   CallRepository,
   StoredWarning,
   WarningRepository,
@@ -41,8 +44,11 @@ interface FakeStorageState {
   patients: Record<string, PatientRecord>;
   rounds: Record<string, StoredRound[]>;
   phq9: Record<string, StoredPhq9[]>;
+  gad7: Record<string, StoredGad7[]>;
   calls: Record<string, StoredCall[]>;
+  nurseCallRecords: Record<string, StoredNurseCallRecord[]>;
   warnings: Record<string, StoredWarning[]>;
+  flagStatuses: Record<string, string>;
   smallDips: Record<string, StoredSmallDip[]>;
   crisis: Record<string, StoredCrisisEvent[]>;
   baselineNotWell: Record<string, StoredBaselineNotWellNotice[]>;
@@ -55,8 +61,11 @@ function createEmptyState(): FakeStorageState {
     patients: {},
     rounds: {},
     phq9: {},
+    gad7: {},
     calls: {},
+    nurseCallRecords: {},
     warnings: {},
+    flagStatuses: {},
     smallDips: {},
     crisis: {},
     baselineNotWell: {},
@@ -162,6 +171,31 @@ export class FakePhq9Repository implements Phq9Repository {
   }
 }
 
+export class FakeGad7Repository implements Gad7Repository {
+  public beforeSave: (() => Promise<void>) | null = null;
+
+  constructor(private ctx: FakeStorageContext) {}
+
+  async getGad7s(patientId: string): Promise<readonly StoredGad7[]> {
+    const list = this.ctx.state.gad7[patientId] ?? [];
+    return structuredClone(list).sort((a, b) => a.roundNumber - b.roundNumber);
+  }
+
+  async saveGad7(assessment: StoredGad7): Promise<void> {
+    if (this.beforeSave) await this.beforeSave();
+    if (!this.ctx.state.gad7[assessment.patientId]) {
+      this.ctx.state.gad7[assessment.patientId] = [];
+    }
+    const list = this.ctx.state.gad7[assessment.patientId];
+    const idx = list.findIndex((g) => g.roundNumber === assessment.roundNumber);
+    if (idx >= 0) {
+      list[idx] = structuredClone(assessment);
+    } else {
+      list.push(structuredClone(assessment));
+    }
+  }
+}
+
 export class FakeCallRepository implements CallRepository {
   constructor(private ctx: FakeStorageContext) {}
 
@@ -175,6 +209,35 @@ export class FakeCallRepository implements CallRepository {
       this.ctx.state.calls[call.patientId] = [];
     }
     this.ctx.state.calls[call.patientId].push(structuredClone(call));
+  }
+
+  async saveNurseCallRecord(record: StoredNurseCallRecord): Promise<StoredNurseCallRecord> {
+    if (!this.ctx.state.nurseCallRecords[record.patientId]) {
+      this.ctx.state.nurseCallRecords[record.patientId] = [];
+    }
+    const stored: StoredNurseCallRecord = {
+      ...record,
+      id: record.id ?? `call-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    };
+    this.ctx.state.nurseCallRecords[record.patientId].push(structuredClone(stored));
+
+    if (record.status === 'completed' && record.date) {
+      if (!this.ctx.state.calls[record.patientId]) {
+        this.ctx.state.calls[record.patientId] = [];
+      }
+      this.ctx.state.calls[record.patientId].push({
+        patientId: record.patientId,
+        date: record.date,
+        ...(record.position ? { position: record.position } : {}),
+      });
+    }
+
+    return structuredClone(stored);
+  }
+
+  async getNurseCallRecords(patientId: string): Promise<readonly StoredNurseCallRecord[]> {
+    const list = this.ctx.state.nurseCallRecords[patientId] ?? [];
+    return structuredClone(list);
   }
 }
 
@@ -194,6 +257,10 @@ export class FakeWarningRepository implements WarningRepository {
       this.ctx.state.warnings[warning.patientId] = [];
     }
     this.ctx.state.warnings[warning.patientId].push(structuredClone(warning));
+  }
+
+  async updateFlagStatus(flagId: string, status: string): Promise<void> {
+    this.ctx.state.flagStatuses[flagId] = status;
   }
 }
 
@@ -224,11 +291,39 @@ export class FakeCrisisRepository implements CrisisRepository {
     return structuredClone(list);
   }
 
+  async getUnacknowledgedCrisisEvents(clinicId: string): Promise<readonly StoredCrisisEvent[]> {
+    const unack: StoredCrisisEvent[] = [];
+    for (const [patientId, events] of Object.entries(this.ctx.state.crisis)) {
+      const patient = this.ctx.state.patients[patientId];
+      if (patient && patient.clinicId === clinicId) {
+        for (const ev of events) {
+          if (!ev.acknowledgedAt) {
+            unack.push(structuredClone(ev));
+          }
+        }
+      }
+    }
+    return unack.sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+  }
+
   async saveCrisisEvent(event: StoredCrisisEvent): Promise<void> {
     if (!this.ctx.state.crisis[event.patientId]) {
       this.ctx.state.crisis[event.patientId] = [];
     }
-    this.ctx.state.crisis[event.patientId].push(structuredClone(event));
+    const list = this.ctx.state.crisis[event.patientId];
+    const existing = list.find((e) => e.roundNumber === event.roundNumber);
+    if (existing) {
+      if (!existing.acknowledgedAt && event.acknowledgedAt) {
+        const idx = list.indexOf(existing);
+        list[idx] = {
+          ...existing,
+          acknowledgedAt: event.acknowledgedAt,
+          acknowledgedByStaffId: event.acknowledgedByStaffId ?? existing.acknowledgedByStaffId ?? null,
+        };
+      }
+    } else {
+      list.push(structuredClone(event));
+    }
   }
 }
 
@@ -347,6 +442,7 @@ export function createFakePorts(
     patients: new FakePatientRepository(ctx),
     rounds: new FakeRoundRepository(ctx),
     phq9: new FakePhq9Repository(ctx),
+    gad7: new FakeGad7Repository(ctx),
     calls: new FakeCallRepository(ctx),
     warnings: new FakeWarningRepository(ctx),
     smallDips: new FakeSmallDipRepository(ctx),

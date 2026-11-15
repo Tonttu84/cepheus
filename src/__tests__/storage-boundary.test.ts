@@ -19,8 +19,6 @@ export const LEGACY_EXCEPTIONS: readonly string[] = [
   "src/server/auth/eid-provider.ts",
   // Verifies clinic and staff user credentials against database records during staff login.
   "src/server/auth/staff-auth.ts",
-  // Directly reads and writes participant check-ins, assessments, and crisis events from the bedside endpoint.
-  "src/server/monitoring/bedside.ts",
   // Directly reads and writes monitoring streams, rhythm windows, consent, and participant data.
   "src/server/monitoring/store.ts",
 ];

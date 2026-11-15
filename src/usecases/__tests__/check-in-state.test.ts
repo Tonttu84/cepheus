@@ -106,4 +106,25 @@ describe('CheckInState and Taps Status (Points 4 and 5)', () => {
     expect(res.value.openRound).toBeNull();
     expect((res.value as unknown as { taps: string }).taps).toBe('waiting');
   });
+  it('after "Not today" no PHQ-9 is due in that round, and it carries over to the next round', async () => {
+    const { ports, clock } = createFakePorts('2026-11-16T16:00:00.000Z');
+    await ports.patients.savePatient(sampleRecord);
+
+    const notToday = await submitNotToday(patientActor, { patientId }, ports);
+    expect(notToday.ok).toBe(true);
+
+    const sameRound = await getCheckInState(patientActor, { patientId }, ports);
+    expect(sameRound.ok).toBe(true);
+    if (!sameRound.ok) return;
+    expect(sameRound.value.taps).toBe('not_today');
+    expect(sameRound.value.isPhq9Due).toBe(false);
+    expect(sameRound.value.phq9Progress).toBe('not_started');
+
+    clock.setNow('2026-11-19T16:00:00.000Z');
+    const nextRound = await getCheckInState(patientActor, { patientId }, ports);
+    expect(nextRound.ok).toBe(true);
+    if (!nextRound.ok) return;
+    expect(nextRound.value.openRound?.number).toBe(2);
+    expect(nextRound.value.isPhq9Due).toBe(true);
+  });
 });

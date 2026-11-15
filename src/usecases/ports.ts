@@ -9,7 +9,10 @@ import type { ConsentState } from '../domain/consent';
 import type { Schedule, RoundStatus, Phq9Progress } from '../domain/rounds';
 import type { Phq9Answer, Gad7Answer } from '../domain/instruments';
 import type { CallPosition, EvaluatedEffect, QuestionnaireType } from '../domain/history';
+
+export type { CallPosition };
 import type { ExtraItem, ExtraItemsConfig } from '../domain/extra-items';
+import type { CrisisResource } from '../lib/constants';
 
 export type UseCaseResult<T, E = unknown> =
   | { readonly ok: true; readonly value: T }
@@ -80,9 +83,46 @@ export interface StoredCall {
   readonly position?: CallPosition;
 }
 
+export type NurseCallStatus = 'requested' | 'completed' | 'unreachable';
+
+export type NurseCallOutcomeTier =
+  | 'rough_patch'
+  | 'sustained_decline'
+  | 'full_relapse'
+  | 'crisis'
+  | 'false_alarm';
+
+export type NurseCallActionTaken =
+  | 'advice_and_medication_check'
+  | 'booster_tms_cluster'
+  | 'new_tms_course_referral'
+  | 'urgent_care'
+  | 'none';
+
+export interface StoredNurseCallRecord {
+  readonly id?: string;
+  readonly flagId?: string | null;
+  readonly patientId: string;
+  readonly clinicId?: string | null;
+  readonly staffUserId?: string | null;
+  readonly requestedAt?: string;
+  readonly completedAt?: string | null;
+  readonly status: NurseCallStatus;
+  readonly outcomeTier?: NurseCallOutcomeTier | null;
+  readonly actionTaken?: NurseCallActionTaken | null;
+  readonly medicationChecked?: boolean;
+  readonly watchNextRounds?: number;
+  readonly boosterSessionsPlanned?: number | null;
+  readonly isSimulated?: boolean;
+  readonly date?: string | null;
+  readonly position?: CallPosition | null;
+}
+
 export interface CallRepository {
   getCalls(patientId: string): Promise<readonly StoredCall[]>;
   saveCall(call: StoredCall): Promise<void>;
+  saveNurseCallRecord(record: StoredNurseCallRecord): Promise<StoredNurseCallRecord>;
+  getNurseCallRecords(patientId: string): Promise<readonly StoredNurseCallRecord[]>;
 }
 
 export type StoredCause =
@@ -116,6 +156,7 @@ export interface Gad7Repository {
 export interface WarningRepository {
   getWarnings(patientId: string): Promise<readonly StoredWarning[]>;
   saveWarning(warning: StoredWarning): Promise<void>;
+  updateFlagStatus(flagId: string, status: string): Promise<void>;
 }
 
 export interface StoredSmallDip {
@@ -139,10 +180,12 @@ export interface StoredCrisisEvent {
   readonly value: number;
   readonly occurredAt: string;
   readonly acknowledgedAt?: string | null;
+  readonly acknowledgedByStaffId?: string | null;
 }
 
 export interface CrisisRepository {
   getCrisisEvents(patientId: string): Promise<readonly StoredCrisisEvent[]>;
+  getUnacknowledgedCrisisEvents(clinicId: string): Promise<readonly StoredCrisisEvent[]>;
   saveCrisisEvent(event: StoredCrisisEvent): Promise<void>;
 }
 
@@ -241,6 +284,11 @@ export interface SubmitNotTodayResult {
   readonly ruleRunNeeded: boolean;
 }
 
+export interface SubmitGad7AnswerResult {
+  readonly isComplete: boolean;
+  readonly ruleRunNeeded: boolean;
+}
+
 export interface SubmitPhq9AnswerResult {
   readonly showCrisisPath: boolean;
   readonly progress: Phq9Progress;
@@ -257,3 +305,11 @@ export interface EvaluatePatientResult {
   readonly storedEffectsCount: number;
   readonly newEffects: readonly EvaluatedEffect[];
 }
+
+export interface SubmitCrisisButtonResult {
+  readonly saved: boolean;
+  readonly showCrisisPath: true;
+  readonly crisisResources: readonly CrisisResource[];
+  readonly roundNumber: number;
+}
+

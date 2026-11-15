@@ -227,7 +227,7 @@ describe("Use cases on the PostgreSQL ports (*.dbtest.ts)", () => {
     const failing: Ports = {
       ...ports,
       crisis: {
-        getCrisisEvents: ports.crisis.getCrisisEvents,
+        ...ports.crisis,
         saveCrisisEvent: async () => {
           throw new Error("crisis storage is down");
         },
