@@ -198,7 +198,7 @@ async function computeFlagFacts(
         ...(r.status === "answered" && typeof r.interest === "number" ? { interest: r.interest } : {}),
       }));
 
-    let roundsUnderBaseline = 2;
+    let roundsUnderBaseline: number | undefined;
     if (roundsHistory.length > 0) {
       const evalResult = evaluateHistory({ rounds: roundsHistory });
       if (evalResult.ok) {
@@ -224,7 +224,7 @@ async function computeFlagFacts(
     const missed = storedRounds.filter(
       (r) => r.localDate >= warning.since && (r.status === "missed" || r.status === "not_today")
     );
-    const missedRoundsCount = missed.length > 0 ? missed.length : 2;
+    const missedRoundsCount = missed.length > 0 ? missed.length : undefined;
 
     return {
       warningKind: kind,
@@ -247,7 +247,7 @@ async function computeFlagFacts(
         ...(r.status === "answered" && typeof r.interest === "number" ? { interest: r.interest } : {}),
       }));
 
-    let roundsUnderBaseline = 1;
+    let roundsUnderBaseline: number | undefined;
     if (roundsHistory.length > 0) {
       const evalResult = evaluateHistory({ rounds: roundsHistory });
       if (evalResult.ok) {
@@ -263,7 +263,7 @@ async function computeFlagFacts(
     const missed = storedRounds.filter(
       (r) => r.localDate >= warning.since && (r.status === "missed" || r.status === "not_today")
     );
-    const missedRoundsCount = missed.length > 0 ? missed.length : 1;
+    const missedRoundsCount = missed.length > 0 ? missed.length : undefined;
 
     return {
       warningKind: kind,

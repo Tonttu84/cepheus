@@ -438,6 +438,69 @@ describe("Clinic Flags with Rule Facts and Home Monitoring Supporting Lines", ()
     expect(flags[0].facts?.missedRoundsCount).toBeUndefined();
   });
 
+  it("does not invent made-up numbers when a silence, low_answers, or mixed warning has no matching rounds in storage", async () => {
+    const patientId = "patient-no-matching-rounds";
+    await fake.ports.patients.savePatient(
+      patientRecord({
+        patientId,
+        clinicId: CLINIC_ID,
+      })
+    );
+    fake.clinicPatients[CLINIC_ID] = [patientId];
+
+    // Silence warning with 0 missed rounds in storage
+    await fake.ports.warnings.saveWarning({
+      patientId,
+      kind: "silence",
+      since: "2026-11-16",
+      version: 1,
+      causedBy: { type: "round", roundNumber: 1, date: "2026-11-16" },
+      raisedAt: "2026-11-16T18:00:00.000Z",
+    });
+
+    const silenceFlags = await listClinicFlags(STAFF_ACTOR, {
+      ports: fake.ports,
+      clinicPatientIds: async (c) => fake.clinicPatients[c] ?? [],
+      resolveDevicePatient: async () => ({ patientId, clinicId: CLINIC_ID }),
+    });
+    expect(silenceFlags[0].facts?.missedRoundsCount).toBeUndefined();
+
+    // Low answers warning with 0 low rounds in storage
+    await fake.ports.warnings.saveWarning({
+      patientId,
+      kind: "low_answers",
+      since: "2026-11-16",
+      version: 1,
+      causedBy: { type: "round", roundNumber: 1, date: "2026-11-16" },
+      raisedAt: "2026-11-16T18:00:00.000Z",
+    });
+
+    const lowFlags = await listClinicFlags(STAFF_ACTOR, {
+      ports: fake.ports,
+      clinicPatientIds: async (c) => fake.clinicPatients[c] ?? [],
+      resolveDevicePatient: async () => ({ patientId, clinicId: CLINIC_ID }),
+    });
+    expect(lowFlags[0].facts?.roundsUnderBaseline).toBeUndefined();
+
+    // Mixed warning with 0 matching rounds in storage
+    await fake.ports.warnings.saveWarning({
+      patientId,
+      kind: "mixed",
+      since: "2026-11-16",
+      version: 1,
+      causedBy: { type: "round", roundNumber: 1, date: "2026-11-16" },
+      raisedAt: "2026-11-16T18:00:00.000Z",
+    });
+
+    const mixedFlags = await listClinicFlags(STAFF_ACTOR, {
+      ports: fake.ports,
+      clinicPatientIds: async (c) => fake.clinicPatients[c] ?? [],
+      resolveDevicePatient: async () => ({ patientId, clinicId: CLINIC_ID }),
+    });
+    expect(mixedFlags[0].facts?.roundsUnderBaseline).toBeUndefined();
+    expect(mixedFlags[0].facts?.missedRoundsCount).toBeUndefined();
+  });
+
   describe("Home monitoring supporting lines", () => {
     it("includes wearable worn line, rhythm shift line, and check done line when consent is on", async () => {
       const patientId = "patient-monitored";
