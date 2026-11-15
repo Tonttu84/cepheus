@@ -15,33 +15,31 @@ After acute depression treatment with TMS, sustained response is only 46.3% at 1
 ## 4. What it does
 
 - Check-in flow (`src/app/check-in/page.tsx`, `src/components/check-in-interactive.tsx`): twice-weekly check-in with tactile word-labelled pills ('Very low' to 'Very good', 'Not at all' to 'Very much'), optional fortnightly PHQ-9 (`src/domain/instruments/index.ts`), and a guilt-free skip option ("Not today").
-- On-device speech and typed input (`src/components/check-in-voice-input.tsx`, `src/domain/arduino/voice.ts`): typed and spoken answers, mapped deterministically to choices (the check that speech is recognised on the device is listed under "Merging on 15 Nov"; until it is merged the browser's own speech service is used); crisis words immediately trigger emergency guidance; audio and transcripts are dropped from memory without storage.
+- Rotating GAD-7 anxiety questionnaire (`src/domain/instruments/gad7.ts`, `src/components/check-in-interactive.tsx`): validated clinical anxiety assessment presented on the check-in screen for assigned patients, evaluated alongside the PHQ-9.
+- On-device speech and typed input (`src/components/check-in-voice-input.tsx`, `src/domain/arduino/voice.ts`): typed and spoken answers, mapped deterministically to choices; speech is offered only where recognition runs on the device; crisis words immediately trigger emergency guidance; audio and transcripts are dropped from memory without storage.
+- Strict on-device voice gate (`src/components/check-in/on-device-speech.ts`): refuses cloud transcription and verifies local speech recognition support before enabling microphone input.
 - Bedside voice kiosk (`hardware/uno-q/voice_kiosk.py`, `src/app/api/arduino/check-in/route.ts`): dedicated Arduino UNO Q device with Bluetooth audio answering check-in rounds through shared transactional use cases.
 - Transactional persistence and data minimisation (`src/usecases/submit-taps.ts`, `src/server/db/rounds.ts`, `prisma/schema.prisma`): questionnaire answers are validated and processed in memory; only aggregate status, scores, and derived states are stored in PostgreSQL.
 - Immediate crisis escalation (`src/components/crisis-help-bar.tsx`, `src/domain/crisis/index.ts`): any non-zero response to PHQ-9 item 9 or bedside crisis button immediately displays direct human emergency help and alerts the clinic.
+- Direct human crisis help alert (`src/app/api/check-in/crisis/route.ts`): immediate alert sent to the clinic when a patient requests direct help or enters crisis keywords during check-in.
 - Patient suggestions and guided tools (`src/app/patient/page.tsx`, `src/components/patient-suggestion-card.tsx`, `src/components/guided-activity-widget.tsx`): gentle single-action suggestion card offering an interactive 10-minute walk timer and an animated 3-minute paced breathing circle, without streaks or scores.
+- Persistent patient suggestions (`src/app/api/patient/suggestion/route.ts`): loads suggestions from storage and persists the patient's choice through transactional use cases.
 - Clinic follow-up dashboard (`src/app/clinic/page.tsx`, `src/components/clinic-flags-view.tsx`, `src/components/clinic-flag-card.tsx`, `src/domain/flags/index.ts`): displays open follow-up flags showing broad life areas (`check_in`, `sleep`, `daily_routine`), never raw patient answers.
+- Persistent clinic actions (`src/app/api/clinic/nurse-calls/route.ts`, `src/components/clinic-flag-card.tsx`): records nurse call outcomes and booster offers directly to PostgreSQL storage from the clinic flag card.
 - Automated round closing and warning rule evaluation (`src/app/api/clinic/flags/route.ts`, `src/usecases/close-elapsed-rounds.ts`, `src/domain/warning/index.ts`): server closes elapsed rounds and evaluates the multi-round warning rule when staff inspect flags, identifying sustained silence as an outreach signal.
 - Verified nurse pre-call brief (`src/components/clinic-nurse-brief-panel.tsx`, `src/server/verda/client.ts`): optional Verda Gemma integration (off by default) that formats verified derived numbers into concise pre-call summary sentences for clinicians.
 - Circadian rhythm analytics and baselines (`src/domain/signals/interdaily-stability.ts`, `src/domain/signals/sleep-regularity.ts`, `src/domain/baseline/index.ts`): calculates interdaily stability, intradaily variability, relative amplitude, sleep regularity index, and rolling personal baselines.
-- On-device camera kinematics (`src/app/camera/page.tsx`, `src/components/camera-check-session.tsx`, `src/domain/camera/metrics.ts`): browser-based MediaPipe Face Landmarker running in WebAssembly to track head pose and expressivity blendshapes, with zero video frames leaving the browser.
+- On-device camera kinematics (`src/app/camera/page.tsx`, `src/components/camera-check-session.tsx`, `src/domain/camera/metrics.ts`, `src/app/api/camera/readings/route.ts`): browser-based MediaPipe Face Landmarker running in WebAssembly to track head pose and expressivity blendshapes with zero video frames leaving the browser, saving derived numbers through a validated route with the camera consent checked.
 - Wearable and phone sync (`src/app/monitoring/page.tsx`, `src/app/api/fitbit/`, `src/app/api/webhooks/health-connect/route.ts`, `src/domain/health-connect/pairing.ts`): Fitbit OAuth2 PKCE integration and Health Connect / Apple Health webhooks with authenticated QR pairing.
 - Granular sensor consent (`src/components/monitoring/consent-section.tsx`, `src/server/monitoring/store.ts`): passive sensors default to paused (`false`) until opted in, and device connection status is shown separately from consent permissions.
+- Layered consent screen (`src/app/consent/page.tsx`, `src/components/consent/consent-screen.tsx`): presents privacy permissions in progressive steps on first sign-in, separating participation, extra sensor methods, and research evaluation.
+- Rewards and everyday tasks (`src/app/rewards/page.tsx`, `src/domain/rewards/`, `src/app/api/rewards/`): simulated ledger balances and milestone payouts for answered rounds and optional small everyday tasks with "done" and "not today" options.
+- Interactive demo page (`src/app/demo/page.tsx`, `src/components/demo/demo-controls.tsx`): forwards-only time progression to advance hours or days, close rounds, trigger warning rules, reset clocks, and switch sample patients.
+- Phone demo (`src/components/phone-demo-qr-card.tsx`, `scripts/run-lan.mjs`): development-only local network workflow (`npm run dev:lan`) with a QR code on `/demo` for testing responsive patient check-in flows on a phone.
+- Public data protection page and compliance documentation (`src/app/privacy/page.tsx`, `docs/privacy/`): public privacy page, data inventory, compliance requirements mapping, and mock policies ensuring EU storage with no international transfers.
 - Authentication and security hardening (`src/server/auth/session.ts`, `src/server/auth/guards.ts`, `src/components/auth-forms.tsx`, `src/app/sign-in/page.tsx`, `next.config.ts`, `src/__tests__/no-raw-logging.test.ts`, `src/__tests__/storage-boundary.test.ts`): AES-256-GCM sealed session cookies, role-scoped route guards, one-click simulated authentication for sample profiles, strict CSP headers, and automated tests enforcing zero raw logging and strict storage boundaries.
+- Hosted demo blueprint (`render.yaml`): deployment blueprint for a long-running Node web service and managed PostgreSQL database hosted in Frankfurt (EU) on Render.
 - 3D-printable hardware enclosure (`hardware/enclosure/build_enclosure.py`, `hardware/enclosure/README.md`): Desk Buddy bedside unit with a physical flip-up privacy visor covering the camera when at rest.
-
-### Merging on 15 Nov
-
-- Rotating GAD-7 anxiety questionnaire on the check-in screen (`src/domain/instruments/gad7.ts`, `src/components/check-in-interactive.tsx`).
-- Strict on-device voice gate refusing cloud transcription and verifying local speech recognition support before enabling microphone input (`src/components/check-in/on-device-speech.ts`).
-- Direct human crisis help alert sent to the clinic from the check-in screen (`/api/check-in/crisis`).
-- Interactive demo page with time progression to advance hours or days, close rounds, trigger warning rules, reset clocks, and switch sample patients (`/demo`).
-- Public data protection page and compliance documentation (`/privacy`, `docs/privacy/`).
-- Persistent clinic actions recording nurse call outcomes and booster offers directly to PostgreSQL storage from `/clinic` (`/api/clinic/nurse-calls`).
-- Patient suggestion card wired to database storage (`/api/patient/suggestion`).
-- Rewards page with simulated payouts, ledger balances, and small everyday tasks with "done" and "not today" options (`/rewards`, `src/domain/rewards/`).
-- Camera kinematics readings saved to PostgreSQL storage (`/api/camera/readings`).
-- Layered consent screen presenting privacy permissions in progressive steps on first sign-in (`/consent`).
 
 ## 5. What it deliberately does not do
 
@@ -79,6 +77,8 @@ The team hosted the repository on Entire from the beginning, structuring every d
 
 - Public repository: https://github.com/Tonttu84/cepheus (a copy of `main` with its full
   history; the working repository is hosted on Entire).
+- Hosted demo: TO FILL BY THE TEAM: the Render address once it is live.
+- Presentation: https://claude.ai/artifact/GP4e9P7YnjCBMvxpg4Gdsr
 - Promotional video:
   https://github.com/Tonttu84/cepheus/blob/main/promotional-video/generated/cepheus_promo_full.mp4
 - Entire trails: https://entire.com/et/crunchproject/-/trails (every change, one trail
