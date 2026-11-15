@@ -61,8 +61,12 @@ export function SiteNav({ rewardsEnabled = false }: { rewardsEnabled?: boolean }
   const navItems = visibleNavItems(session, demoMode, rewardsEnabled);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border-hairline bg-surface-card/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+    <header className="sticky top-0 z-30 border-b border-border-hairline">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 bg-surface-card/95 backdrop-blur-md"
+      />
+      <div className="relative mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6">
         <Link
           href="/"
           className="group inline-flex min-h-11 items-center gap-2.5 rounded-lg text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
@@ -85,7 +89,7 @@ export function SiteNav({ rewardsEnabled = false }: { rewardsEnabled?: boolean }
 
         <nav
           aria-label="Primary navigation"
-          className="flex flex-wrap items-center gap-1 rounded-xl border border-border-hairline bg-surface-subtle p-1"
+          className="flex max-w-full flex-wrap items-center gap-1 rounded-xl border border-border-hairline bg-surface-subtle p-1"
         >
           {navItems.map((item) => {
             const isActive =
@@ -99,7 +103,7 @@ export function SiteNav({ rewardsEnabled = false }: { rewardsEnabled?: boolean }
                 href={item.href}
                 data-testid={item.testId}
                 aria-current={isActive ? "page" : undefined}
-                className={`inline-flex min-h-11 items-center rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
+                className={`inline-flex min-h-11 items-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage sm:px-3 ${
                   isActive
                     ? "bg-accent-sage text-white"
                     : "text-ink-secondary hover:bg-surface-card hover:text-ink-primary"

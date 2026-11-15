@@ -38,8 +38,8 @@ export function PatientEidSignInPanel({ onSuccess }: AuthPanelProps) {
   return (
     <div className="space-y-3">
       <p className="text-sm leading-relaxed text-ink-secondary">
-        Simulated Finnish strong electronic identification (D34). Choose your
-        simulated participant to sign in at once.
+        Choose a sample participant to sign in with simulated Finnish strong
+        identification. Only a pseudonymous participant code is stored.
       </p>
 
       <div
@@ -66,11 +66,11 @@ export function PatientEidSignInPanel({ onSuccess }: AuthPanelProps) {
                 {preset.avatarInitials}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
                   <span className="text-sm font-medium text-ink-primary">
                     {preset.label}
                   </span>
-                  <span className="font-mono text-xs text-ink-muted">
+                  <span className="shrink-0 font-mono text-xs tabular-nums text-ink-muted">
                     {preset.participantCode}
                   </span>
                 </span>
@@ -116,7 +116,7 @@ function StaffTimeBasedForm({ onSuccess }: AuthPanelProps) {
     event.preventDefault();
     setError(null);
     if (!/^\d{6}$/.test(totpCode.trim())) {
-      setError("Enter the 6-digit code from your authenticator app.");
+      setError("Enter all 6 digits from your authenticator app before signing in.");
       return;
     }
     setSubmitting(true);
@@ -137,11 +137,11 @@ function StaffTimeBasedForm({ onSuccess }: AuthPanelProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <p className="text-sm leading-relaxed text-ink-secondary">
-        Clinic staff sign-in requires a password and 6-digit code from an
-        authenticator app.
+        Choose your clinic account, then enter your password and 6-digit
+        authenticator code.
       </p>
 
-      <fieldset className="grid grid-cols-2 gap-2">
+      <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <legend className="sr-only">Select staff account</legend>
         {SIMULATED_STAFF_PRESETS.map((preset) => {
           const isSelected = email === preset.email;
@@ -184,7 +184,7 @@ function StaffTimeBasedForm({ onSuccess }: AuthPanelProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           data-testid="auth-staff-password"
-          className="min-h-11 w-full rounded-xl border border-border-tactile bg-surface-card px-3 py-2 text-sm text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+          className="min-h-11 w-full rounded-xl border border-border-tactile bg-surface-card px-3 py-2 text-base text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage sm:text-sm"
         />
       </div>
 
@@ -205,11 +205,8 @@ function StaffTimeBasedForm({ onSuccess }: AuthPanelProps) {
           onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
           placeholder="000000"
           data-testid="auth-staff-totp"
-          className="min-h-11 w-full rounded-xl border border-border-tactile bg-surface-card px-3 py-2 font-mono text-sm text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+          className="min-h-11 w-full rounded-xl border border-border-tactile bg-surface-card px-3 py-2 font-mono text-base text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage sm:text-sm"
         />
-        <p className="mt-1 text-[11px] text-ink-muted">
-          The code comes from an authenticator app.
-        </p>
       </div>
 
       {error ? (
@@ -265,8 +262,7 @@ export function StaffSignInPanel({ onSuccess }: AuthPanelProps) {
   return (
     <div className="space-y-3">
       <p className="text-sm leading-relaxed text-ink-secondary">
-        Demonstration sign-in using simulated clinic credentials. Press an
-        account below to sign in at once.
+        Choose a sample clinic role to open the nurse follow-up workspace.
       </p>
 
       <div
@@ -297,11 +293,11 @@ export function StaffSignInPanel({ onSuccess }: AuthPanelProps) {
                   <span className="text-sm font-medium text-ink-primary">
                     {preset.displayName}
                   </span>
-                  <span className="rounded-full border border-border-hairline bg-surface-card px-2 py-0.5 text-[11px] text-ink-muted">
+                  <span className="shrink-0 rounded-full border border-border-hairline bg-surface-card px-2 py-0.5 text-[11px] text-ink-muted">
                     {preset.role}
                   </span>
                 </span>
-                <span className="mt-0.5 block text-xs text-ink-secondary">
+                <span className="mt-0.5 block text-xs text-ink-secondary [overflow-wrap:anywhere]">
                   {preset.email} · {preset.clinicName}
                 </span>
                 {isPending ? (

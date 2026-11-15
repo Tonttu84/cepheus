@@ -28,6 +28,24 @@ function UserIcon() {
   );
 }
 
+function CloseIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
+}
+
 function UnsignedPopover({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<"patient" | "staff">("patient");
 
@@ -36,15 +54,25 @@ function UnsignedPopover({ onClose }: { onClose: () => void }) {
       role="dialog"
       aria-label="Sign in to Cepheus"
       data-testid="header-auth-popover"
-      className="absolute right-0 top-full z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border-tactile bg-surface-card p-4 shadow-sm sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
+      className="fixed left-3 right-3 top-3 z-50 max-h-[calc(100dvh-1.5rem)] w-auto overflow-y-auto overscroll-contain rounded-2xl border border-border-tactile bg-surface-card p-4 shadow-sm sm:left-auto sm:right-6 sm:w-80 lg:absolute lg:left-1/2 lg:right-auto lg:top-full lg:z-40 lg:mt-2 lg:max-h-[calc(100dvh-6rem)] lg:w-80 lg:-translate-x-1/2"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-ink-primary">
-          Sign in to Cepheus
-        </span>
-        <span className="rounded-full border border-[#fcd34d] bg-[#fffbeb] px-2 py-0.5 text-[11px] font-medium text-[#451a03]">
-          Simulated
-        </span>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-ink-primary">
+            Sign in to Cepheus
+          </span>
+          <span className="rounded-full border border-amber-notice-border bg-amber-notice-bg px-2 py-0.5 text-[11px] font-medium text-amber-notice-ink">
+            Simulated
+          </span>
+        </div>
+        <button
+          type="button"
+          aria-label="Close sign-in panel"
+          onClick={onClose}
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage lg:hidden"
+        >
+          <CloseIcon />
+        </button>
       </div>
 
       <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-border-hairline bg-surface-subtle p-1">
@@ -87,7 +115,7 @@ function UnsignedPopover({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           className="inline-flex min-h-11 items-center text-xs font-medium text-accent-sage hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
         >
-          Full sign-in page →
+          Open full sign-in page →
         </Link>
       </div>
     </div>
@@ -110,7 +138,7 @@ function SignedInMenu({
       role="menu"
       aria-label="Account menu"
       data-testid="header-user-menu"
-      className="absolute right-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-border-tactile bg-surface-card p-4 shadow-sm sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
+      className="fixed left-3 right-3 top-3 z-50 max-h-[calc(100dvh-1.5rem)] w-auto overflow-y-auto overscroll-contain rounded-2xl border border-border-tactile bg-surface-card p-4 shadow-sm sm:left-auto sm:right-6 sm:w-72 lg:absolute lg:left-1/2 lg:right-auto lg:top-full lg:z-40 lg:mt-2 lg:max-h-[calc(100dvh-6rem)] lg:w-72 lg:-translate-x-1/2"
     >
       <div className="flex items-start gap-3">
         <span
@@ -147,10 +175,18 @@ function SignedInMenu({
             </>
           )}
         </div>
+        <button
+          type="button"
+          aria-label="Close account menu"
+          onClick={onClose}
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-secondary transition hover:bg-surface-subtle hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage lg:hidden"
+        >
+          <CloseIcon />
+        </button>
       </div>
 
       <div className="mt-3">
-        <span className="inline-block rounded-full border border-[#fcd34d] bg-[#fffbeb] px-2.5 py-0.5 text-[11px] font-medium text-[#451a03]">
+        <span className="inline-block rounded-full border border-amber-notice-border bg-amber-notice-bg px-2.5 py-0.5 text-[11px] font-medium text-amber-notice-ink">
           Simulated session
         </span>
       </div>
@@ -260,7 +296,7 @@ export function HeaderAuthControl() {
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative flex items-center">
+    <div ref={containerRef} className="flex items-center lg:relative">
       {session ? (
         <button
           type="button"
@@ -284,7 +320,7 @@ export function HeaderAuthControl() {
           aria-haspopup="dialog"
           aria-expanded={open}
           onClick={() => setOpen((prev) => !prev)}
-          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border-tactile bg-surface-subtle px-4 py-2 text-sm font-medium text-ink-primary transition hover:bg-surface-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border-tactile bg-surface-subtle px-3.5 py-2 text-sm font-medium text-ink-primary transition hover:bg-surface-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage sm:gap-2 sm:px-4"
         >
           <UserIcon />
           <span>Sign in</span>
@@ -292,15 +328,29 @@ export function HeaderAuthControl() {
       )}
 
       {open && !session ? (
-        <UnsignedPopover onClose={() => setOpen(false)} />
+        <>
+          <div
+            aria-hidden="true"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 bg-ink-primary/15 lg:hidden"
+          />
+          <UnsignedPopover onClose={() => setOpen(false)} />
+        </>
       ) : null}
 
       {open && session ? (
-        <SignedInMenu
-          session={session}
-          onSignOut={handleSignOut}
-          onClose={() => setOpen(false)}
-        />
+        <>
+          <div
+            aria-hidden="true"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 bg-ink-primary/15 lg:hidden"
+          />
+          <SignedInMenu
+            session={session}
+            onSignOut={handleSignOut}
+            onClose={() => setOpen(false)}
+          />
+        </>
       ) : null}
     </div>
   );
