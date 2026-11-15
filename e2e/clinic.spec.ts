@@ -1,7 +1,16 @@
 import { expect } from "@playwright/test";
-import { signInAsStaff, test } from "./helpers";
+import {
+  ensureClinicFlagNumbers,
+  removeClinicFlagNumbers,
+  signInAsStaff,
+  test,
+} from "./helpers";
 
 test.describe("Clinic follow-up screen: nurse call requests & crisis alerts", () => {
+  test.afterAll(async () => {
+    await removeClinicFlagNumbers();
+  });
+
   test("nurse requests a call on a flag (persisted on reload) and acknowledges a crisis alert (gone on reload)", async ({
     page,
     context,
@@ -61,10 +70,11 @@ test.describe("Clinic follow-up screen: nurse call requests & crisis alerts", ()
     page,
     context,
   }) => {
-    // 1. Sign in as nurse with seeded flag
+    // 1. Sign in as nurse with seeded flag and the questionnaire that raised it
     await signInAsStaff(page, context, {
       ensureFlag: true,
     });
+    await ensureClinicFlagNumbers();
 
     await page.goto("/clinic");
 
@@ -84,6 +94,9 @@ test.describe("Clinic follow-up screen: nurse call requests & crisis alerts", ()
     await expect(page.getByTestId("clinic-flag-fact-line").first()).toBeVisible();
 
     // 5. Patient remains labeled as simulated
-    await expect(flagCard.getByText("Simulated", { exact: false })).toBeVisible();
+    const simulatedBadge = flagCard.getByTestId("simulated-badge");
+    await expect(simulatedBadge).toBeVisible();
+    await expect(simulatedBadge).toContainText("Simulated data");
+    await expect(simulatedBadge).toContainText("Simulated flag");
   });
 });

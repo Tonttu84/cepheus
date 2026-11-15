@@ -96,6 +96,41 @@ export async function ensureClinicFlag() {
   });
 }
 
+const FLAG_PHQ9_ID = "e2e-clinic-flag-phq9";
+
+/**
+ * A flag raised by a PHQ-9 always has that questionnaire behind it. This adds
+ * the completed questionnaire the helper's flag points at, so that the card
+ * has a total to show. It replaces the patient's other PHQ-9 rows (their dates
+ * must rise with the round) and sits in round 1, which makes the open round's
+ * own PHQ-9 no longer due: call removeClinicFlagNumbers() when the test is over.
+ */
+export async function ensureClinicFlagNumbers(): Promise<void> {
+  const flag = await ensureClinicFlag();
+  const prisma = getPrisma();
+  const data = {
+    participantId: flag.participantId,
+    clinicId: flag.clinicId,
+    scheduledAt: new Date(),
+    completedAt: new Date(),
+    date: flag.causeDate ?? flag.sinceDate,
+    dayIndex: 1,
+    weekNumber: 1,
+    roundNumber: 1,
+    completedInRoundNumber: 1,
+    status: "completed",
+    totalScore: 12,
+    isSimulated: true,
+    source: "synthetic",
+  };
+  await prisma.phq9Assessment.deleteMany({ where: { participantId: flag.participantId } });
+  await prisma.phq9Assessment.create({ data: { id: FLAG_PHQ9_ID, ...data } });
+}
+
+export async function removeClinicFlagNumbers(): Promise<void> {
+  await getPrisma().phq9Assessment.deleteMany({ where: { id: FLAG_PHQ9_ID } });
+}
+
 export async function ensureCrisisEvent() {
   const prisma = getPrisma();
   const patient = await prisma.participant.findFirstOrThrow({
