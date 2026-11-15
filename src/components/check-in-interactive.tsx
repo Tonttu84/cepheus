@@ -193,14 +193,14 @@ function CrisisPathBanner() {
             className="flex min-h-12 flex-col justify-between rounded-xl border border-rose-200 bg-white p-3.5 shadow-sm transition hover:border-rose-400"
           >
             <div>
-              <p className="text-xs font-semibold text-rose-900">
+              <p className="text-sm font-semibold text-rose-900">
                 {resource.label}
               </p>
               <p className="tabular-nums mt-0.5 text-base font-bold text-rose-950">
                 {resource.phone}
               </p>
             </div>
-            <p className="mt-1 text-xs text-rose-800">
+            <p className="mt-1 text-sm text-rose-800">
               {resource.availability}
             </p>
           </a>

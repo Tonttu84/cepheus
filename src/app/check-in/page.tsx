@@ -61,7 +61,7 @@ export default async function CheckInPage() {
           </span>
         </summary>
 
-        <div className="mt-5 space-y-6 rounded-2xl border border-border-hairline bg-surface-subtle/70 p-6 text-xs leading-relaxed text-ink-secondary">
+        <div className="mt-5 space-y-6 rounded-2xl border border-border-hairline bg-surface-subtle/70 p-6 text-sm leading-relaxed text-ink-secondary">
           <div>
             <h2 className="font-display text-base font-semibold text-ink-primary">
               Data handling and your consent choices
@@ -84,7 +84,7 @@ export default async function CheckInPage() {
                       Consented
                     </span>
                   </div>
-                  <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">
                     {method.recordedDescription}
                   </p>
                 </div>
@@ -108,7 +108,7 @@ export default async function CheckInPage() {
               <p className="text-sm font-semibold text-ink-primary">
                 Talk with a person right now
               </p>
-              <p className="mt-1 text-xs text-ink-secondary">
+              <p className="mt-1 text-sm text-ink-secondary">
                 You do not need to finish or start a check-in to call any of
                 these numbers:
               </p>
@@ -120,14 +120,14 @@ export default async function CheckInPage() {
                     className="flex min-h-11 flex-col justify-between rounded-xl border border-border-tactile bg-surface-card p-3 transition hover:border-accent-sage/50 hover:bg-surface-subtle"
                   >
                     <div>
-                      <p className="text-xs font-semibold text-ink-secondary">
+                      <p className="text-sm font-semibold text-ink-secondary">
                         {resource.label}
                       </p>
                       <p className="tabular-nums mt-1 text-sm font-bold text-ink-primary">
                         {resource.phone}
                       </p>
                     </div>
-                    <p className="mt-1.5 text-xs text-ink-muted">
+                    <p className="mt-1.5 text-sm text-ink-muted">
                       {resource.availability}
                     </p>
                   </a>
