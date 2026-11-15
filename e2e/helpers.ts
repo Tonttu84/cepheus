@@ -356,6 +356,16 @@ export async function reofferSuggestionsAnsweredSince(
   });
 }
 
+/**
+ * A reset gives every simulated patient a new id, and a patient's session
+ * holds the id it was signed in with: a session from before a reset is sent
+ * on to /consent and its check-in calls are refused. So after a reset the
+ * kept patient sessions are dropped and the next signInAsPatient signs in anew.
+ */
+function forgetPatientSessions(): void {
+  cachedPatientCookies.clear();
+}
+
 /** Sets the demo back to its seeded state and its clock to now, as the Reset button on /demo does. */
 export async function resetDemo(page: Page, context: BrowserContext): Promise<void> {
   await signInAsStaff(page, context);
@@ -365,6 +375,24 @@ export async function resetDemo(page: Page, context: BrowserContext): Promise<vo
   if (!res.ok()) {
     throw new Error(`Demo reset failed (${res.status()}): ${await res.text()}`);
   }
+  forgetPatientSessions();
+}
+
+/**
+ * Presses Reset on /demo and waits until the server has answered. The page
+ * shows "+0 days" before as well as after a reset, so that text does not say
+ * the reset is over.
+ */
+export async function pressDemoReset(page: Page): Promise<void> {
+  const answered = page.waitForResponse(
+    (res) => res.request().method() === "POST" && res.url().endsWith("/api/demo/reset")
+  );
+  await page.getByTestId("btn-reset-demo").click();
+  const res = await answered;
+  if (!res.ok()) {
+    throw new Error(`Demo reset failed (${res.status()})`);
+  }
+  forgetPatientSessions();
 }
 
 export async function signInAsPatient(

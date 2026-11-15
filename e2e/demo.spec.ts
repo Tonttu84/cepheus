@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { resetDemo, signInAsPatient, signInAsStaff, test } from "./helpers";
+import { pressDemoReset, resetDemo, signInAsPatient, signInAsStaff, test } from "./helpers";
 
 test.describe("Demo page: time advance, clinic warning, and reset", () => {
   // Each test moves the demo clock or a switch; the specs that follow expect the seeded state.
@@ -18,8 +18,7 @@ test.describe("Demo page: time advance, clinic warning, and reset", () => {
     await page.goto("/demo");
     await expect(page.getByTestId("demo-controls-panel")).toBeVisible();
 
-    const resetBtn = page.getByTestId("btn-reset-demo");
-    await resetBtn.click();
+    await pressDemoReset(page);
     await expect(page.getByTestId("current-demo-offset")).toContainText("+0 days");
 
     // 3. Check clinic view before time advancement: no flags
@@ -53,7 +52,7 @@ test.describe("Demo page: time advance, clinic warning, and reset", () => {
 
     // 6. Return to /demo and click Reset
     await page.goto("/demo");
-    await page.getByTestId("btn-reset-demo").click();
+    await pressDemoReset(page);
     await expect(page.getByTestId("current-demo-offset")).toContainText("+0 days");
     await expect(page.getByTestId("missed-rounds-P-SIM-001")).toContainText("Missed rounds: 0");
 
@@ -71,7 +70,7 @@ test.describe("Demo page: time advance, clinic warning, and reset", () => {
     await signInAsStaff(page, context);
     await page.goto("/demo");
     await expect(page.getByTestId("demo-controls-panel")).toBeVisible();
-    await page.getByTestId("btn-reset-demo").click();
+    await pressDemoReset(page);
     await expect(page.getByTestId("switch-status-extra")).toContainText("OFF");
 
     // 2. Visit /check-in as patient with switch OFF: extra question does NOT appear
@@ -110,7 +109,7 @@ test.describe("Demo page: time advance, clinic warning, and reset", () => {
     await signInAsStaff(page, context);
     await page.goto("/demo");
     await expect(page.getByTestId("demo-controls-panel")).toBeVisible();
-    await page.getByTestId("btn-reset-demo").click();
+    await pressDemoReset(page);
     await expect(page.getByTestId("current-demo-offset")).toContainText("+0 days");
 
     // 2. Sign in as patient and open /check-in
