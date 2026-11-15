@@ -1,8 +1,34 @@
 import { expect, test } from "@playwright/test";
+import { getPrisma } from "../src/lib/db";
 
 const BASE_ORIGIN = "http://127.0.0.1:3100";
 
+async function resetSimulatedPatientCheckIn() {
+  const prisma = getPrisma();
+  const patient = await prisma.participant.findFirst({
+    where: { participantCode: "P-SIM-001" },
+  });
+  if (patient) {
+    await prisma.checkInRound.deleteMany({
+      where: { participantId: patient.id, roundNumber: { gt: 1 } },
+    });
+    await prisma.phq9Assessment.deleteMany({
+      where: { participantId: patient.id },
+    });
+    await prisma.clinicFlag.deleteMany({
+      where: { participantId: patient.id, causeType: { not: null } },
+    });
+  }
+}
+
 test.describe("Cepheus Auth, Logged-Out Privacy & Role-Scoped Navigation", () => {
+  test.beforeAll(async () => {
+    await resetSimulatedPatientCheckIn();
+  });
+
+  test.afterAll(async () => {
+    await resetSimulatedPatientCheckIn();
+  });
   test("1. Logged-out / hides patient & clinic nav/data, keeps crisis path, and redirects protected pages", async ({
     page,
     request,
@@ -226,6 +252,24 @@ test.describe("Cepheus Auth, Logged-Out Privacy & Role-Scoped Navigation", () =>
   test("4. Touch targets are at least 44px tall for header auth, staff presets, and clinic nurse brief button", async ({
     page,
   }) => {
+    // Ensure the clinic has an active flag through the product by answering a check-in as P-SIM-001
+    const patientReq = await page.context().request.post("/api/auth/sign-in", {
+      headers: { origin: BASE_ORIGIN },
+      data: { mode: "patient_eid", participantCode: "P-SIM-001" },
+    });
+    expect(patientReq.ok()).toBe(true);
+    await page.context().request.post("/api/check-in/taps", {
+      headers: { origin: BASE_ORIGIN },
+      data: { mood: 1, interest: 1 },
+    });
+    for (let item = 1; item <= 9; item++) {
+      await page.context().request.post("/api/check-in/phq9", {
+        headers: { origin: BASE_ORIGIN },
+        data: { itemId: String(item), value: item === 9 ? 1 : 2 },
+      });
+    }
+    await page.context().clearCookies();
+
     await page.setViewportSize({ width: 1280, height: 720 });
 
     // 1. Controls in header-auth-control (unsigned state)
