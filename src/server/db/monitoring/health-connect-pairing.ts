@@ -20,7 +20,7 @@ import { resolveMonitoringTarget } from "./session-scope";
 import {
   ensureHomeDemoParticipant,
   loadConsentContext,
-} from "./store";
+} from "@/server/monitoring/store";
 
 const SEAL_TTL_MS = 365 * 24 * 60 * 60 * 1000;
 

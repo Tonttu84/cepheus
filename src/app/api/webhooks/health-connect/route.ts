@@ -8,7 +8,7 @@ import { saveWearableDaysAndComputeRhythm } from "@/server/monitoring";
 import {
   recordHealthConnectWebhookDelivery,
   verifyAndResolveHealthConnectWebhook,
-} from "@/server/monitoring/health-connect-pairing";
+} from "@/server/db/monitoring/health-connect-pairing";
 import {
   checkRateLimit,
   extractBearerToken,

@@ -10,7 +10,7 @@ import type {
 } from "@/lib/auth-types";
 import { MEASUREMENT_METHODS } from "@/lib/constants";
 import { getPrisma } from "@/lib/db";
-import { resolveMonitoringTarget } from "./session-scope";
+import { resolveMonitoringTarget } from "@/server/db/monitoring/session-scope";
 
 /**
  * DEMO-ONLY PARTICIPANT SCOPING:

@@ -6,7 +6,7 @@ import {
   ALL_CONSENT_METHODS,
   DEMO_CLINIC_ID,
   ensureHomeDemoParticipant,
-} from "./store";
+} from "@/server/monitoring/store";
 
 export const DEFAULT_AUTH_CLINIC_CODE = "sim-clinic-01";
 
