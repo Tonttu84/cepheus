@@ -37,7 +37,7 @@ export function PatientEidSignInPanel({ onSuccess }: AuthPanelProps) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs leading-relaxed text-ink-secondary">
+      <p className="text-sm leading-relaxed text-ink-secondary">
         Simulated Finnish strong electronic identification (D34). Choose your
         simulated participant to sign in at once.
       </p>
@@ -92,7 +92,7 @@ export function PatientEidSignInPanel({ onSuccess }: AuthPanelProps) {
         <p
           role="alert"
           data-testid="auth-error-message"
-          className="rounded-lg border border-[#fcd34d] bg-[#fffbeb] px-3 py-2 text-xs text-[#451a03]"
+          className="rounded-lg border border-[#fcd34d] bg-[#fffbeb] px-3 py-2 text-sm text-[#451a03]"
         >
           {error}
         </p>
@@ -136,7 +136,7 @@ function StaffTimeBasedForm({ onSuccess }: AuthPanelProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <p className="text-xs leading-relaxed text-ink-secondary">
+      <p className="text-sm leading-relaxed text-ink-secondary">
         Clinic staff sign-in requires a password and 6-digit code from an
         authenticator app.
       </p>
@@ -216,7 +216,7 @@ function StaffTimeBasedForm({ onSuccess }: AuthPanelProps) {
         <p
           role="alert"
           data-testid="auth-error-message"
-          className="rounded-lg border border-[#fcd34d] bg-[#fffbeb] px-3 py-2 text-xs text-[#451a03]"
+          className="rounded-lg border border-[#fcd34d] bg-[#fffbeb] px-3 py-2 text-sm text-[#451a03]"
         >
           {error}
         </p>
@@ -264,7 +264,7 @@ export function StaffSignInPanel({ onSuccess }: AuthPanelProps) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs leading-relaxed text-ink-secondary">
+      <p className="text-sm leading-relaxed text-ink-secondary">
         Demonstration sign-in using simulated clinic credentials. Press an
         account below to sign in at once.
       </p>
@@ -319,7 +319,7 @@ export function StaffSignInPanel({ onSuccess }: AuthPanelProps) {
         <p
           role="alert"
           data-testid="auth-error-message"
-          className="rounded-lg border border-[#fcd34d] bg-[#fffbeb] px-3 py-2 text-xs text-[#451a03]"
+          className="rounded-lg border border-[#fcd34d] bg-[#fffbeb] px-3 py-2 text-sm text-[#451a03]"
         >
           {error}
         </p>
