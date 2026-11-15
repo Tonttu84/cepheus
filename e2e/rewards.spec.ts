@@ -48,14 +48,18 @@ test.describe("Rewards flow", () => {
     await page.goto("/rewards");
 
     // D38 & D42: Visible count of answered rounds and visible count of walks
-    await expect(page.locator("text=rounds answered")).toBeVisible();
-    await expect(page.locator("text=walks")).toBeVisible();
+    const picture = page.locator('section[aria-label="My picture"]');
+    await expect(picture.getByText("rounds answered", { exact: true })).toBeVisible();
+    await expect(picture.getByText("walks", { exact: true })).toBeVisible();
 
     // Must NOT show "tasks done"
     await expect(page.locator("text=tasks done")).toHaveCount(0);
 
-    // Must NOT be labeled as a streak or score (AGENTS.md, D38, D42)
-    const pageText = await page.textContent("body");
+    // Must NOT be labeled as a streak or score (AGENTS.md, D38, D42).
+    // The text the page renders, not its script tags: the development
+    // server writes what the page awaited on the server into them for debugging,
+    // and a stored consent description there says "never scored as zero".
+    const pageText = await page.locator("body").innerText();
     expect(pageText).not.toMatch(/streak/i);
     expect(pageText).not.toMatch(/score/i);
   });
@@ -119,9 +123,12 @@ test.describe("Rewards flow", () => {
     await page.goto("/rewards");
 
     // Neutral disclaimer is visible beside balance and beside payout button before clicking
-    await expect(
-      page.locator('section[aria-label="My balance"]').getByText("Amounts and payouts are simulated in this demonstration and no real money is paid.")
-    ).toBeVisible();
+    const notices = page
+      .locator('section[aria-label="My balance"]')
+      .getByText("Amounts and payouts are simulated in this demonstration and no real money is paid.");
+    await expect(notices).toHaveCount(2);
+    await expect(notices.nth(0)).toBeVisible();
+    await expect(notices.nth(1)).toBeVisible();
 
     // Payout button is visible and enabled
     const payoutBtn = page.getByRole("button", { name: "Request payout" });
@@ -139,6 +146,11 @@ test.describe("Rewards flow", () => {
 
     // Balance reflects payout and payout entry in list is marked simulated
     await expect(page.locator('section[aria-label="My balance"]')).toContainText("€0.00");
-    await expect(page.locator("text=Payout")).toBeVisible();
+    const payoutEntry = page
+      .locator('section[aria-label="My balance"]')
+      .getByRole("listitem")
+      .filter({ has: page.getByText("Payout", { exact: true }) });
+    await expect(payoutEntry).toBeVisible();
+    await expect(payoutEntry).toContainText("simulated");
   });
 });
