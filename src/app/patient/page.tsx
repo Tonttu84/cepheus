@@ -1,6 +1,8 @@
 import { requirePatientPageSession } from "@/server/auth";
 import { getRouteDeps } from "@/server/api";
 import { getPatientSuggestion, getPatientConsent } from "@/usecases";
+import { readAccount } from "@/usecases/rewards";
+import Link from "next/link";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { SessionContextPill } from "@/components/session-context-banner";
 import { PatientSuggestionCard } from "@/components/patient-suggestion-card";
@@ -34,6 +36,14 @@ export default async function PatientPage() {
         rule_check: true,
       };
 
+  const rewardsPorts = getRouteDeps().rewardsPorts;
+  const accountRes = await readAccount(
+    session.actor,
+    { patientId: session.actor.patientId },
+    rewardsPorts
+  );
+  const account = accountRes.ok ? accountRes.value : null;
+
   return (
     <div className="space-y-12 sm:space-y-16">
       <header className="space-y-4">
@@ -58,6 +68,12 @@ export default async function PatientPage() {
         suggestion={suggestion}
         actionKey={suggestion?.actionKey}
       />
+
+      {account ? (
+        <p className="text-sm text-ink-secondary text-center">
+          Simulated balance: {(account.balanceCents / 100).toFixed(2)} € · <Link href="/rewards" className="text-accent-sage hover:underline">See rewards</Link>
+        </p>
+      ) : null}
 
       <ForestDivider variant="grove" />
 
