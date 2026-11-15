@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export interface CheckInPromptItem {
   key: string;
@@ -14,61 +14,82 @@ interface CheckInInteractiveProps {
   items: readonly CheckInPromptItem[];
 }
 
+const WORD_LABELS_BY_KEY: Record<string, readonly [string, string, string, string, string]> = {
+  mood: ["Very low", "Low", "Okay", "Good", "Very good"],
+  tap_mood: ["Very low", "Low", "Okay", "Good", "Very good"],
+  interest: ["Not at all", "A little", "Somewhat", "Quite a bit", "Very much"],
+  tap_interest: ["Not at all", "A little", "Somewhat", "Quite a bit", "Very much"],
+};
+
+function resolveChoiceLabels(
+  item: CheckInPromptItem
+): readonly [string, string, string, string, string] {
+  return (
+    WORD_LABELS_BY_KEY[item.key] ??
+    WORD_LABELS_BY_KEY[item.label.toLowerCase()] ?? [
+      item.lowAnchor,
+      "Low",
+      "Moderate",
+      "Good",
+      item.highAnchor,
+    ]
+  );
+}
+
 interface ScaleButtonsProps {
   promptId: string;
-  itemLabel: string;
+  item: CheckInPromptItem;
   selected: number | undefined;
   skippedToday: boolean;
-  lowAnchor: string;
-  highAnchor: string;
   onSelect: (choice: number) => void;
 }
 
 function ScaleButtons({
   promptId,
-  itemLabel,
+  item,
   selected,
   skippedToday,
-  lowAnchor,
-  highAnchor,
   onSelect,
 }: ScaleButtonsProps) {
+  const labels = resolveChoiceLabels(item);
+
   return (
     <div className="mt-4">
       <div
         role="group"
         aria-labelledby={promptId}
-        className="grid grid-cols-5 gap-2.5 sm:max-w-md sm:gap-3"
+        className="grid grid-cols-2 gap-2.5 sm:grid-cols-5 sm:gap-3"
       >
         {[0, 1, 2, 3, 4].map((choice) => {
           const isChosen = !skippedToday && selected === choice;
+          const wordLabel = labels[choice];
           return (
             <button
               key={choice}
               type="button"
-              aria-label={`${itemLabel}: ${choice} of 4`}
+              aria-label={`${item.label}: ${choice} of 4`}
               aria-pressed={isChosen}
               onClick={() => onSelect(choice)}
-              className={`tabular-nums inline-flex h-12 w-full items-center justify-center rounded-xl border text-base font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
+              className={`inline-flex min-h-14 w-full flex-col items-center justify-center gap-0.5 rounded-xl border px-3 py-2.5 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
                 isChosen
-                  ? "border-accent-sage bg-accent-sage text-white"
+                  ? "border-accent-sage bg-accent-sage text-white shadow-xs"
                   : "border-border-tactile bg-surface-card text-ink-primary hover:border-accent-sage hover:bg-accent-sage-soft/60"
               }`}
             >
-              {choice}
+              <span className="text-sm font-semibold leading-tight">
+                {wordLabel}
+              </span>
+              <span
+                aria-hidden="true"
+                className={`tabular-nums text-[11px] font-medium ${
+                  isChosen ? "text-white/85" : "text-ink-muted"
+                }`}
+              >
+                {choice}
+              </span>
             </button>
           );
         })}
-      </div>
-      <div className="mt-2.5 flex items-center justify-between gap-4 text-xs text-ink-secondary sm:max-w-md">
-        <span>
-          <span className="tabular-nums font-semibold text-ink-primary">0</span>{" "}
-          — {lowAnchor}
-        </span>
-        <span className="text-right">
-          <span className="tabular-nums font-semibold text-ink-primary">4</span>{" "}
-          — {highAnchor}
-        </span>
       </div>
     </div>
   );
@@ -79,6 +100,7 @@ interface PromptRowProps {
   selected: number | undefined;
   skippedToday: boolean;
   onSelect: (choice: number) => void;
+  rowRef?: (el: HTMLDivElement | null) => void;
 }
 
 function PromptRow({
@@ -86,10 +108,11 @@ function PromptRow({
   selected,
   skippedToday,
   onSelect,
+  rowRef,
 }: PromptRowProps) {
   const promptId = `checkin-prompt-${item.key}`;
   return (
-    <div className="py-7 first:pt-0 last:pb-0">
+    <div ref={rowRef} className="py-7 first:pt-0 last:pb-0">
       <p
         id={promptId}
         className="font-display text-lg font-medium leading-snug text-ink-primary sm:text-xl"
@@ -98,11 +121,9 @@ function PromptRow({
       </p>
       <ScaleButtons
         promptId={promptId}
-        itemLabel={item.label}
+        item={item}
         selected={selected}
         skippedToday={skippedToday}
-        lowAnchor={item.lowAnchor}
-        highAnchor={item.highAnchor}
         onSelect={onSelect}
       />
     </div>
@@ -112,17 +133,18 @@ function PromptRow({
 export function CheckInInteractive({ items }: CheckInInteractiveProps) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [skippedToday, setSkippedToday] = useState(false);
+  const rowRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   const answeredCount = Object.keys(answers).length;
   const isComplete = answeredCount === items.length;
 
-  function handleSelectFour(key: string, choice: number) {
+  function handleSelectChoice(idx: number, key: string, choice: number) {
     setSkippedToday(false);
     setAnswers((prev) => ({ ...prev, [key]: choice }));
-  }
-
-  function handleSkip() {
-    setSkippedToday(true);
+    const nextRow = rowRefs.current[idx + 1];
+    if (nextRow && typeof nextRow.scrollIntoView === "function") {
+      nextRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   }
 
   return (
@@ -134,32 +156,29 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="font-display text-xl font-semibold text-ink-primary sm:text-2xl">
-              Twice-weekly check-in prompts (2 quick taps)
+              Two quick taps
             </h2>
             <span className="tabular-nums rounded-full border border-accent-sage-border bg-accent-sage-soft px-3 py-0.5 text-xs font-medium text-accent-sage-hover">
-              {answeredCount} of {items.length} answered
+              {answeredCount} of {items.length}
             </span>
           </div>
           <p className="max-w-xl text-sm text-ink-secondary">
-            If two questions feel like too much today, tap &ldquo;Not
-            today&rdquo;.
+            Tap the word that fits right now, or choose &ldquo;Not today&rdquo;.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            data-testid="not-today-button"
-            onClick={handleSkip}
-            className={`min-h-11 rounded-xl border px-4 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
-              skippedToday
-                ? "border-accent-sage bg-accent-sage-soft text-accent-sage-hover"
-                : "border-border-tactile bg-surface-subtle text-ink-primary hover:bg-surface-muted"
-            }`}
-          >
-            Not today (skip without penalty)
-          </button>
-        </div>
+        <button
+          type="button"
+          data-testid="not-today-button"
+          onClick={() => setSkippedToday(true)}
+          className={`min-h-11 rounded-xl border px-4 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
+            skippedToday
+              ? "border-accent-sage bg-accent-sage-soft text-accent-sage-hover"
+              : "border-border-tactile bg-surface-subtle text-ink-primary hover:bg-surface-muted"
+          }`}
+        >
+          Not today (skip without penalty)
+        </button>
       </div>
 
       {skippedToday ? (
@@ -171,8 +190,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
             This is a preview of a simulated round and nothing is sent yet.
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
-            Taking a day off from check-ins is completely fine. If you change
-            your mind later, you can still tap an option below.
+            Taking a day off from check-ins is completely fine.
           </p>
         </div>
       ) : null}
@@ -186,20 +204,22 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
             This is a preview of a simulated round and nothing is sent yet.
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
-            All {items.length} answers selected. Thank you for completing the
-            preview.
+            All {items.length} answers selected. Nothing else needed right now.
           </p>
         </div>
       ) : null}
 
       <div className="mt-7 divide-y divide-border-hairline">
-        {items.map((item) => (
+        {items.map((item, idx) => (
           <PromptRow
             key={item.key}
             item={item}
             selected={answers[item.key]}
             skippedToday={skippedToday}
-            onSelect={(choice) => handleSelectFour(item.key, choice)}
+            rowRef={(el) => {
+              rowRefs.current[idx] = el;
+            }}
+            onSelect={(choice) => handleSelectChoice(idx, item.key, choice)}
           />
         ))}
       </div>
