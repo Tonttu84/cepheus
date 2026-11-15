@@ -5,7 +5,9 @@ export const CRISIS_EVENT_ITEM_ID = {
   ASKED_FOR_HELP: 'asked_for_help',
 } as const;
 
-export type CrisisEventItemId = typeof CRISIS_EVENT_ITEM_ID[keyof typeof CRISIS_EVENT_ITEM_ID];
+export type CrisisEventItemId =
+  | (typeof CRISIS_EVENT_ITEM_ID)[keyof typeof CRISIS_EVENT_ITEM_ID]
+  | 'phq9_item9';
 
 export type CrisisResult = { ok: true; value: boolean } | { ok: false; error: string };
 

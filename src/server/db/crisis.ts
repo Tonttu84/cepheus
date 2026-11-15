@@ -5,7 +5,12 @@ import { loadParticipantScope } from "./participant-scope";
 import { CRISIS_EVENT_ITEM_ID, type CrisisEventItemId } from "@/domain/crisis";
 
 function toCanonicalItemId(rawItemId: string): CrisisEventItemId {
-  if (rawItemId === "9" || rawItemId === "item9SelfHarm" || rawItemId === "item9SelfHarm_value") {
+  if (
+    rawItemId === "9" ||
+    rawItemId === "item9SelfHarm" ||
+    rawItemId === "item9SelfHarm_value" ||
+    rawItemId === "phq9_item9"
+  ) {
     return CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9;
   }
   if (rawItemId === "crisis_button") {
