@@ -274,10 +274,16 @@ export async function restorePatientConsent(
     data: { takingPart: true, ruleCheckConsent: true },
   });
   await prisma.consentEvent.deleteMany({
-    where: { participantId: patient.id, layer: "detailed_answers" },
+    where: {
+      participantId: patient.id,
+      layer: { in: ["detailed_answers", "facial_movement_usual_range"] },
+    },
   });
   await prisma.measurementConsent.deleteMany({
-    where: { participantId: patient.id, method: "detailed_answers" },
+    where: {
+      participantId: patient.id,
+      method: { in: ["detailed_answers", "facial_movement_usual_range"] },
+    },
   });
 }
 
@@ -315,33 +321,66 @@ export async function clearCheckInAnswers(
  */
 export async function setMeasuringMethodConsent(
   participantCode: SimulatedPatientPresetKey,
-  method: "ring_rhythm" | "camera_expressivity",
+  method: "ring_rhythm" | "camera_expressivity" | "facial_movement_usual_range",
   enabled: boolean
 ): Promise<boolean> {
   const prisma = getPrisma();
   const patient = await prisma.participant.findFirstOrThrow({ where: { participantCode } });
   const key = { participantId_method: { participantId: patient.id, method } };
-  const before = await prisma.measurementConsent.findUniqueOrThrow({ where: key });
-  if (before.enabled === enabled) return before.enabled;
-  await prisma.measurementConsent.update({
-    where: key,
-    data: {
-      enabled,
-      consentedAt: enabled ? new Date() : before.consentedAt,
-      revokedAt: enabled ? null : new Date(),
-    },
-  });
-  await prisma.consentEvent.create({
-    data: {
-      participantId: patient.id,
-      clinicId: patient.clinicId,
-      layer: "method",
-      method,
-      enabled,
-      noticeVersion: "v1",
-    },
-  });
-  return before.enabled;
+  const before = await prisma.measurementConsent.findUnique({ where: key });
+  const wasEnabled = before?.enabled ?? false;
+  if (!before && !enabled) return false;
+  if (before && wasEnabled === enabled) return wasEnabled;
+
+  const isFacialRange = method === "facial_movement_usual_range";
+  if (!before) {
+    await prisma.measurementConsent.create({
+      data: {
+        participantId: patient.id,
+        clinicId: patient.clinicId,
+        method,
+        broadArea: "check_in",
+        recordedDescription:
+          "Let my clinic see how my facial movement in the camera check compares with my own usual range (optional, research potential).",
+        enabled,
+        isPersonalSign: false,
+        consentedAt: enabled ? new Date() : null,
+        revokedAt: enabled ? null : new Date(),
+      },
+    });
+  } else if (!enabled && isFacialRange) {
+    await prisma.measurementConsent.delete({ where: key });
+  } else {
+    await prisma.measurementConsent.update({
+      where: key,
+      data: {
+        enabled,
+        consentedAt: enabled ? new Date() : before.consentedAt,
+        revokedAt: enabled ? null : new Date(),
+      },
+    });
+  }
+
+  if (isFacialRange && !enabled) {
+    await prisma.consentEvent.deleteMany({
+      where: {
+        participantId: patient.id,
+        layer: "facial_movement_usual_range",
+      },
+    });
+  } else {
+    await prisma.consentEvent.create({
+      data: {
+        participantId: patient.id,
+        clinicId: patient.clinicId,
+        layer: isFacialRange ? "facial_movement_usual_range" : "method",
+        method: isFacialRange ? null : method,
+        enabled,
+        noticeVersion: "v1",
+      },
+    });
+  }
+  return wasEnabled;
 }
 
 /** Offers again every suggestion of this patient that was answered at or after `since`. */
