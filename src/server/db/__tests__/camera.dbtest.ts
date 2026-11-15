@@ -1,41 +1,90 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createPrismaPorts } from '../index';
-import { getPrisma } from '@/lib/db';
-import { createDbContext } from '../context';
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { PrismaClient } from "@prisma/client";
+import { getPrisma } from "@/lib/db";
+import { submitCameraReading } from "@/usecases";
+import { createPrismaPorts } from "../index";
 
-describe('camera db repository', () => {
-  const prisma = getPrisma();
-  const ports = createPrismaPorts(prisma);
+describe("CameraReading repository (*.dbtest.ts)", () => {
+  let prisma: PrismaClient;
+  let clinicId: string;
+  let patientId: string;
 
-  beforeEach(async () => {
-    await prisma.participant.deleteMany();
-    await prisma.clinic.deleteMany();
-
-    const clinic = await prisma.clinic.create({
-      data: { code: 'test-clinic', name: 'Test Clinic' },
-    });
-    await prisma.participant.create({
-      data: { id: 'pt-1', clinicId: clinic.id, label: 'Pt 1', source: 'live' },
-    });
+  beforeAll(async () => {
+    prisma = getPrisma();
+    clinicId = (
+      await prisma.clinic.create({
+        data: { code: "camera-dbtest-clinic", name: "Camera DB Test" },
+      })
+    ).id;
+    patientId = (
+      await prisma.participant.create({
+        data: {
+          clinicId,
+          label: "camera-dbtest-patient",
+          source: "live",
+          isSimulated: false,
+          takingPart: true,
+          ruleCheckConsent: true,
+          enrolmentDate: "2026-11-01",
+          scheduleDaysJson: JSON.stringify([1, 4]),
+          scheduleTime: "10:00",
+          timeZone: "Europe/Helsinki",
+          consents: {
+            create: [
+              {
+                clinicId,
+                method: "camera_expressivity",
+                enabled: true,
+                broadArea: "face_movement",
+                recordedDescription: "Derived facial and head movement summary",
+              },
+            ],
+          },
+        },
+      })
+    ).id;
   });
 
-  it('saves and reads camera readings', async () => {
-    await ports.camera!.saveCameraReading({
-      participantId: 'pt-1',
-      date: '2026-11-15',
-      durationSec: 20.5,
-      effectiveFps: 30,
-      faceDetectedRatio: 1.0,
-      expressivityScore: 0.123,
-      smileFraction: 0.05,
-      yawSdDeg: 2.1,
-      pitchSdDeg: 1.5,
-      angularPathDegPerMin: 120,
-    });
+  afterAll(async () => {
+    if (!prisma) return;
+    await prisma.cameraReading.deleteMany({ where: { clinicId } });
+    await prisma.measurementConsent.deleteMany({ where: { clinicId } });
+    await prisma.participant.deleteMany({ where: { clinicId } });
+    await prisma.clinic.deleteMany({ where: { id: clinicId } });
+  });
 
-    const readings = await ports.camera!.getCameraReadings('pt-1');
-    expect(readings.length).toBe(1);
-    expect(readings[0].durationSec).toBe(20.5);
-    expect(readings[0].expressivityScore).toBe(0.123);
+  it("persists and reads back derived camera summary numbers via createPrismaPorts", async () => {
+    const ports = createPrismaPorts(prisma);
+    const actor = { kind: "patient" as const, patientId, clinicId };
+
+    const res = await submitCameraReading(
+      actor,
+      {
+        patientId,
+        durationSec: 20,
+        effectiveFps: 10,
+        faceDetectedRatio: 0.94,
+        expressivityScore: 0.16,
+        angularPathDegPerMin: 195,
+      },
+      ports
+    );
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+
+    const rows = await ports.cameraReadings!.getCameraReadings(patientId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: res.value.readingId,
+      patientId,
+      durationSec: 20,
+      effectiveFps: 10,
+      faceDetectedRatio: 0.94,
+      expressivityScore: 0.16,
+      angularPathDegPerMin: 195,
+      isSimulated: false,
+      source: "live",
+    });
   });
 });

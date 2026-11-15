@@ -1,82 +1,43 @@
 import { requireApiSession } from "@/server/auth";
 import {
+  failureOf,
   getRouteDeps,
   guardPatient,
   orStorageFailure,
   parseInput,
   readJsonBody,
   respond,
-  failureOf,
 } from "@/server/api";
-import { CameraReadingInputSchema } from "@/lib/schemas";
-import { storeCameraReading } from "@/usecases/store-camera-reading";
+import { verifySameOrigin } from "@/server/security";
+import { CameraReadingRequestSchema } from "@/server/route-schemas";
+import { submitCameraReading } from "@/usecases";
 
 export const dynamic = "force-dynamic";
+
 const ROUTE = "camera:readings";
 
+/** Saves derived on-device camera summary numbers for the signed-in patient when camera consent is enabled. */
 export async function POST(request: Request) {
+  if (!verifySameOrigin(request)) {
+    return respond({ ok: false, error: "Cross-origin POST rejected." }, 403);
+  }
+
   const sessionGuard = requireApiSession(request, "patient");
   if (!sessionGuard.ok) return sessionGuard.response;
-  
+
   const guard = guardPatient(request, ROUTE);
   if (!guard.ok) return guard.response;
-  
-  const input = parseInput(CameraReadingInputSchema, await readJsonBody(request));
+
+  const input = parseInput(CameraReadingRequestSchema, await readJsonBody(request));
   if (!input.ok) return input.response;
-  
+
   const { actor } = guard;
   const context = { route: ROUTE, actorKind: actor.kind };
 
-  if (input.data.participantId !== actor.patientId) {
-    return respond({ error: "participantId mismatch" }, 400);
-  }
-
   return orStorageFailure(context, async () => {
     const { ports } = getRouteDeps();
-    const result = await storeCameraReading(
-      actor,
-      {
-        patientId: actor.patientId,
-        date: input.data.date,
-        dayIndex: input.data.dayIndex ?? null,
-        taskId: input.data.taskId,
-        durationSec: input.data.durationSec,
-        sampleRateHz: input.data.sampleRateHz,
-        effectiveFps: input.data.effectiveFps,
-        faceDetectedRatio: input.data.faceDetectedRatio,
-        expressivityScore: input.data.expressivityScore,
-        smileFraction: input.data.smileFraction,
-        mouthSmileMean: input.data.mouthSmileMean ?? null,
-        mouthSmileSd: input.data.mouthSmileSd ?? null,
-        browInnerUpSd: input.data.browInnerUpSd ?? null,
-        browDownSd: input.data.browDownSd ?? null,
-        browOuterUpSd: input.data.browOuterUpSd ?? null,
-        eyeSquintSd: input.data.eyeSquintSd ?? null,
-        cheekSquintSd: input.data.cheekSquintSd ?? null,
-        jawOpenSd: input.data.jawOpenSd ?? null,
-        blendshapeStatsJson: input.data.blendshapeStatsJson ?? null,
-        yawSdDeg: input.data.yawSdDeg,
-        pitchSdDeg: input.data.pitchSdDeg,
-        rollSdDeg: input.data.rollSdDeg ?? null,
-        angularPathDegPerMin: input.data.angularPathDegPerMin,
-        translationSd: input.data.translationSd ?? null,
-        expressivityZScore: input.data.expressivityZScore ?? null,
-        headMovementZScore: input.data.headMovementZScore ?? null,
-        isSimulated: input.data.isSimulated,
-        source: input.data.source,
-      },
-      ports
-    );
-
-    if (!result.ok) {
-      if (result.error === "consent_required") {
-        return respond({ error: "consent_required" }, 403);
-      }
-      return respond({ error: result.error }, 400);
-    }
-
-    return respond({ ok: true, saved: true });
+    const result = await submitCameraReading(actor, { patientId: actor.patientId, ...input.data }, ports);
+    if (!result.ok) return failureOf(context, result.error);
+    return respond({ ok: true, saved: true, readingId: result.value.readingId });
   });
-
 }
-

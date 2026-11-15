@@ -8,8 +8,10 @@ import {
 } from "@/domain/camera";
 import {
   useCameraSession,
+  type CameraSaveStatus,
   type SessionState,
 } from "./camera/use-camera-session";
+import { saveCameraSessionNumbers } from "@/lib/camera-client";
 import { CameraIdleView } from "./camera/camera-idle-view";
 import { CameraPreparingView } from "./camera/camera-preparing-view";
 import { CameraRecordingView } from "./camera/camera-recording-view";
@@ -23,7 +25,7 @@ import {
   CameraPermissionDeniedView,
 } from "./camera/camera-problem-views";
 
-export type { SessionState };
+export type { SessionState, CameraSaveStatus };
 
 export interface CameraCheckSessionProps {
   durationMs?: number;
@@ -33,51 +35,31 @@ export interface CameraCheckSessionProps {
 }
 
 export async function saveCompletedCameraReading({
-  patientId,
   sessionResult,
-  canSave,
+  canSave = true,
 }: {
   patientId?: string;
   sessionResult: CameraSessionOutput & { hasNumbers: true };
   canSave?: boolean;
 }): Promise<boolean> {
-  if (!canSave || !patientId) return false;
-
-  try {
-    await fetch("/api/camera/readings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        participantId: patientId,
-        date: new Date().toISOString().split("T")[0],
-        durationSec:
-          Math.round(sessionResult.quality.sessionDurationMs / 1000) || 20,
-        effectiveFps: 30,
-        faceDetectedRatio: sessionResult.quality.faceShare,
-        expressivityScore: sessionResult.expressivity,
-        smileFraction: 0,
-        yawSdDeg: 1,
-        pitchSdDeg: 1,
-        angularPathDegPerMin: sessionResult.headMovement * 60,
-      }),
-    });
-    return true;
-  } catch {
-    return false;
-  }
+  if (canSave === false) return false;
+  const outcome = await saveCameraSessionNumbers(sessionResult);
+  return outcome.status === "saved";
 }
 
 function SessionStateBody({
   state,
   errorMessage,
+  saveStatus,
   sessionResult,
   onStart,
   onStop,
   onReset,
-  canSave = true,
+  canSave,
 }: {
   state: SessionState;
   errorMessage: string | null;
+  saveStatus: CameraSaveStatus;
   sessionResult: ReturnType<typeof useCameraSession>["sessionResult"];
   onStart: () => void;
   onStop: () => void;
@@ -94,6 +76,7 @@ function SessionStateBody({
       return sessionResult && sessionResult.hasNumbers ? (
         <CameraCompletedView
           sessionResult={sessionResult}
+          saveStatus={saveStatus}
           onReset={onReset}
           canSave={canSave}
         />
@@ -123,8 +106,7 @@ export function CameraCheckSession({
   durationMs: propDurationMs = 20_000,
   config = DEFAULT_CAMERA_SESSION_CONFIG,
   canSave = true,
-  patientId,
-}: CameraCheckSessionProps) {
+}: CameraCheckSessionProps = {}) {
   const [durationMs, setDurationMs] = useState<number>(propDurationMs);
 
   // Allow optional URL search parameter for automated testing (e.g. ?durationMs=2500)
@@ -144,6 +126,7 @@ export function CameraCheckSession({
   const {
     state,
     errorMessage,
+    saveStatus,
     progressPercent,
     remainingSec,
     liveAnnouncement,
@@ -153,22 +136,6 @@ export function CameraCheckSession({
     handleStop,
     handleReset,
   } = useCameraSession({ durationMs, config });
-
-  useEffect(() => {
-    if (
-      state === "completed" &&
-      sessionResult &&
-      sessionResult.hasNumbers &&
-      canSave &&
-      patientId
-    ) {
-      void saveCompletedCameraReading({
-        patientId,
-        sessionResult,
-        canSave,
-      });
-    }
-  }, [state, sessionResult, canSave, patientId]);
 
   return (
     <div className="space-y-6">
@@ -195,6 +162,7 @@ export function CameraCheckSession({
       <SessionStateBody
         state={state}
         errorMessage={errorMessage}
+        saveStatus={saveStatus}
         sessionResult={sessionResult}
         onStart={handleStart}
         onStop={handleStop}

@@ -36,5 +36,5 @@ export {
   type GetPatientConsentInput,
   type GetPatientConsentResult,
 } from './get-patient-consent';
-export { storeCameraReading, type StoreCameraReadingInput } from './store-camera-reading';
+export { submitCameraReading, type SubmitCameraReadingInput } from './submit-camera-reading';
 export type * from './ports';

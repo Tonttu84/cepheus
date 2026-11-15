@@ -1,20 +1,78 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import type { CameraSessionOutput } from "@/domain/camera";
 import { SimulatedBadge } from "@/components/simulated-badge";
+import type { CameraSaveStatus } from "./use-camera-session";
 
 interface CameraCompletedViewProps {
   sessionResult: CameraSessionOutput & { hasNumbers: true };
+  saveStatus?: CameraSaveStatus;
   onReset: () => void;
   canSave?: boolean;
 }
 
+function SaveStatusBanner({ saveStatus }: { saveStatus: CameraSaveStatus }) {
+  if (saveStatus === "idle") return null;
+  if (saveStatus === "saving") {
+    return (
+      <p
+        role="status"
+        data-testid="camera-save-status"
+        className="rounded-xl border border-border-hairline bg-surface-subtle px-4 py-3 text-xs text-ink-secondary"
+      >
+        Saving derived movement numbers…
+      </p>
+    );
+  }
+  if (saveStatus === "saved") {
+    return (
+      <p
+        role="status"
+        data-testid="camera-save-status"
+        className="rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3 text-xs font-medium text-accent-sage-hover"
+      >
+        Two derived movement numbers saved. No video or image was stored.
+      </p>
+    );
+  }
+  if (saveStatus === "consent_paused") {
+    return (
+      <p
+        role="status"
+        data-testid="camera-save-status"
+        className="rounded-xl border border-border-hairline bg-surface-subtle px-4 py-3 text-xs text-ink-secondary"
+      >
+        Not saved because camera check-in consent is paused. You can turn it on
+        anytime in{" "}
+        <Link href="/monitoring" className="font-semibold underline">
+          Sensors &amp; Monitoring
+        </Link>
+        .
+      </p>
+    );
+  }
+  return (
+    <p
+      role="status"
+      data-testid="camera-save-status"
+      className="rounded-xl border border-amber-300/80 bg-amber-50/70 px-4 py-3 text-xs font-medium text-amber-950"
+    >
+      Measurements could not be saved right now; no video was stored.
+    </p>
+  );
+}
+
 export function CameraCompletedView({
   sessionResult,
+  saveStatus = "idle",
   onReset,
-  canSave = true,
+  canSave,
 }: CameraCompletedViewProps) {
+  const effectiveSaveStatus: CameraSaveStatus =
+    saveStatus === "idle" && canSave === false ? "consent_paused" : saveStatus;
+
   return (
     <section
       data-testid="camera-completed-card"
@@ -36,16 +94,9 @@ export function CameraCompletedView({
           Camera access has been closed and all tracks were stopped. The video
           frames were analysed in memory and discarded.
         </p>
-        {!canSave ? (
-          <p
-            role="status"
-            className="mt-2 text-xs font-medium text-ink-muted"
-          >
-            Saving is off. Camera wellbeing check is paused or not consented;
-            measurements are not saved.
-          </p>
-        ) : null}
       </div>
+
+      <SaveStatusBanner saveStatus={effectiveSaveStatus} />
 
       <details
         data-testid="camera-movement-details"

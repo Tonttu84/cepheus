@@ -18,9 +18,9 @@ import { createPatientRepository, getClinicPatientIds } from "./patients";
 import { createPhq9Repository } from "./phq9";
 import { createRoundRepository } from "./rounds";
 import { createSuggestionRepository } from "./suggestions";
-import { createCameraRepository } from "./camera";
+import { createCameraReadingRepository, createCameraRepository } from "./camera";
 
-export { getClinicPatientIds };
+export { getClinicPatientIds, createCameraReadingRepository, createCameraRepository };
 
 /**
  * The use case ports on PostgreSQL. Item answers are written to the database
@@ -49,6 +49,7 @@ export function createPrismaPorts(
     extraAnswers: createExtraAnswerRepository(ctx),
     homeMonitoring: createHomeMonitoringRepository(ctx),
     camera: createCameraRepository(ctx),
+    cameraReadings: createCameraReadingRepository(ctx),
     unitOfWork: ctx.unitOfWork,
     suggestions: createSuggestionRepository(ctx),
   };

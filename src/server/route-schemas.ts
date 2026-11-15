@@ -117,3 +117,26 @@ export const RecordNurseCallRequestSchema = z
   .strict()
   .meta({ description: "Record the outcome of a nurse call about a flag" });
 
+export const CameraReadingRequestSchema = z
+  .object({
+    taskId: z
+      .string()
+      .min(1)
+      .max(64)
+      .regex(/^[a-z0-9_]+$/)
+      .optional()
+      .meta({ description: "Camera check task identifier" }),
+    durationSec: z.number().finite().gt(0).max(600).meta({ description: "Clip duration in seconds" }),
+    effectiveFps: z.number().finite().min(0).max(120).meta({ description: "Analysed frames per second" }),
+    faceDetectedRatio: z.number().finite().min(0).max(1).meta({ description: "Share of frames with face detected (0..1)" }),
+    expressivityScore: z.number().finite().min(0).max(10).meta({ description: "Facial movement dispersion summary" }),
+    smileFraction: z.number().finite().min(0).max(1).optional().meta({ description: "Fraction of frames with smile expression (0..1)" }),
+    yawSdDeg: z.number().finite().min(0).max(180).optional().meta({ description: "Yaw angle standard deviation (degrees)" }),
+    pitchSdDeg: z.number().finite().min(0).max(180).optional().meta({ description: "Pitch angle standard deviation (degrees)" }),
+    rollSdDeg: z.number().finite().min(0).max(180).nullable().optional().meta({ description: "Roll angle standard deviation (degrees)" }),
+    angularPathDegPerMin: z.number().finite().min(0).max(10_800).meta({ description: "Head angular movement speed (deg/min)" }),
+  })
+  .strict()
+  .meta({ description: "Derived on-device camera kinematics numbers only; never video or images" });
+
+

@@ -8,6 +8,7 @@ import {
   type CameraSessionConfig,
   type CameraSessionOutput,
 } from "@/domain/camera";
+import { saveCameraSessionNumbers } from "@/lib/camera-client";
 import {
   attachStreamToVideo,
   obtainCameraMediaStream,
@@ -32,6 +33,13 @@ export type SessionState =
   | "no_face_found"
   | "error";
 
+export type CameraSaveStatus =
+  | "idle"
+  | "saving"
+  | "saved"
+  | "consent_paused"
+  | "error";
+
 export interface UseCameraSessionOptions {
   durationMs: number;
   config?: CameraSessionConfig;
@@ -43,6 +51,7 @@ export function useCameraSession({
 }: UseCameraSessionOptions) {
   const [state, setState] = useState<SessionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<CameraSaveStatus>("idle");
   const [progressPercent, setProgressPercent] = useState<number>(0);
   const [remainingSec, setRemainingSec] = useState<number>(
     Math.ceil(durationMs / 1000)
@@ -91,7 +100,7 @@ export function useCameraSession({
   }, [releaseCamera]);
 
   const finishSession = useCallback(
-    (frames: CameraFrameInput[], totalDurationMs: number) => {
+    (frames: CameraFrameInput[], totalDurationMs: number, currentToken: number) => {
       releaseCamera();
 
       const result = evaluateSessionResult(
@@ -118,9 +127,16 @@ export function useCameraSession({
         );
       } else {
         setState("completed");
+        setSaveStatus("saving");
         setLiveAnnouncement(
           "Camera check-in complete. Movement measurements are ready."
         );
+        void saveCameraSessionNumbers(result.value).then((outcome) => {
+          if (!isMountedRef.current || sessionTokenRef.current !== currentToken) {
+            return;
+          }
+          setSaveStatus(outcome.status);
+        });
       }
     },
     [config, durationMs, releaseCamera]
@@ -143,7 +159,7 @@ export function useCameraSession({
       });
 
       if (tick.done) {
-        finishSession(recordedFramesRef.current, tick.elapsedMs);
+        finishSession(recordedFramesRef.current, tick.elapsedMs, currentToken);
         return;
       }
 
@@ -254,6 +270,7 @@ export function useCameraSession({
     releaseCamera();
     setErrorMessage(null);
     setSessionResult(null);
+    setSaveStatus("idle");
     recordedFramesRef.current = [];
     setProgressPercent(0);
     setRemainingSec(Math.ceil(durationMs / 1000));
@@ -292,6 +309,7 @@ export function useCameraSession({
     releaseCamera();
     setErrorMessage(null);
     setSessionResult(null);
+    setSaveStatus("idle");
     recordedFramesRef.current = [];
     setProgressPercent(0);
     setRemainingSec(Math.ceil(durationMs / 1000));
@@ -302,6 +320,7 @@ export function useCameraSession({
   return {
     state,
     errorMessage,
+    saveStatus,
     progressPercent,
     remainingSec,
     liveAnnouncement,

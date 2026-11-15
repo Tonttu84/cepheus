@@ -1,8 +1,8 @@
 import type { z } from "zod";
 import { createDocument, type ZodOpenApiOperationObject, type ZodOpenApiPathsObject } from "zod-openapi";
-import { CameraReadingInputSchema } from "@/lib/schemas";
 import {
   AcknowledgeCrisisEventRequestSchema,
+  CameraReadingRequestSchema,
   CheckInCrisisRequestSchema,
   CheckInExtraAnswerRequestSchema,
   CheckInGad7RequestSchema,
@@ -109,8 +109,8 @@ export const API_ROUTES: readonly RouteEntry[] = [
     path: "/api/camera/readings",
     method: "post",
     caller: "patient",
-    summary: "Store a camera check reading of summary numbers",
-    body: CameraReadingInputSchema,
+    summary: "Save derived on-device camera summary numbers when camera consent is enabled",
+    body: CameraReadingRequestSchema,
   },
   { path: "/api/openapi.json", method: "get", caller: "anyone", summary: "This document" },
 ];

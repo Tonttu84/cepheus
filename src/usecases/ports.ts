@@ -266,7 +266,9 @@ export interface SuggestionRepository {
 }
 
 export interface StoredCameraReading {
-  readonly participantId: string;
+  readonly id?: string;
+  readonly patientId: string;
+  readonly participantId?: string;
   readonly date: string;
   readonly dayIndex?: number | null;
   readonly taskId?: string;
@@ -275,7 +277,7 @@ export interface StoredCameraReading {
   readonly effectiveFps: number;
   readonly faceDetectedRatio: number;
   readonly expressivityScore: number;
-  readonly smileFraction: number;
+  readonly smileFraction?: number;
   readonly mouthSmileMean?: number | null;
   readonly mouthSmileSd?: number | null;
   readonly browInnerUpSd?: number | null;
@@ -285,8 +287,8 @@ export interface StoredCameraReading {
   readonly cheekSquintSd?: number | null;
   readonly jawOpenSd?: number | null;
   readonly blendshapeStatsJson?: string | null;
-  readonly yawSdDeg: number;
-  readonly pitchSdDeg: number;
+  readonly yawSdDeg?: number;
+  readonly pitchSdDeg?: number;
   readonly rollSdDeg?: number | null;
   readonly angularPathDegPerMin: number;
   readonly translationSd?: number | null;
@@ -296,10 +298,12 @@ export interface StoredCameraReading {
   readonly source?: string;
 }
 
-export interface CameraRepository {
+export interface CameraReadingRepository {
   getCameraReadings(patientId: string): Promise<readonly StoredCameraReading[]>;
-  saveCameraReading(reading: StoredCameraReading): Promise<void>;
+  saveCameraReading(reading: StoredCameraReading): Promise<StoredCameraReading>;
 }
+
+export type CameraRepository = CameraReadingRepository;
 
 /**
  * The real implementation must give a use case a consistent view for one patient 
@@ -342,7 +346,8 @@ export interface Ports {
   readonly baselineNotWell: BaselineNotWellRepository;
   readonly accessLog: AccessLogRepository;
   readonly extraAnswers: ExtraAnswerRepository;
-  readonly camera?: CameraRepository;
+  readonly camera?: CameraReadingRepository;
+  readonly cameraReadings?: CameraReadingRepository;
   readonly extraItemsConfig?: ExtraItemsConfig;
   readonly homeMonitoring?: HomeMonitoringRepository;
   readonly unitOfWork: UnitOfWork;
@@ -410,4 +415,10 @@ export interface SubmitCrisisButtonResult {
   readonly roundNumber: number;
   readonly duplicate?: boolean;
 }
+
+export interface SubmitCameraReadingResult {
+  readonly saved: boolean;
+  readonly readingId: string;
+}
+
 

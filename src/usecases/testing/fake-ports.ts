@@ -27,7 +27,7 @@ import type {
   SuggestionStatus,
   SuggestionRepository,
   StoredCameraReading,
-  CameraRepository,
+  CameraReadingRepository,
   UnitOfWork,
   Ports,
   HomeMonitoringFacts,
@@ -65,6 +65,7 @@ interface FakeStorageState {
   extraAnswers: Record<string, StoredExtraAnswer[]>;
   suggestions: Record<string, StoredSuggestion[]>;
   camera: Record<string, StoredCameraReading[]>;
+  cameraReadings: Record<string, StoredCameraReading[]>;
 }
 
 function createEmptyState(): FakeStorageState {
@@ -84,6 +85,7 @@ function createEmptyState(): FakeStorageState {
     extraAnswers: {},
     suggestions: {},
     camera: {},
+    cameraReadings: {},
   };
 }
 
@@ -492,21 +494,37 @@ export class FakeSuggestionRepository implements SuggestionRepository {
   }
 }
 
-export class FakeCameraRepository implements CameraRepository {
+export class FakeCameraReadingRepository implements CameraReadingRepository {
+  private seq = 0;
+
   constructor(private ctx: FakeStorageContext) {}
 
   async getCameraReadings(patientId: string): Promise<readonly StoredCameraReading[]> {
-    const list = this.ctx.state.camera[patientId] ?? [];
+    const list = this.ctx.state.cameraReadings[patientId] ?? this.ctx.state.camera[patientId] ?? [];
     return structuredClone(list);
   }
 
-  async saveCameraReading(reading: StoredCameraReading): Promise<void> {
-    if (!this.ctx.state.camera[reading.participantId]) {
-      this.ctx.state.camera[reading.participantId] = [];
+  async saveCameraReading(reading: StoredCameraReading): Promise<StoredCameraReading> {
+    const pId = reading.patientId || reading.participantId || "";
+    if (!this.ctx.state.cameraReadings[pId]) {
+      this.ctx.state.cameraReadings[pId] = [];
     }
-    this.ctx.state.camera[reading.participantId].push(structuredClone(reading));
+    if (!this.ctx.state.camera[pId]) {
+      this.ctx.state.camera[pId] = [];
+    }
+    const stored: StoredCameraReading = {
+      ...structuredClone(reading),
+      patientId: pId,
+      participantId: pId,
+      id: reading.id ?? `cam-${++this.seq}`,
+    };
+    this.ctx.state.cameraReadings[pId].push(stored);
+    this.ctx.state.camera[pId].push(stored);
+    return structuredClone(stored);
   }
 }
+
+export const FakeCameraRepository = FakeCameraReadingRepository;
 
 export class FakeUnitOfWork implements UnitOfWork {
   public failNext = false;
@@ -631,6 +649,8 @@ export function createFakePorts(
   const ctx = new FakeStorageContext();
   const unitOfWork = new FakeUnitOfWork(ctx);
 
+  const cameraRepo = new FakeCameraReadingRepository(ctx);
+
   const ports: Ports = {
     clock,
     patients: new FakePatientRepository(ctx),
@@ -644,7 +664,8 @@ export function createFakePorts(
     baselineNotWell: new FakeBaselineNotWellRepository(ctx),
     accessLog: new FakeAccessLogRepository(ctx),
     extraAnswers: new FakeExtraAnswerRepository(ctx),
-    camera: new FakeCameraRepository(ctx),
+    camera: cameraRepo,
+    cameraReadings: cameraRepo,
     extraItemsConfig,
     homeMonitoring: new FakeHomeMonitoringRepository(),
     unitOfWork,
