@@ -168,4 +168,62 @@ describe("QuestionInput answer processing (question-input.ts)", () => {
     expect(onNotToday).toHaveBeenCalled();
     expect(onSelectScore).not.toHaveBeenCalled();
   });
+
+  it("triggers not today on skip phrases during PHQ-9 question", () => {
+    const onSelectScore = vi.fn();
+    const onNotToday = vi.fn();
+    const onUnclearHint = vi.fn();
+
+    processQuestionAnswer({
+      rawAnswer: "skip",
+      mode: "phq9",
+      itemId: "3",
+      callbacks: {
+        onSelectScore,
+        onNotToday,
+        onUnclearHint,
+      },
+    });
+
+    expect(onNotToday).toHaveBeenCalled();
+    expect(onSelectScore).not.toHaveBeenCalled();
+  });
+
+  it("triggers not today on skip phrases during GAD-7 question", () => {
+    const onSelectScore = vi.fn();
+    const onNotToday = vi.fn();
+    const onUnclearHint = vi.fn();
+
+    processQuestionAnswer({
+      rawAnswer: "not today",
+      mode: "gad7",
+      itemId: "2",
+      callbacks: {
+        onSelectScore,
+        onNotToday,
+        onUnclearHint,
+      },
+    });
+
+    expect(onNotToday).toHaveBeenCalled();
+    expect(onSelectScore).not.toHaveBeenCalled();
+  });
+
+  it("safely handles skip phrase when onNotToday callback is omitted", () => {
+    const onSelectScore = vi.fn();
+    const onUnclearHint = vi.fn();
+
+    processQuestionAnswer({
+      rawAnswer: "skip",
+      mode: "phq9",
+      itemId: "1",
+      callbacks: {
+        onSelectScore,
+        onUnclearHint,
+      },
+    });
+
+    expect(onSelectScore).not.toHaveBeenCalled();
+    expect(onUnclearHint).not.toHaveBeenCalled();
+  });
 });
