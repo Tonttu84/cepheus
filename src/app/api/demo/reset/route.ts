@@ -7,7 +7,11 @@ import {
   isDemoEnabled,
 } from "@/server/api";
 import { requireApiSession } from "@/server/auth";
-import { getSimulatedPatientSummaries, resetSimulatedData } from "@/server/db";
+import {
+  checkDemoNeedsReset,
+  getSimulatedPatientSummaries,
+  resetSimulatedData,
+} from "@/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +35,7 @@ export async function POST(request: NextRequest) {
   const offsetMs = getDemoOffsetMs();
   const switches = getSwitches();
   const patients = await getSimulatedPatientSummaries();
+  const needsReset = await checkDemoNeedsReset(undefined, new Date(now));
 
   return NextResponse.json({
     ok: true,
@@ -38,6 +43,7 @@ export async function POST(request: NextRequest) {
     now,
     offsetDays,
     offsetMs,
+    needsReset,
     switches,
     patients,
   });

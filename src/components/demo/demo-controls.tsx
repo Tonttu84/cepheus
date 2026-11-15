@@ -24,6 +24,7 @@ interface DemoState {
   readonly now: string;
   readonly offsetDays: number;
   readonly offsetMs: number;
+  readonly needsReset: boolean;
   readonly switches: DemoSwitches;
   readonly patients: readonly SimulatedPatientSummary[];
 }
@@ -84,11 +85,20 @@ function ClockSection({
         </span>
       </div>
 
+      {state.needsReset ? (
+        <p
+          data-testid="demo-needs-reset"
+          className="mt-4 text-xs font-semibold text-rose-700"
+        >
+          Stored demo data is ahead of current time. Please press Reset.
+        </p>
+      ) : null}
+
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button
           type="button"
           data-testid="btn-advance-1d"
-          disabled={isPending}
+          disabled={isPending || state.needsReset}
           onClick={() => onAdvance(1)}
           className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border-hairline bg-surface-subtle px-4 py-2.5 text-sm font-semibold text-ink-primary hover:bg-surface-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage disabled:opacity-50"
         >
@@ -97,7 +107,7 @@ function ClockSection({
         <button
           type="button"
           data-testid="btn-advance-3d"
-          disabled={isPending}
+          disabled={isPending || state.needsReset}
           onClick={() => onAdvance(3)}
           className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border-hairline bg-surface-subtle px-4 py-2.5 text-sm font-semibold text-ink-primary hover:bg-surface-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage disabled:opacity-50"
         >
@@ -106,7 +116,7 @@ function ClockSection({
         <button
           type="button"
           data-testid="btn-advance-1w"
-          disabled={isPending}
+          disabled={isPending || state.needsReset}
           onClick={() => onAdvance(7)}
           className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border-hairline bg-surface-subtle px-4 py-2.5 text-sm font-semibold text-ink-primary hover:bg-surface-card focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage disabled:opacity-50"
         >
@@ -115,7 +125,7 @@ function ClockSection({
         <button
           type="button"
           data-testid="btn-advance-2w"
-          disabled={isPending}
+          disabled={isPending || state.needsReset}
           onClick={() => onAdvance(14)}
           className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-accent-sage px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-sage/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage disabled:opacity-50"
         >

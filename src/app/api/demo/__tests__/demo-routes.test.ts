@@ -15,6 +15,7 @@ import {
   setSwitch,
 } from "@/server/api";
 import { SESSION_COOKIE_NAME, sealSession } from "@/server/auth";
+import { checkDemoNeedsReset } from "@/server/db";
 
 // Mock database operations for unit test of routes
 vi.mock(import("@/server/db"), async (importOriginal) => {
@@ -31,6 +32,7 @@ vi.mock(import("@/server/db"), async (importOriginal) => {
       },
     ]),
     getSimulatedPatientIds: vi.fn().mockResolvedValue(["sim-p-1"]),
+    checkDemoNeedsReset: vi.fn().mockResolvedValue(false),
     resetSimulatedData: vi.fn().mockImplementation(async () => {
       resetDemoClock();
       resetSettings();
@@ -214,6 +216,30 @@ describe("Demo API routes (src/app/api/demo/**)", () => {
       expect(json.offsetDays).toBe(0);
       expect(json.switches).toBeDefined();
       expect(Array.isArray(json.patients)).toBe(true);
+      expect(json.needsReset).toBe(false);
+    });
+
+    it("GET /api/demo reports needsReset: true when stored data is ahead of real time", async () => {
+      vi.mocked(checkDemoNeedsReset).mockResolvedValueOnce(true);
+      const req = createRequest("/api/demo", { session: STAFF_SESSION });
+      const res = await getDemo(req);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.needsReset).toBe(true);
+    });
+
+    it("POST /api/demo/advance rejects advance when needsReset is true", async () => {
+      vi.mocked(checkDemoNeedsReset).mockResolvedValueOnce(true);
+      const req = createRequest("/api/demo/advance", {
+        method: "POST",
+        body: { days: 1 },
+        session: STAFF_SESSION,
+      });
+      const res = await postAdvance(req);
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.ok).toBe(false);
+      expect(json.error).toMatch(/reset/i);
     });
 
     it("GET /api/demo?moment=small_dip preserves foundation backwards compatibility", async () => {

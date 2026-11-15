@@ -15,7 +15,11 @@ import {
   setSwitch,
 } from "@/server/api";
 import { requireApiSession } from "@/server/auth";
-import { getSimulatedPatientSummaries, resetSimulatedData } from "@/server/db";
+import {
+  checkDemoNeedsReset,
+  getSimulatedPatientSummaries,
+  resetSimulatedData,
+} from "@/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +96,7 @@ export async function GET(request: NextRequest) {
   const offsetMs = getDemoOffsetMs();
   const switches = getSwitches();
   const patients = await getSimulatedPatientSummaries();
+  const needsReset = await checkDemoNeedsReset(undefined, new Date(now));
 
   return NextResponse.json({
     ok: true,
@@ -99,6 +104,7 @@ export async function GET(request: NextRequest) {
     now,
     offsetDays,
     offsetMs,
+    needsReset,
     switches,
     patients,
   });
@@ -133,6 +139,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (parsed.data.action === "advance") {
+    const isResetRequired = await checkDemoNeedsReset(undefined, new Date(getDemoClock().now()));
+    if (isResetRequired) {
+      return NextResponse.json(
+        { ok: false, error: "Reset required: stored demo data is ahead of current time" },
+        { status: 400 }
+      );
+    }
     const adv = await advanceDemoAndRunSystemWork(parsed.data.days);
     if (!adv.ok) {
       return NextResponse.json({ ok: false, error: adv.error }, { status: 400 });
@@ -148,6 +161,7 @@ export async function POST(request: NextRequest) {
   const offsetMs = getDemoOffsetMs();
   const switches = getSwitches();
   const patients = await getSimulatedPatientSummaries();
+  const needsReset = await checkDemoNeedsReset(undefined, new Date(now));
 
   return NextResponse.json({
     ok: true,
@@ -155,6 +169,7 @@ export async function POST(request: NextRequest) {
     now,
     offsetDays,
     offsetMs,
+    needsReset,
     switches,
     patients,
   });

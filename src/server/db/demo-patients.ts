@@ -66,3 +66,43 @@ export async function getSimulatedPatientIds(
   });
   return participants.map((p) => p.id);
 }
+
+/**
+ * Checks whether stored data for simulated participants is ahead of the given
+ * moment (e.g. after a server restart when in-memory offset returned to 0).
+ * Specifically checks for closed rounds or clinic flags dated after `now`.
+ */
+export async function checkDemoNeedsReset(
+  prisma: PrismaClient = getPrisma(),
+  now: Date = new Date()
+): Promise<boolean> {
+  const nowIsoDate = now.toISOString().slice(0, 10);
+
+  const futureClosedRound = await prisma.checkInRound.findFirst({
+    where: {
+      isSimulated: true,
+      status: { not: "open" },
+      OR: [
+        { scheduledAt: { gt: now } },
+        { respondedAt: { gt: now } },
+        { date: { gt: nowIsoDate } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (futureClosedRound) return true;
+
+  const futureFlag = await prisma.clinicFlag.findFirst({
+    where: {
+      isSimulated: true,
+      OR: [
+        { createdAt: { gt: now } },
+        { sinceDate: { gt: nowIsoDate } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  return futureFlag !== null;
+}

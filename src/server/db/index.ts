@@ -52,5 +52,6 @@ export { resetSimulatedData, type ResetOptions } from "./reset";
 export {
   getSimulatedPatientSummaries,
   getSimulatedPatientIds,
+  checkDemoNeedsReset,
   type SimulatedPatientDemoSummary,
 } from "./demo-patients";

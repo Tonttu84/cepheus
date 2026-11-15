@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getPrisma } from "@/lib/db";
 import { advanceDemoAndRunSystemWork, getDemoOffsetDays, resetDemoClock } from "@/server/api";
 import { getSimulatedPatientSummaries, resetSimulatedData } from "@/server/db";
+import { checkDemoNeedsReset } from "@/server/db/demo-patients";
 import { sharedAnswerStore } from "@/server/db/answer-store";
 import { seedDatabase } from "../../../../prisma/seed";
 
@@ -170,5 +171,25 @@ describe("Demo advance and reset database integration (*.dbtest.ts)", () => {
         where: { id: nonSimulated.id },
       });
     }
+  });
+
+  it("detects when stored simulated data is ahead of real time (needs reset after restart)", async () => {
+    // 1. Initial seeded state: not ahead of time
+    expect(await checkDemoNeedsReset(prisma, new Date())).toBe(false);
+
+    // 2. Advance demo time 14 days and run system work (creates future closed rounds/flags)
+    await advanceDemoAndRunSystemWork(14);
+
+    // 3. Simulate server restart: offset returns to 0 in memory, now is real time
+    resetDemoClock();
+    expect(getDemoOffsetDays()).toBe(0);
+
+    // 4. Stored closed rounds and flags for simulated patients are now dated after real time
+    const needsResetAfterRestart = await checkDemoNeedsReset(prisma, new Date());
+    expect(needsResetAfterRestart).toBe(true);
+
+    // 5. Reset restores clean state, so needsReset returns to false
+    await resetSimulatedData(prisma);
+    expect(await checkDemoNeedsReset(prisma, new Date())).toBe(false);
   });
 });
