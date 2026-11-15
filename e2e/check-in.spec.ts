@@ -157,9 +157,11 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await phq1Input.fill("not today");
     await page.getByTestId("type-submit-1").click();
 
-    // Status message appears confirming skip
+    // Status message appears confirming skip and plain save explanation
     const statusMessage = page.getByRole("status");
     await expect(statusMessage).toBeVisible();
+    await expect(statusMessage).toContainText("The answers of this round are saved");
+    await expect(statusMessage).toContainText("never scored as zero");
     await expect(statusMessage).toContainText("simulated");
 
     // Questionnaire section is dismissed
@@ -192,12 +194,44 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await gad7Input1.fill("skip");
     await page.locator('[data-testid="type-submit-1"]').last().click();
 
-    // Status message appears confirming skip
+    // Status message appears confirming skip and plain save explanation
     const statusMessage = page.getByRole("status");
     await expect(statusMessage).toBeVisible();
+    await expect(statusMessage).toContainText("The answers of this round are saved");
+    await expect(statusMessage).toContainText("never scored as zero");
     await expect(statusMessage).toContainText("simulated");
 
     // GAD-7 section is dismissed
     await expect(gad7Section).toHaveCount(0);
+  });
+
+  test("7. page header and completion status show true plain sentence without preview claims", async ({
+    page,
+    context,
+  }) => {
+    await signInAsPatient(page, context, "P-SIM-001");
+    await page.goto("/check-in");
+
+    // Verify page header contains the true plain sentence
+    const header = page.locator("header");
+    await expect(header).toContainText("The answers of this round are saved");
+    await expect(header).toContainText("never scored as zero");
+    await expect(header).toContainText("simulated");
+    await expect(header).not.toContainText("nothing is sent yet");
+
+    // Complete the two taps
+    const choiceMood = page.getByRole("button", { name: "Mood: 3 of 4" });
+    await choiceMood.click();
+    const choiceInterest = page.getByRole("button", { name: "Interest: 3 of 4" });
+    await choiceInterest.click();
+
+    // Completion status message appears with true sentence
+    const statusMessage = page.getByRole("status");
+    await expect(statusMessage).toBeVisible();
+    await expect(statusMessage).toContainText("The answers of this round are saved");
+    await expect(statusMessage).toContainText("never scored as zero");
+    await expect(statusMessage).toContainText("simulated");
+    await expect(statusMessage).not.toContainText("nothing is sent yet");
+    await expect(statusMessage).not.toContainText("preview");
   });
 });

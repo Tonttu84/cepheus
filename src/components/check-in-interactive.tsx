@@ -386,7 +386,9 @@ function CheckInStatusBanners({
           className="mt-6 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
           <p className="font-semibold">
-            This is a preview of a simulated round and nothing is sent yet.
+            The answers of this round are saved. A round left unanswered is
+            recorded as not answered and never scored as zero, and data for
+            sample patients is simulated.
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
             Taking a day off from check-ins is completely fine.
@@ -400,10 +402,12 @@ function CheckInStatusBanners({
           className="mt-6 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
           <p className="font-semibold">
-            This is a preview of a simulated round and nothing is sent yet.
+            The answers of this round are saved. A round left unanswered is
+            recorded as not answered and never scored as zero, and data for
+            sample patients is simulated.
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
-            All {itemCount} answers selected. Nothing else needed right now.
+            All {itemCount} answers selected.
           </p>
         </div>
       ) : null}

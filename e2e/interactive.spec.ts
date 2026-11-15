@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { signInAsPatient, signInAsStaff } from "./helpers";
 
 test.describe("Interactive Redesign Fixes & Invariants", () => {
-  test("1. /check-in handles scale tapping with accessible names, Not Today skip, and no saving claims", async ({
+  test("1. /check-in handles scale tapping with accessible names, Not Today skip, and plain save explanation", async ({
     page,
     context,
   }) => {
@@ -28,16 +28,12 @@ test.describe("Interactive Redesign Fixes & Invariants", () => {
     const notTodayButton = page.getByTestId("not-today-button");
     await notTodayButton.click();
 
-    // Assert preview status message appears and contains "simulated"
+    // Assert status message explains answers are saved, missed is never scored zero, and data is simulated
     const statusMessage = page.getByRole("status");
     await expect(statusMessage).toBeVisible();
+    await expect(statusMessage).toContainText("The answers of this round are saved");
+    await expect(statusMessage).toContainText("never scored as zero");
     await expect(statusMessage).toContainText("simulated");
-
-    // Assert page contains none of the words "saved", "recorded", "queued"
-    const bodyText = await page.locator("body").innerText();
-    expect(bodyText.toLowerCase()).not.toContain("saved");
-    expect(bodyText.toLowerCase()).not.toContain("recorded");
-    expect(bodyText.toLowerCase()).not.toContain("queued");
   });
 
   test("2. /patient action buttons show simulated status message", async ({
