@@ -233,4 +233,61 @@ describe("getExpressivityShowcase use case", () => {
       }
     }
   });
+
+  it("leaves out readings with NaN and 1.5 expressivity scores among good readings", async () => {
+    setSwitch("expressivityShowcase", true);
+    const noisyPatient = "patient-noisy";
+    await ports.patients.savePatient({
+      patientId: noisyPatient,
+      clinicId: CLINIC_ID,
+      schedule: {
+        weekdays: [1, 4],
+        timeOfDay: "18:00",
+        timeZone: "Europe/Helsinki",
+        enrolmentDate: "2026-11-16",
+      },
+      consent: {
+        taking_part: true,
+        methods: { ring: false, camera: true },
+        rule_check: true,
+        facial_movement_usual_range: true,
+      },
+    });
+
+    // 6 valid readings (5 past + 1 latest) with a NaN and a 1.5 interspersed
+    const scores = [0.2, Number.NaN, 0.25, 1.5, 0.3, 0.35, 0.4, 0.32];
+    for (let i = 0; i < scores.length; i++) {
+      await ports.camera?.saveCameraReading({
+        participantId: noisyPatient,
+        date: `2026-11-${String(i + 1).padStart(2, "0")}`,
+        dayIndex: i,
+        taskId: "check_in_clip_60s",
+        durationSec: 60,
+        sampleRateHz: 10,
+        effectiveFps: 30,
+        faceDetectedRatio: 0.95,
+        expressivityScore: scores[i],
+        smileFraction: 0,
+        yawSdDeg: 1,
+        pitchSdDeg: 1,
+        angularPathDegPerMin: 100,
+      });
+    }
+
+    const result = await getExpressivityShowcase(
+      staffActor,
+      { patientId: noisyPatient },
+      ports
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).not.toBeNull();
+      expect(result.value?.status).toBe("within_usual_range");
+      if (result.value && result.value.status !== "insufficient_history") {
+        expect(result.value.sampleCount).toBe(5);
+        expect(result.value.mean).toBeCloseTo(0.3, 2);
+      }
+    }
+  });
 });

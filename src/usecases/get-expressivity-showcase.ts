@@ -86,7 +86,9 @@ export async function getExpressivityShowcase(
   }
 
   const readings = await ports.camera.getCameraReadings(input.patientId);
-  const scores = readings.map((r) => r.expressivityScore);
+  const scores = readings
+    .map((r) => r.expressivityScore)
+    .filter((s): s is number => typeof s === "number" && Number.isFinite(s) && s >= 0 && s <= 1);
   if (scores.length === 0) {
     return { ok: true, value: { status: "insufficient_history", kind: "insufficient_history", count: 0, minimum: 5 } };
   }
