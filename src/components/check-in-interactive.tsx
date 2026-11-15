@@ -180,7 +180,7 @@ function CrisisPathBanner() {
           Direct connection to a person — nothing automated in between
         </h3>
       </div>
-      <p className="mt-1 text-xs text-rose-900">
+      <p className="mt-1 text-sm text-rose-900">
         Emergency help and support are available right now. You do not need to
         finish this check-in to reach out.
       </p>
@@ -227,7 +227,7 @@ function Phq9Section({
         <h3 className="font-display text-lg font-semibold text-ink-primary sm:text-xl">
           Fortnightly PHQ-9 questions
         </h3>
-        <p className="text-xs text-ink-secondary">
+        <p className="text-sm text-ink-secondary">
           Over the last 2 weeks, how often have you been bothered by any of the
           following problems?
         </p>
@@ -294,7 +294,7 @@ function Gad7Section({
         <h3 className="font-display text-lg font-semibold text-ink-primary sm:text-xl">
           Fortnightly GAD-7 anxiety questions
         </h3>
-        <p className="text-xs text-ink-secondary">
+        <p className="text-sm text-ink-secondary">
           Over the last 2 weeks, how often have you been bothered by the following problems?
         </p>
       </div>
@@ -363,6 +363,7 @@ function CheckInStatusBanners({
           Please{" "}
           <a
             href="/sign-in"
+            data-testid="auth-required-signin-link"
             className="font-semibold text-ink-primary underline hover:text-accent-sage"
           >
             sign in
@@ -392,7 +393,7 @@ function CheckInStatusBanners({
             recorded as not answered and never scored as zero, and data for
             sample patients is simulated.
           </p>
-          <p className="mt-1 text-xs text-ink-secondary">
+          <p className="mt-1 text-sm text-ink-secondary">
             Taking a day off from check-ins is completely fine.
           </p>
         </div>
@@ -408,7 +409,7 @@ function CheckInStatusBanners({
             recorded as not answered and never scored as zero, and data for
             sample patients is simulated.
           </p>
-          <p className="mt-1 text-xs text-ink-secondary">
+          <p className="mt-1 text-sm text-ink-secondary">
             All {itemCount} answers selected.
           </p>
         </div>

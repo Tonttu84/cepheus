@@ -313,7 +313,7 @@ export function CheckInVoiceInput({
           <p className="text-sm font-semibold text-ink-primary">
             {voiceAvailable ? "Speak or type an answer" : "Type an answer"}
           </p>
-          <p className="text-xs text-ink-secondary">
+          <p className="text-sm text-ink-secondary">
             {promptHint}
             {voiceAvailable
               ? " · Uses confirmed on-device speech recognition when you tap Speak; Cepheus never records, keeps, or uploads audio."
@@ -341,7 +341,7 @@ export function CheckInVoiceInput({
         <p
           aria-live="polite"
           data-testid="check-in-voice-feedback"
-          className="mt-2.5 text-xs font-medium text-ink-secondary"
+          className="mt-2.5 text-sm font-medium text-ink-secondary"
         >
           {feedback}
         </p>
