@@ -84,6 +84,12 @@ export interface MonitoringSummaryPayload {
   viewerKind: "patient" | "staff";
   readingsRedactedForStaff: boolean;
   consents: MonitoringConsentSummary[];
+  /**
+   * Whether the patient chose to have individual answers kept, as stored.
+   * Only in the patient's own view; without it the switch on the monitoring
+   * page showed "Paused" whatever was stored and could not be switched off.
+   */
+  detailedAnswersEnabled?: boolean;
   deviceConnections: DeviceConnectionsMap;
   latestRhythmWindow: {
     windowEndDate: string;
@@ -911,6 +917,12 @@ export async function getMonitoringSummary(
     where: { participantId: participant.id, method: { in: [...MONITORED_METHODS] } },
   });
   const consents = formatConsentSummaries(consentsRows);
+  const detailedAnswers = await prisma.measurementConsent.findUnique({
+    where: {
+      participantId_method: { participantId: participant.id, method: "detailed_answers" },
+    },
+    select: { enabled: true },
+  });
 
   const [deviceConnections, rhythmWindow, ringDays, cameraReadings, routineReadings] =
     await Promise.all([
@@ -953,6 +965,7 @@ export async function getMonitoringSummary(
     viewerKind: "patient",
     readingsRedactedForStaff: false,
     consents,
+    detailedAnswersEnabled: detailedAnswers?.enabled ?? false,
     deviceConnections,
     latestRhythmWindow: rhythmWindow
       ? {

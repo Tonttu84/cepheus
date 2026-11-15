@@ -6,6 +6,8 @@ import type {
 
 interface ConsentSectionProps {
   consents: MonitoringSummaryPayload["consents"];
+  /** Whether the patient's choice to keep individual answers is stored as on. */
+  detailedAnswersEnabled: boolean;
   deviceConnections: DeviceConnectionsMap;
   busyAction: string | null;
   onToggleConsent: (method: string, nextEnabled: boolean) => void;
@@ -13,6 +15,7 @@ interface ConsentSectionProps {
 
 export function ConsentSection({
   consents,
+  detailedAnswersEnabled,
   deviceConnections,
   busyAction,
   onToggleConsent,
@@ -23,7 +26,7 @@ export function ConsentSection({
     broadArea: "check_in" as const,
     recordedDescription:
       "Keep my individual answers so the service can learn what helps me. Kept on the service's server in the EU, never on this phone; only your own answers from now on. Kept so it can be used for personalisation later. Can be withdrawn at any time, and withdrawing deletes what was kept.",
-    enabled: false,
+    enabled: detailedAnswersEnabled,
   };
 
   const allCards = consents.some((c) => c.method === "detailed_answers")

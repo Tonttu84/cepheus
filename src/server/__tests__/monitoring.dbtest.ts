@@ -659,5 +659,29 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     );
     expect(allowedARes.status).toBe(200);
   });
+
+  it("shows the keep-individual-answers switch as it is stored, on and then off again", async () => {
+    const before = await getMonitoringSummary("patient", prisma);
+    expect(before.detailedAnswersEnabled).toBe(false);
+
+    await updateMethodConsent("detailed_answers", true, prisma);
+    const on = await getMonitoringSummary("patient", prisma);
+    expect(on.detailedAnswersEnabled).toBe(true);
+    // The list of measuring methods is still the three passive ones.
+    expect(on.consents.map((c) => c.method)).toEqual([
+      "ring_rhythm",
+      "camera_expressivity",
+      "home_routine",
+    ]);
+
+    await updateMethodConsent("detailed_answers", false, prisma);
+    const off = await getMonitoringSummary("patient", prisma);
+    expect(off.detailedAnswersEnabled).toBe(false);
+
+    // The staff view does not carry a patient's choice to keep answers.
+    const staff = await getMonitoringSummary("staff", prisma);
+    expect(staff.detailedAnswersEnabled).toBeUndefined();
+    expect(staff.consents.some((c) => c.method === "detailed_answers")).toBe(false);
+  });
 });
 
