@@ -77,6 +77,11 @@ The team hosted the repository on Entire from the beginning, structuring every d
 
 ## 9. Links
 
-- Public repository: TO FILL BY THE TEAM: link to the public repository.
-- Promotional video: TO FILL BY THE TEAM: link to the promotional video.
-- Entire trails: TO FILL BY THE TEAM: links to the Entire trails.
+- Public repository: https://github.com/Tonttu84/cepheus (a copy of `main` with its full
+  history; the working repository is hosted on Entire).
+- Promotional video:
+  https://github.com/Tonttu84/cepheus/blob/main/promotional-video/generated/cepheus_promo_full.mp4
+- Entire trails: https://entire.com/et/crunchproject/-/trails (every change, one trail
+  each). The combined check-in, demo, clinic and rewards work is trail 82:
+  https://entire.com/et/crunchproject/-/trails/82, and the core loop on the database is
+  trail 72: https://entire.com/et/crunchproject/-/trails/72.
