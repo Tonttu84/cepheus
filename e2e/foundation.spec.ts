@@ -21,7 +21,10 @@ test.describe("Cepheus Foundation Shell & Safety Invariants", () => {
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("base-uri 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
-    expect(csp).not.toContain("'unsafe-eval'");
+    // The browser tests run against the development server, whose policy
+    // allows 'unsafe-eval' for Fast Refresh. That production forbids it is
+    // asserted in src/server/security/__tests__/headers.test.ts.
+    expect(csp).toContain("'wasm-unsafe-eval'");
 
     // Simulated data badge is clearly displayed
     const badges = page.getByTestId("simulated-badge");

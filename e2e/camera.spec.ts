@@ -514,7 +514,9 @@ test.describe("Camera Wellbeing Check-in Flow & Safety Invariants", () => {
 
     // Verify progression past model loading (into camera requesting or active recording)
     await expect(
-      page.getByText(/Opening camera on this device|check-in/i)
+      page
+        .getByText(/Opening camera on this device|Check-in in progress/)
+        .first()
     ).toBeVisible({ timeout: 90_000 });
 
     // Collect recorded securitypolicyviolation events
