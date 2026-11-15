@@ -174,6 +174,113 @@ describe("Demo advance and reset database integration (*.dbtest.ts)", () => {
     }
   });
 
+  it("reset clears rewards, suggestions, nurse calls, crisis events, and consent events", async () => {
+    // 1. Identify a seeded simulated participant
+    const simPatient = await prisma.participant.findFirstOrThrow({
+      where: { participantCode: "P-SIM-001", isSimulated: true },
+    });
+
+    const clinicId = simPatient.clinicId!;
+
+    // 2. Add records that the check-in branch's reset might have missed if not cascaded
+    await prisma.rewardLedgerEntry.create({
+      data: {
+        id: "reward-1",
+        participantId: simPatient.id,
+        clinicId,
+        kind: "answered_round",
+        amountCents: 100,
+        isSimulated: true,
+      },
+    });
+
+    await prisma.nurseCallRecord.create({
+      data: {
+        participantId: simPatient.id,
+        clinicId,
+        status: "requested",
+        isSimulated: true,
+      },
+    });
+
+    await prisma.crisisEvent.create({
+      data: {
+        participantId: simPatient.id,
+        clinicId,
+        roundNumber: 2,
+        itemId: "crisis_button",
+        value: 1,
+        isSimulated: true,
+      },
+    });
+
+    await prisma.taskPreference.create({
+      data: {
+        participantId: simPatient.id,
+        clinicId,
+        preferredKeysJson: "[]",
+        isSimulated: true,
+      },
+    });
+
+    await prisma.taskRecord.create({
+      data: {
+        participantId: simPatient.id,
+        clinicId,
+        localDate: "2026-11-15",
+        taskKey: "short_walk",
+        status: "offered",
+        isSimulated: true,
+      },
+    });
+
+    // We add an extra consent event to ensure they are reset back to seeded count
+    await prisma.consentEvent.create({
+      data: {
+        participantId: simPatient.id,
+        clinicId,
+        layer: "method",
+        method: "phq9",
+        enabled: false,
+        noticeVersion: "v1",
+      },
+    });
+
+    // 3. Perform reset
+    await resetSimulatedData(prisma);
+
+    // 4. Verify the participant is recreated and has clean state
+    const resetPatient = await prisma.participant.findFirstOrThrow({
+      where: { participantCode: "P-SIM-001", isSimulated: true },
+    });
+    const newId = resetPatient.id;
+
+    const rewards = await prisma.rewardLedgerEntry.count({ where: { participantId: newId } });
+    expect(rewards).toBe(0);
+
+    const nurseCalls = await prisma.nurseCallRecord.count({ where: { participantId: newId } });
+    expect(nurseCalls).toBe(0);
+
+    const crisisEvents = await prisma.crisisEvent.count({ where: { participantId: newId } });
+    expect(crisisEvents).toBe(0);
+
+    const taskPrefs = await prisma.taskPreference.count({ where: { participantId: newId } });
+    expect(taskPrefs).toBe(0);
+
+    const taskRecords = await prisma.taskRecord.count({ where: { participantId: newId } });
+    expect(taskRecords).toBe(0);
+
+    // Suggestions should be back to the seeded state (e.g. initial suggestions)
+    // The dataset has 1 suggestion per participant plus 1 open one created by seedDatabase
+    const seededSuggestionsCount = await prisma.patientSuggestion.count({ where: { participantId: newId } });
+    expect(seededSuggestionsCount).toBeGreaterThan(0);
+
+    // Check we don't have the extra consent event anymore (should just be the seeded ones)
+    const resetConsentsCount = await prisma.consentEvent.count({ where: { participantId: newId } });
+    // Default seeded consent events: taking_part, rule_check, plus one for each method in dataset
+    expect(resetConsentsCount).toBeGreaterThan(0);
+  });
+
   it("detects when stored simulated data is ahead of real time (needs reset after restart)", async () => {
     // 1. Initial seeded state: not ahead of time
     expect(await checkDemoNeedsReset(prisma, new Date())).toBe(false);

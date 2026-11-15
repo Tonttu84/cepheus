@@ -11,6 +11,7 @@ import { sharedAnswerStore, type InMemoryAnswerStore } from "./answer-store";
 import {
   createCalmFirstRound,
   createSampleParticipants,
+  createSampleSuggestion,
   type LiveSchedule,
   liveScheduleAt,
   upsertSimClinic,
@@ -339,6 +340,7 @@ export async function resetSimulatedData(
     await seedCameraReadings(tx, participantId, clinicId, dataset);
     await seedRoutineAndBaselines(tx, participantId, clinicId, dataset);
     await seedSuggestionsAndFlags(tx, participantId, clinicId, dataset);
+    await createSampleSuggestion(tx, participantId, clinicId, now, 0);
     await createSampleParticipants(tx, clinicId, now);
   });
 
