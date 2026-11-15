@@ -13,9 +13,11 @@ import {
 } from "./effects";
 import { createExtraAnswerRepository } from "./extra-answers";
 import { createGad7Repository } from "./gad7";
-import { createPatientRepository } from "./patients";
+import { createPatientRepository, getClinicPatientIds } from "./patients";
 import { createPhq9Repository } from "./phq9";
 import { createRoundRepository } from "./rounds";
+
+export { getClinicPatientIds };
 
 /**
  * The use case ports on PostgreSQL. Item answers are written to the database

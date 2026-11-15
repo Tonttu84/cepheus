@@ -1,5 +1,4 @@
-import { getPrisma } from "@/lib/db";
-import { createPrismaPorts } from "@/server/db";
+import { createPrismaPorts, getClinicPatientIds } from "@/server/db";
 import { ensureHomeDemoParticipant } from "@/server/monitoring/store";
 import type { Ports } from "@/usecases/ports";
 
@@ -22,19 +21,10 @@ export async function defaultResolveDevicePatient(): Promise<{ patientId: string
   };
 }
 
-async function clinicPatientIdsFromDb(clinicId: string): Promise<readonly string[]> {
-  const rows = await getPrisma().participant.findMany({
-    where: { clinicId },
-    select: { id: true },
-    orderBy: { id: "asc" },
-  });
-  return rows.map((row) => row.id);
-}
-
 function createDefaultDeps(): RouteDeps {
   return {
     ports: createPrismaPorts(),
-    clinicPatientIds: clinicPatientIdsFromDb,
+    clinicPatientIds: (clinicId: string) => getClinicPatientIds(clinicId),
     resolveDevicePatient: defaultResolveDevicePatient,
   };
 }
