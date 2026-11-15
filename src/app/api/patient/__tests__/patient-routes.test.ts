@@ -1,4 +1,28 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getRouteDeps } from "@/server/api";
+
+vi.mock("@/server/monitoring/store", () => ({
+  updateMethodConsent: vi.fn(async (method, enabled) => {
+    const { ports } = getRouteDeps();
+    const patient = await ports.patients.getPatient("patient-1");
+    if (patient) {
+       const mapped = method === "ring_rhythm" ? "ring" : method === "camera_expressivity" ? "camera" : method;
+       const updated = {
+         ...patient,
+         consent: {
+           ...patient.consent,
+           methods: {
+             ...patient.consent.methods,
+             [mapped]: enabled,
+           }
+         }
+       };
+       await ports.patients.savePatient(updated);
+    }
+    return { method, enabled };
+  })
+}));
+
 import { GET as getSuggestion, POST as postSuggestionChoice } from "@/app/api/patient/suggestion/route";
 import { GET as getConsent, POST as postConsent } from "@/app/api/patient/consent/route";
 import {

@@ -3,7 +3,8 @@ import { z } from "zod";
 import { requireApiSession } from "@/server/auth";
 import { verifySameOrigin } from "@/server/security";
 import { getRouteDeps } from "@/server/api";
-import { getPatientConsent, updateMethodConsent } from "@/usecases";
+import { getPatientConsent } from "@/usecases";
+import { updateMethodConsent, type MonitoredMethodKey } from "@/server/monitoring/store";
 
 export const dynamic = "force-dynamic";
 
@@ -56,26 +57,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid request payload" }, { status: 400 });
   }
 
-  const { actor } = auth.session;
-  const { ports } = getRouteDeps();
-  const result = await updateMethodConsent(
-    actor,
-    {
-      patientId: actor.patientId,
-      method: parsed.data.method,
-      enabled: parsed.data.enabled,
-    },
-    ports
-  );
+  const mappedMethod: MonitoredMethodKey = 
+    parsed.data.method === "ring" ? "ring_rhythm" :
+    parsed.data.method === "camera" ? "camera_expressivity" :
+    parsed.data.method as MonitoredMethodKey;
 
-  if (!result.ok) {
-    const status = result.error === "not_own_data" ? 403 : 400;
-    return NextResponse.json({ ok: false, error: result.error }, { status });
+  try {
+    const result = await updateMethodConsent(
+      mappedMethod,
+      parsed.data.enabled,
+      undefined,
+      auth.session
+    );
+    return NextResponse.json({
+      ok: true,
+      method: result.method === "ring_rhythm" ? "ring" : result.method === "camera_expressivity" ? "camera" : result.method,
+      enabled: result.enabled,
+    });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    const status = errorMsg.includes("Access denied") ? 403 : 400;
+    return NextResponse.json({ ok: false, error: errorMsg }, { status });
   }
-
-  return NextResponse.json({
-    ok: true,
-    method: result.value.method,
-    enabled: result.value.enabled,
-  });
 }

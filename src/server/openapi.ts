@@ -93,6 +93,10 @@ export const API_ROUTES: readonly RouteEntry[] = [
     summary: "Run the warning rule for one patient",
     pathParams: PatientEvaluateParamsSchema,
   },
+  { path: "/api/patient/consent", method: "get", caller: "patient", summary: "Get the patient's consent switches" },
+  { path: "/api/patient/consent", method: "post", caller: "patient", summary: "Update a consent switch" },
+  { path: "/api/patient/suggestion", method: "get", caller: "patient", summary: "Get the patient's current suggestion" },
+  { path: "/api/patient/suggestion", method: "post", caller: "patient", summary: "Record a choice for the patient's suggestion" },
   { path: "/api/openapi.json", method: "get", caller: "anyone", summary: "This document" },
 ];
 
