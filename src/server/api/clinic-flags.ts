@@ -3,10 +3,12 @@ import { decideAccess, type StaffActor, type TargetData } from "@/domain/access"
 import type { ConsentState } from "@/domain/consent";
 import type { FlagArea } from "@/domain/flags";
 import { evaluateHistory, type HistoryRound } from "@/domain/history";
-import { closeElapsedRounds } from "@/usecases";
+import type { ExpressivityRangeResult } from "@/domain/camera";
+import { closeElapsedRounds, getExpressivityShowcase } from "@/usecases";
 import type { Ports, StoredWarning } from "@/usecases/ports";
 import type { RouteDeps } from "./deps";
 import { runRuleIfNeeded } from "./rule";
+import { isExpressivityShowcaseEnabled } from "./settings";
 
 export type FlagWarningKind =
   | "low_answers"
@@ -27,6 +29,7 @@ export interface ClinicFlagFacts {
   readonly missedSince?: string;
   readonly hasOpenCrisisEvent?: boolean;
   readonly supportingLines?: readonly string[];
+  readonly expressivityShowcase?: ExpressivityRangeResult | null;
 }
 
 /** What the clinic sees of a flag: who, the broad area, when, the warning kind and its facts. */
@@ -85,7 +88,7 @@ export async function bringClinicUpToDate(clinicId: string, deps: ClinicFlagsDep
   }
 }
 
-async function computeFlagFacts(
+async function computeRawFlagFacts(
   warning: StoredWarning,
   patientId: string,
   ports: Ports,
@@ -282,6 +285,34 @@ async function computeFlagFacts(
   };
 }
 
+async function computeFlagFacts(
+  warning: StoredWarning,
+  patientId: string,
+  ports: Ports,
+  consent: ConsentState,
+  actor?: StaffActor
+): Promise<ClinicFlagFacts> {
+  const baseFacts = await computeRawFlagFacts(warning, patientId, ports, consent);
+  if (!baseFacts.warningKind) return baseFacts;
+
+  let expressivityShowcase: ExpressivityRangeResult | null = null;
+  if (actor && isExpressivityShowcaseEnabled()) {
+    try {
+      const showcaseRes = await getExpressivityShowcase(actor, { patientId }, ports);
+      if (showcaseRes.ok) {
+        expressivityShowcase = showcaseRes.value;
+      }
+    } catch {
+      // Optional showcase must not fail flag computation
+    }
+  }
+
+  return {
+    ...baseFacts,
+    expressivityShowcase,
+  };
+}
+
 async function flagsOfPatient(actor: StaffActor, patientId: string, ports: Ports): Promise<ClinicFlagView[]> {
   const switches = await ports.patients.getPatientAccessSwitches(patientId);
   if (!switches) return [];
@@ -305,7 +336,7 @@ async function flagsOfPatient(actor: StaffActor, patientId: string, ports: Ports
 
   const views: ClinicFlagView[] = [];
   for (const w of warnings) {
-    const facts = await computeFlagFacts(w, switches.patientId, ports, switches.consent);
+    const facts = await computeFlagFacts(w, switches.patientId, ports, switches.consent, actor);
     views.push({
       patientId: w.patientId,
       area: "check_in",

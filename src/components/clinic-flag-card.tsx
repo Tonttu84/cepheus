@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BROAD_AREA_LABELS, type BroadAreaKey } from "@/lib/constants";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import type { ClinicFlagFacts } from "@/server/api/clinic-flags";
+import type { ExpressivityRangeResult } from "@/domain/camera";
 
 export interface RequestedCallInfo {
   readonly requestedBy: string;
@@ -41,6 +42,7 @@ export interface ClinicFlagCardProps {
   supportingLines?: readonly string[];
   initialRequestedCall?: RequestedCallInfo | null;
   onCallRequested?: (info: RequestedCallInfo) => void;
+  expressivityShowcase?: ExpressivityRangeResult | null;
 }
 
 function formatCallTime(isoString: string): string {
@@ -217,6 +219,60 @@ function FlagFactsSection({
   );
 }
 
+function ExpressivityShowcasePanel({
+  showcase,
+  isSamplePatient,
+}: {
+  showcase: ExpressivityRangeResult;
+  isSamplePatient: boolean;
+}) {
+  let factText = "";
+  if (showcase.status === "insufficient_history") {
+    factText = `Not enough camera checks yet (${showcase.count} of 5).`;
+  } else {
+    const positionWord =
+      showcase.position === "within_usual_range"
+        ? "inside"
+        : showcase.position === "below_usual_range"
+          ? "below"
+          : "above";
+    factText = `Latest camera check: ${positionWord} this person's usual range (${showcase.sampleCount} readings).`;
+  }
+
+  return (
+    <div
+      data-testid="clinic-expressivity-showcase-panel"
+      className="mt-6 rounded-2xl border border-accent-sage-border bg-surface-card p-5 sm:p-6 space-y-3.5"
+    >
+      <h3 className="font-display text-base font-semibold text-ink-primary">
+        Facial movement, against this person&apos;s own usual range (optional module, research potential)
+      </h3>
+
+      <p className="text-sm font-medium text-ink-primary">
+        {factText}
+      </p>
+
+      {isSamplePatient ? (
+        <div>
+          <SimulatedBadge subtitle="" />
+        </div>
+      ) : null}
+
+      <p className="text-xs leading-relaxed text-ink-secondary">
+        Review of 12 studies (389 people) found response goes with more expressivity (source: Facial expression and treatment response, systematic review (Karger supplementary record)).
+      </p>
+
+      <p className="text-xs leading-relaxed text-ink-muted">
+        This is not a reading of mood and not a judgement. No study shows that it warns of relapse. The clinician decides.
+      </p>
+
+      <p className="text-xs leading-relaxed text-ink-muted">
+        Whether this is worth it is doubtful: it needs a camera in the home, and it adds privacy and data-security cost for an uncertain benefit. It is off by default.
+      </p>
+    </div>
+  );
+}
+
 export function ClinicFlagCard({
   participantLabel,
   participantExternalId,
@@ -229,6 +285,7 @@ export function ClinicFlagCard({
   supportingLines,
   initialRequestedCall,
   onCallRequested,
+  expressivityShowcase,
 }: ClinicFlagCardProps) {
   const [callInfo, setCallInfo] = useState<RequestedCallInfo | null>(
     initialRequestedCall ?? null
@@ -237,6 +294,50 @@ export function ClinicFlagCard({
   const [errorText, setErrorText] = useState<string | null>(null);
   const [outcomeTier, setOutcomeTier] = useState<string>("");
   const [actionTaken, setActionTaken] = useState<string>("");
+  const [fetchedShowcase, setFetchedShowcase] = useState<
+    ExpressivityRangeResult | null | undefined
+  >(undefined);
+
+  useEffect(() => {
+    if (
+      expressivityShowcase !== undefined ||
+      facts?.expressivityShowcase !== undefined
+    ) {
+      return;
+    }
+    let cancelled = false;
+    fetch(
+      `/api/clinic/expressivity-showcase?patientId=${encodeURIComponent(
+        participantExternalId
+      )}`
+    )
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.ok) {
+          setFetchedShowcase(data.showcase ?? null);
+        } else if (!cancelled) {
+          setFetchedShowcase(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFetchedShowcase(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [participantExternalId, expressivityShowcase, facts?.expressivityShowcase]);
+
+  const activeShowcase =
+    expressivityShowcase !== undefined
+      ? expressivityShowcase
+      : facts?.expressivityShowcase !== undefined
+        ? facts.expressivityShowcase
+        : fetchedShowcase;
+
+  const isSamplePatient =
+    participantExternalId.startsWith("P-SIM") ||
+    participantLabel.toLowerCase().includes("sample") ||
+    participantLabel.toLowerCase().includes("simulated");
 
   useEffect(() => {
     if (initialRequestedCall) {
@@ -367,6 +468,13 @@ export function ClinicFlagCard({
         facts={facts}
         supportingLines={supportingLines}
       />
+
+      {activeShowcase ? (
+        <ExpressivityShowcasePanel
+          showcase={activeShowcase}
+          isSamplePatient={isSamplePatient}
+        />
+      ) : null}
 
       <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-border-hairline pt-6">
         <button
