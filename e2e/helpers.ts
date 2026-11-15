@@ -83,6 +83,52 @@ export async function ensureCrisisEvent() {
   });
 }
 
+export async function resetRewardsState(
+  participantCode: SimulatedPatientPresetKey = "P-SIM-001",
+  options: { nonCheckInDay?: boolean; balanceCents?: number } = {}
+): Promise<void> {
+  const prisma = getPrisma();
+  const patient = await prisma.participant.findFirst({
+    where: { participantCode },
+  });
+  if (!patient) return;
+
+  await prisma.rewardLedgerEntry.deleteMany({ where: { participantId: patient.id } });
+  await prisma.taskRecord.deleteMany({ where: { participantId: patient.id } });
+  await prisma.checkInRound.deleteMany({
+    where: { participantId: patient.id, roundNumber: { gt: 1 } },
+  });
+
+  if (options.nonCheckInDay) {
+    const todayWeekday = new Date().getDay();
+    const nonTodayWeekday = (todayWeekday + 2) % 7;
+    await prisma.participant.update({
+      where: { id: patient.id },
+      data: {
+        scheduleDaysJson: JSON.stringify([nonTodayWeekday]),
+      },
+    });
+  }
+
+  if (options.balanceCents && options.balanceCents > 0) {
+    const rounds = Math.floor(options.balanceCents / 100);
+    for (let r = 1; r <= rounds; r++) {
+      await prisma.rewardLedgerEntry.create({
+        data: {
+          id: `seed-rewards-${patient.id}-${r}`,
+          participantId: patient.id,
+          clinicId: patient.clinicId,
+          kind: "answered_round",
+          amountCents: 100,
+          roundNumber: r + 10,
+          createdAt: new Date(),
+          isSimulated: true,
+        },
+      });
+    }
+  }
+}
+
 export async function signInAsPatient(
   page: Page,
   contextOrCode?: BrowserContext | SimulatedPatientPresetKey,
