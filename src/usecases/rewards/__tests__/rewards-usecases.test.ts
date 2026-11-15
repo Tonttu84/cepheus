@@ -5,10 +5,12 @@ import type { TaskKey } from "../../../domain/small-tasks/types";
 import { creditAnsweredRound, creditCheckInRound } from "../credit-answered-round";
 import { markTaskDone } from "../mark-task-done";
 import { markTaskNotToday } from "../mark-task-not-today";
+import { requestPayout } from "../request-payout";
 import { setPreferences } from "../preferences";
 import { readAccount } from "../read-account";
 import { readTodayTask } from "../read-today-task";
 import { createFakeRewardsPorts, type FakeRewardsPorts } from "../testing/fake-ports";
+import { createLedgerEntry } from "../../../domain/rewards/ledger";
 
 describe("Rewards and Small Tasks Use Cases (D48, D38, D42)", () => {
   const patientId = "patient-001";
@@ -297,6 +299,244 @@ describe("Rewards and Small Tasks Use Cases (D48, D38, D42)", () => {
         // Since Day 1 task WAS completed, rotation advances to index 1 -> breathing_space
         expect(day2.value.task?.key).toBe("breathing_space");
       }
+    });
+  });
+
+  describe("Check-in day task rule (D48)", () => {
+    // Schedule has weekdays: [2, 5] (Tuesday and Friday).
+    // 2026-11-17 is Tuesday (check-in day).
+    // 2026-11-14 is Saturday (non-check-in day).
+
+    it("markTaskDone on a check-in day: nothing is recorded and nothing is credited", async () => {
+      ports.clock.setTime("2026-11-17T10:00:00.000Z");
+
+      const res = await markTaskDone(actor, { patientId }, ports);
+      expect(res.ok).toBe(false);
+      if (!res.ok) {
+        expect(res.error).toBe("No task offered on check-in days");
+      }
+
+      // Invariant: nothing is recorded
+      const record = await ports.taskRecords.getTaskRecord(patientId, "2026-11-17");
+      expect(record).toBeNull();
+      const history = await ports.taskRecords.getHistory(patientId);
+      expect(history).toHaveLength(0);
+
+      // Invariant: nothing is credited
+      const entries = await ports.ledger.getEntries(patientId);
+      expect(entries).toHaveLength(0);
+    });
+
+    it("markTaskDone on another day: records task as completed and credits reward", async () => {
+      ports.clock.setTime("2026-11-14T10:00:00.000Z");
+
+      const res = await markTaskDone(actor, { patientId }, ports);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.value.status).toBe("completed");
+        expect(res.value.rewarded).toBe(true);
+        expect(res.value.rewardCents).toBe(100);
+        expect(res.value.balanceCents).toBe(100);
+        expect(res.value.source).toBe("self_report");
+        expect(res.value.isSimulated).toBe(true);
+      }
+
+      // Record is saved
+      const record = await ports.taskRecords.getTaskRecord(patientId, "2026-11-14");
+      expect(record).not.toBeNull();
+      expect(record?.status).toBe("completed");
+
+      // Ledger has credit
+      const entries = await ports.ledger.getEntries(patientId);
+      expect(entries).toHaveLength(1);
+      expect(entries[0].amountCents).toBe(100);
+      expect(entries[0].kind).toBe("small_task");
+    });
+
+    it("markTaskNotToday on a check-in day: nothing is recorded and nothing is credited", async () => {
+      ports.clock.setTime("2026-11-17T10:00:00.000Z");
+
+      const res = await markTaskNotToday(actor, { patientId }, ports);
+      expect(res.ok).toBe(false);
+      if (!res.ok) {
+        expect(res.error).toBe("No task offered on check-in days");
+      }
+
+      // Invariant: nothing is recorded
+      const record = await ports.taskRecords.getTaskRecord(patientId, "2026-11-17");
+      expect(record).toBeNull();
+      const history = await ports.taskRecords.getHistory(patientId);
+      expect(history).toHaveLength(0);
+
+      // Invariant: nothing is credited
+      const entries = await ports.ledger.getEntries(patientId);
+      expect(entries).toHaveLength(0);
+    });
+
+    it("markTaskNotToday on another day: records task as not_today and credits nothing", async () => {
+      ports.clock.setTime("2026-11-14T10:00:00.000Z");
+
+      const res = await markTaskNotToday(actor, { patientId }, ports);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.value.status).toBe("not_today");
+        expect(res.value.rewarded).toBe(false);
+      }
+
+      // Record is saved as not_today
+      const record = await ports.taskRecords.getTaskRecord(patientId, "2026-11-14");
+      expect(record).not.toBeNull();
+      expect(record?.status).toBe("not_today");
+
+      // Ledger remains empty
+      const entries = await ports.ledger.getEntries(patientId);
+      expect(entries).toHaveLength(0);
+    });
+  });
+
+  describe("Payout use case (D48)", () => {
+    it("refuses a payout when balance is below 10 euros (1000 cents)", async () => {
+      // Balance is 0
+      const res0 = await requestPayout(actor, { patientId, requestId: "req-0" }, ports);
+      expect(res0.ok).toBe(false);
+      if (!res0.ok) {
+        expect(res0.error).toBe("insufficient_balance");
+      }
+
+      // Credit 900 cents (below 10 euros threshold)
+      for (let r = 1; r <= 9; r++) {
+        await ports.ledger.appendEntry(
+          createLedgerEntry({
+            id: `round-credit-${r}`,
+            patientId,
+            kind: "answered_round",
+            amountCents: 100,
+            roundNumber: r,
+            createdAt: `2026-11-0${r}T10:00:00.000Z`,
+          })
+        );
+      }
+
+      const res900 = await requestPayout(actor, { patientId, requestId: "req-900" }, ports);
+      expect(res900.ok).toBe(false);
+      if (!res900.ok) {
+        expect(res900.error).toBe("insufficient_balance");
+      }
+
+      // No payout entry written
+      const entries = await ports.ledger.getEntries(patientId);
+      expect(entries.filter((e) => e.kind === "payout")).toHaveLength(0);
+    });
+
+    it("at or above 10 euros: balance goes down by the paid amount, entry is written and marked simulated", async () => {
+      // Credit 1000 cents (10 euros)
+      for (let r = 1; r <= 10; r++) {
+        await ports.ledger.appendEntry(
+          createLedgerEntry({
+            id: `seed-credit-${r}`,
+            patientId,
+            kind: "answered_round",
+            amountCents: 100,
+            roundNumber: r,
+            createdAt: `2026-11-0${r}T10:00:00.000Z`,
+          })
+        );
+      }
+
+      const res = await requestPayout(actor, { patientId, requestId: "req-payout-1" }, ports);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.value.payoutCents).toBe(1000);
+        expect(res.value.newBalanceCents).toBe(0);
+        expect(res.value.isDuplicate).toBe(false);
+        expect(res.value.isSimulated).toBe(true);
+        expect(res.value.entry.isSimulated).toBe(true);
+        expect(res.value.entry.kind).toBe("payout");
+        expect(res.value.entry.amountCents).toBe(-1000);
+      }
+
+      // Verify account reflects payout
+      const accountRes = await readAccount(actor, { patientId }, ports);
+      expect(accountRes.ok).toBe(true);
+      if (accountRes.ok) {
+        expect(accountRes.value.balanceCents).toBe(0);
+        const payoutEntries = accountRes.value.entries.filter((e) => e.kind === "payout");
+        expect(payoutEntries).toHaveLength(1);
+        expect(payoutEntries[0].isSimulated).toBe(true);
+      }
+    });
+
+    it("pressing twice with the same requestId does not pay twice", async () => {
+      // Seed 2000 cents (20 euros)
+      for (let r = 1; r <= 20; r++) {
+        await ports.ledger.appendEntry(
+          createLedgerEntry({
+            id: `seed-credit-20-${r}`,
+            patientId,
+            kind: "answered_round",
+            amountCents: 100,
+            roundNumber: r,
+            createdAt: `2026-11-0${r}T10:00:00.000Z`,
+          })
+        );
+      }
+
+      // First call
+      const res1 = await requestPayout(actor, { patientId, requestId: "dup-request-id" }, ports);
+      expect(res1.ok).toBe(true);
+      if (res1.ok) {
+        expect(res1.value.payoutCents).toBe(1000);
+        expect(res1.value.newBalanceCents).toBe(1000);
+        expect(res1.value.isDuplicate).toBe(false);
+      }
+
+      // Second call with same requestId
+      const res2 = await requestPayout(actor, { patientId, requestId: "dup-request-id" }, ports);
+      expect(res2.ok).toBe(true);
+      if (res2.ok) {
+        expect(res2.value.payoutCents).toBe(1000);
+        expect(res2.value.newBalanceCents).toBe(1000); // Balance remains 1000, not 0!
+        expect(res2.value.isDuplicate).toBe(true);
+        expect(res2.value.isSimulated).toBe(true);
+      }
+
+      const all = await ports.ledger.getEntries(patientId);
+      const payouts = all.filter((e) => e.kind === "payout");
+      expect(payouts).toHaveLength(1); // Exactly one payout was written!
+    });
+
+    it("second payout with different requestId when balance is 10 euros is refused for insufficient balance", async () => {
+      // Seed 1000 cents
+      for (let r = 1; r <= 10; r++) {
+        await ports.ledger.appendEntry(
+          createLedgerEntry({
+            id: `seed-credit-10-${r}`,
+            patientId,
+            kind: "answered_round",
+            amountCents: 100,
+            roundNumber: r,
+            createdAt: `2026-11-0${r}T10:00:00.000Z`,
+          })
+        );
+      }
+
+      // First payout
+      const res1 = await requestPayout(actor, { patientId, requestId: "req-first" }, ports);
+      expect(res1.ok).toBe(true);
+      if (res1.ok) {
+        expect(res1.value.newBalanceCents).toBe(0);
+      }
+
+      // Second payout with different requestId
+      const res2 = await requestPayout(actor, { patientId, requestId: "req-second" }, ports);
+      expect(res2.ok).toBe(false);
+      if (!res2.ok) {
+        expect(res2.error).toBe("insufficient_balance");
+      }
+
+      const all = await ports.ledger.getEntries(patientId);
+      const payouts = all.filter((e) => e.kind === "payout");
+      expect(payouts).toHaveLength(1);
     });
   });
 });
