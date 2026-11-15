@@ -4,6 +4,7 @@ import { GET as getFlags } from "@/app/api/clinic/flags/route";
 import { GET as getCrisisEvents } from "@/app/api/clinic/crisis-events/route";
 import { POST as acknowledgeCrisis } from "@/app/api/clinic/crisis-events/acknowledge/route";
 import { GET as getNurseCalls, POST as recordNurseCall } from "@/app/api/clinic/nurse-calls/route";
+import { GET as getExpressivityShowcaseRoute } from "@/app/api/clinic/expressivity-showcase/route";
 import { setRouteDepsForTests } from "@/server/api";
 import { createFakeRewardsPorts } from "@/usecases/rewards/testing/fake-ports";
 import type { StoredWarning } from "@/usecases/ports";
@@ -673,4 +674,62 @@ describe("GET /api/clinic/nurse-calls", () => {
     expect(withQuery.status).toBe(400);
   });
 });
+
+describe("GET /api/clinic/expressivity-showcase", () => {
+  let fake: ReturnType<typeof setUpRoutes>;
+
+  beforeEach(async () => {
+    fake = setUpRoutes();
+    await fake.ports.patients.savePatient(
+      patientRecord({
+        patientId: "own-1",
+        consent: {
+          taking_part: true,
+          methods: { ring: true, camera: true },
+          rule_check: true,
+          facial_movement_usual_range: true,
+        },
+      })
+    );
+  });
+
+  afterEach(() => {
+    tearDownRoutes();
+    vi.restoreAllMocks();
+  });
+
+  it("refuses unauthenticated callers with 401 and patient callers with 403", async () => {
+    const unauthReq = apiRequest("/api/clinic/expressivity-showcase?patientId=own-1", {
+      method: "GET",
+      cookie: null,
+    });
+    expect((await getExpressivityShowcaseRoute(unauthReq)).status).toBe(401);
+
+    const patientReq = apiRequest("/api/clinic/expressivity-showcase?patientId=own-1", {
+      method: "GET",
+      cookie: patientCookie("own-1"),
+    });
+    expect((await getExpressivityShowcaseRoute(patientReq)).status).toBe(403);
+  });
+
+  it("refuses requests without patientId query parameter with 400", async () => {
+    const noParamReq = apiRequest("/api/clinic/expressivity-showcase", {
+      method: "GET",
+      cookie: staffCookie(),
+    });
+    expect((await getExpressivityShowcaseRoute(noParamReq)).status).toBe(400);
+  });
+
+  it("allows staff caller and returns showcase result", async () => {
+    const req = apiRequest("/api/clinic/expressivity-showcase?patientId=own-1", {
+      method: "GET",
+      cookie: staffCookie(),
+    });
+    const res = await getExpressivityShowcaseRoute(req);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; showcase: unknown };
+    expect(body.ok).toBe(true);
+  });
+});
+
 

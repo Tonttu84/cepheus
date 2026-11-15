@@ -37,4 +37,8 @@ export {
   type GetPatientConsentResult,
 } from './get-patient-consent';
 export { submitCameraReading, type SubmitCameraReadingInput } from './submit-camera-reading';
+export {
+  getExpressivityShowcase,
+  type GetExpressivityShowcaseInput,
+} from './get-expressivity-showcase';
 export type * from './ports';
