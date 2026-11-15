@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { WarningKind } from "@/domain/ai-support";
+import { SimulatedBadge } from "@/components/simulated-badge";
 
 interface NurseBriefState {
   provider: string;
@@ -98,9 +99,12 @@ export function ClinicNurseBriefPanel({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold text-stone-900">
-            Nurse Pre-Call Brief (Optional EU Verda + Gemma formatter)
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold text-stone-900">
+              Nurse Pre-Call Brief (Optional EU Verda + Gemma formatter)
+            </h3>
+            <SimulatedBadge subtitle="" />
+          </div>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-stone-600">
             Formats pseudonymous broad-area shifts into a brief summary and
             non-judgmental phone openers. Off by default unless{" "}
