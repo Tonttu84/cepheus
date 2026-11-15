@@ -720,6 +720,18 @@ describe("GET /api/clinic/expressivity-showcase", () => {
     expect((await getExpressivityShowcaseRoute(noParamReq)).status).toBe(400);
   });
 
+  it("returns 404 when requested patient is not found", async () => {
+    const req = apiRequest("/api/clinic/expressivity-showcase?patientId=unknown-patient", {
+      method: "GET",
+      cookie: staffCookie(),
+    });
+    const res = await getExpressivityShowcaseRoute(req);
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { ok: boolean; error: string };
+    expect(body.ok).toBe(false);
+    expect(body.error).toBe("Patient not found");
+  });
+
   it("allows staff caller and returns showcase result", async () => {
     const req = apiRequest("/api/clinic/expressivity-showcase?patientId=own-1", {
       method: "GET",

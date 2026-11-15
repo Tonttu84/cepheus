@@ -1,5 +1,6 @@
 import { requireApiSession } from "@/server/auth";
 import {
+  failureOf,
   getRouteDeps,
   guardStaff,
   orStorageFailure,
@@ -30,12 +31,13 @@ export async function GET(request: Request) {
   }
 
   const { actor } = guard;
+  const context = { route: ROUTE, actorKind: actor.kind };
 
-  return orStorageFailure({ route: ROUTE, actorKind: actor.kind }, async () => {
+  return orStorageFailure(context, async () => {
     const { ports } = getRouteDeps();
     const result = await getExpressivityShowcase(actor, { patientId }, ports);
     if (!result.ok) {
-      return respond({ ok: false, error: result.error }, 403);
+      return failureOf(context, result.error);
     }
     return respond({ ok: true, showcase: result.value });
   });
