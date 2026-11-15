@@ -346,4 +346,125 @@ test.describe("Cepheus Auth, Logged-Out Privacy & Role-Scoped Navigation", () =>
     expect(signOutBox).not.toBeNull();
     expect(signOutBox!.height).toBeGreaterThanOrEqual(44);
   });
+
+  test("5. Mobile user login visibility & zero overflow across portrait and landscape viewports", async ({
+    page,
+  }) => {
+    const viewports = [
+      { width: 320, height: 568 },
+      { width: 375, height: 667 },
+      { width: 667, height: 375 },
+    ];
+
+    for (const vp of viewports) {
+      await page.setViewportSize(vp);
+      await page.goto("/", { waitUntil: "networkidle" });
+
+      const scrollWidth = await page.evaluate(
+        () => document.documentElement.scrollWidth
+      );
+      expect(
+        scrollWidth,
+        `scrollWidth on / at ${vp.width}x${vp.height}`
+      ).toBeLessThanOrEqual(vp.width);
+
+      await page.getByTestId("header-sign-in-button").click();
+      const popover = page.getByTestId("header-auth-popover");
+      await expect(popover).toBeVisible();
+
+      const popoverBox = await popover.boundingBox();
+      expect(popoverBox).not.toBeNull();
+      expect(popoverBox!.x).toBeGreaterThanOrEqual(0);
+      expect(popoverBox!.x + popoverBox!.width).toBeLessThanOrEqual(vp.width);
+      expect(popoverBox!.y).toBeGreaterThanOrEqual(0);
+      expect(popoverBox!.y + popoverBox!.height).toBeLessThanOrEqual(vp.height);
+
+      const popoverScrollWidth = await page.evaluate(
+        () => document.documentElement.scrollWidth
+      );
+      expect(popoverScrollWidth).toBeLessThanOrEqual(vp.width);
+
+      await page.getByTestId("auth-tab-staff").click();
+      const staffPopoverBox = await popover.boundingBox();
+      expect(staffPopoverBox).not.toBeNull();
+      expect(staffPopoverBox!.x).toBeGreaterThanOrEqual(0);
+      expect(staffPopoverBox!.x + staffPopoverBox!.width).toBeLessThanOrEqual(
+        vp.width
+      );
+      expect(staffPopoverBox!.y).toBeGreaterThanOrEqual(0);
+      expect(staffPopoverBox!.y + staffPopoverBox!.height).toBeLessThanOrEqual(
+        vp.height
+      );
+
+      await page.getByTestId("auth-tab-patient").click();
+      await page.getByTestId("auth-preset-P-SIM-ANX-01").click();
+
+      const avatarBtn = page.getByTestId("header-user-avatar-button");
+      await expect(avatarBtn).toBeVisible();
+      await avatarBtn.click();
+
+      const userMenu = page.getByTestId("header-user-menu");
+      await expect(userMenu).toBeVisible();
+      const menuBox = await userMenu.boundingBox();
+      expect(menuBox).not.toBeNull();
+      expect(menuBox!.x).toBeGreaterThanOrEqual(0);
+      expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(vp.width);
+      expect(menuBox!.y).toBeGreaterThanOrEqual(0);
+      expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(vp.height);
+
+      const signOutBtn = page.getByTestId("header-sign-out-button");
+      await signOutBtn.scrollIntoViewIfNeeded();
+      await expect(signOutBtn).toBeVisible();
+      await signOutBtn.click();
+      await expect(page.getByTestId("header-sign-in-button")).toBeVisible();
+    }
+
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/sign-in", { waitUntil: "networkidle" });
+
+    const signInScrollWidth = await page.evaluate(
+      () => document.documentElement.scrollWidth
+    );
+    expect(signInScrollWidth).toBeLessThanOrEqual(320);
+
+    for (const testId of ["auth-preset-P-SIM-001", "auth-staff-nurse"]) {
+      const btn = page.getByTestId(testId);
+      await expect(btn).toBeVisible();
+      const box = await btn.boundingBox();
+      expect(box, `Bounding box for ${testId}`).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+    }
+  });
+
+  test("6. Logged-out landing page showcase supports sandbox preview, hardware CAD toggle, and demo sign-in", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/", { waitUntil: "networkidle" });
+
+    const sandbox = page.getByTestId("landing-checkin-sandbox");
+    await expect(sandbox).toBeVisible();
+
+    await sandbox.getByRole("button", { name: "Not today" }).click();
+    await expect(sandbox).toContainText("Skipped without penalty");
+
+    const storageCheck = await page.evaluate(() => ({
+      localLength: window.localStorage.length,
+      sessionLength: window.sessionStorage.length,
+    }));
+    expect(storageCheck.localLength).toBe(0);
+    expect(storageCheck.sessionLength).toBe(0);
+
+    await page.getByRole("button", { name: "Inside hardware" }).click();
+    await expect(
+      page.getByAltText(/Exploded CAD view of Cepheus Desk Buddy/i)
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Arduino UNO Q runs local voice check-ins/i)
+    ).toBeVisible();
+
+    await page.getByTestId("landing-demo-patient").click();
+    await expect(page.getByTestId("demo-timeline-preview")).toBeVisible();
+  });
 });
