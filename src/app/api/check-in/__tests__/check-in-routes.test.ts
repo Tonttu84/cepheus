@@ -305,7 +305,7 @@ describe("check-in routes", () => {
 
       const events = await fake.ports.crisis.getCrisisEvents(PATIENT_ID);
       expect(events).toHaveLength(1);
-      expect(events[0].itemId).toBe("crisis_button");
+      expect(events[0].itemId).toBe("asked_for_help");
       expect(events[0].value).toBe(1);
     });
 
