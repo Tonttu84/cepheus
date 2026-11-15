@@ -1,7 +1,11 @@
 import { expect } from "@playwright/test";
-import { resetPatientConsentForTest, signInAsPatient, test } from "./helpers";
+import { resetPatientConsentForTest, restorePatientConsent, signInAsPatient, test } from "./helpers";
 
 test.describe("Patient consent screen on first sign-in and layered consent", () => {
+  test.afterAll(async () => {
+    await restorePatientConsent("P-SIM-001");
+  });
+
   test("sign in, see the screen, agree to take part only, reach /check-in; then tick layer 3 on monitoring page and see it on", async ({
     page,
   }) => {
@@ -50,6 +54,7 @@ test.describe("Patient consent screen on first sign-in and layered consent", () 
     // 3. Reach /check-in
     await page.waitForURL("**/check-in");
     await expect(page).toHaveURL(/\/check-in$/);
+    await expect(page.getByRole("heading", { name: "Twice-weekly wellbeing check-in" })).toBeVisible();
 
     // 4. Navigate to monitoring page to change consent later
     await page.goto("/monitoring");

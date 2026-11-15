@@ -256,6 +256,117 @@ export async function resetPatientConsentForTest(
   });
 }
 
+/** Restores consent for the given participant so subsequent tests see an agreed-to state. */
+export async function restorePatientConsent(
+  participantCode: SimulatedPatientPresetKey = "P-SIM-001"
+): Promise<void> {
+  const prisma = getPrisma();
+  const patient = await prisma.participant.findFirst({ where: { participantCode } });
+  if (!patient) return;
+  await prisma.participant.update({
+    where: { id: patient.id },
+    data: { takingPart: true, ruleCheckConsent: true },
+  });
+  await prisma.consentEvent.deleteMany({
+    where: { participantId: patient.id, layer: "detailed_answers" },
+  });
+  await prisma.measurementConsent.deleteMany({
+    where: { participantId: patient.id, method: "detailed_answers" },
+  });
+}
+
+/**
+ * Removes what answering on /check-in stores for these sample patients: the
+ * rounds after the seeded one, questionnaires, extra answers, open crisis
+ * alerts and the flags the rule raised. Specs that answer a round call it in
+ * afterAll, so that the next spec finds the open round unanswered.
+ */
+export async function clearCheckInAnswers(
+  participantCodes: readonly SimulatedPatientPresetKey[]
+): Promise<void> {
+  const prisma = getPrisma();
+  for (const participantCode of participantCodes) {
+    const patient = await prisma.participant.findFirst({ where: { participantCode } });
+    if (!patient) continue;
+    const ofPatient = { participantId: patient.id };
+    const seededRounds = participantCode === "P-SIM-001" ? 1 : 0;
+    await prisma.checkInRound.deleteMany({
+      where: { ...ofPatient, roundNumber: { gt: seededRounds } },
+    });
+    await prisma.phq9Assessment.deleteMany({ where: ofPatient });
+    await prisma.gad7Assessment.deleteMany({ where: ofPatient });
+    await prisma.extraAnswer.deleteMany({ where: ofPatient });
+    await prisma.crisisEvent.deleteMany({ where: { ...ofPatient, acknowledgedAt: null } });
+    await prisma.clinicFlag.deleteMany({ where: { ...ofPatient, causeType: { not: null } } });
+  }
+}
+
+/**
+ * Switches one optional measuring method on or off for a patient, as the
+ * switch on /patient does, and returns what it was before. The seed leaves
+ * optional methods off and the demo reset switches them on, so a test that
+ * needs one of the two says which.
+ */
+export async function setMeasuringMethodConsent(
+  participantCode: SimulatedPatientPresetKey,
+  method: "ring_rhythm" | "camera_expressivity",
+  enabled: boolean
+): Promise<boolean> {
+  const prisma = getPrisma();
+  const patient = await prisma.participant.findFirstOrThrow({ where: { participantCode } });
+  const key = { participantId_method: { participantId: patient.id, method } };
+  const before = await prisma.measurementConsent.findUniqueOrThrow({ where: key });
+  if (before.enabled === enabled) return before.enabled;
+  await prisma.measurementConsent.update({
+    where: key,
+    data: {
+      enabled,
+      consentedAt: enabled ? new Date() : before.consentedAt,
+      revokedAt: enabled ? null : new Date(),
+    },
+  });
+  await prisma.consentEvent.create({
+    data: {
+      participantId: patient.id,
+      clinicId: patient.clinicId,
+      layer: "method",
+      method,
+      enabled,
+      noticeVersion: "v1",
+    },
+  });
+  return before.enabled;
+}
+
+/** Offers again every suggestion of this patient that was answered at or after `since`. */
+export async function reofferSuggestionsAnsweredSince(
+  participantCode: SimulatedPatientPresetKey,
+  since: Date
+): Promise<void> {
+  const prisma = getPrisma();
+  const patient = await prisma.participant.findFirst({ where: { participantCode } });
+  if (!patient) return;
+  await prisma.patientSuggestion.updateMany({
+    where: {
+      participantId: patient.id,
+      status: { in: ["accepted", "completed", "skipped"] },
+      respondedAt: { gte: since },
+    },
+    data: { status: "shown", respondedAt: null },
+  });
+}
+
+/** Sets the demo back to its seeded state and its clock to now, as the Reset button on /demo does. */
+export async function resetDemo(page: Page, context: BrowserContext): Promise<void> {
+  await signInAsStaff(page, context);
+  const res = await page.request.post("/api/demo/reset", {
+    headers: { origin: BASE_ORIGIN },
+  });
+  if (!res.ok()) {
+    throw new Error(`Demo reset failed (${res.status()}): ${await res.text()}`);
+  }
+}
+
 export async function signInAsPatient(
   page: Page,
   contextOrCode?: BrowserContext | SimulatedPatientPresetKey,

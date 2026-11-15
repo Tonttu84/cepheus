@@ -1,7 +1,12 @@
 import { expect } from "@playwright/test";
-import { signInAsPatient, signInAsStaff, test } from "./helpers";
+import { resetDemo, signInAsPatient, signInAsStaff, test } from "./helpers";
 
 test.describe("Demo page: time advance, clinic warning, and reset", () => {
+  // Each test moves the demo clock or a switch; the specs that follow expect the seeded state.
+  test.afterEach(async ({ page, context }) => {
+    await resetDemo(page, context);
+  });
+
   test("advance two weeks, see the warning on /clinic, reset, see it gone", async ({
     page,
     context,

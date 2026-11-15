@@ -1,7 +1,26 @@
 import { expect } from "@playwright/test";
-import { signInAsPatient, test } from "./helpers";
+import {
+  reofferSuggestionsAnsweredSince,
+  setMeasuringMethodConsent,
+  signInAsPatient,
+  test,
+} from "./helpers";
 
 test.describe("Patient page with storage", () => {
+  const startedAt = new Date();
+  let ringAllowedBefore = false;
+
+  // The first test pauses the ring, so the ring has to be allowed when it starts.
+  test.beforeAll(async () => {
+    ringAllowedBefore = await setMeasuringMethodConsent("P-SIM-001", "ring_rhythm", true);
+  });
+
+  test.afterAll(async () => {
+    await setMeasuringMethodConsent("P-SIM-001", "ring_rhythm", ringAllowedBefore);
+    await reofferSuggestionsAnsweredSince("P-SIM-001", startedAt);
+    await reofferSuggestionsAnsweredSince("P-SIM-DEP-01", startedAt);
+  });
+
   test("sign in as a sample patient, choose I'll try this today, reload, choice is shown; switch a method off, reload, it is off", async ({
     page,
     context,

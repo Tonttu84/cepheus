@@ -1,7 +1,12 @@
 import { expect } from "@playwright/test";
-import { signInAsPatient, signOutSession, test } from "./helpers";
+import { clearCheckInAnswers, signInAsPatient, signOutSession, test } from "./helpers";
 
 test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gating", () => {
+  // These tests answer and skip the open round of three sample patients.
+  test.afterAll(async () => {
+    await clearCheckInAnswers(["P-SIM-001", "P-SIM-DEP-01", "P-SIM-ANX-01"]);
+  });
+
   test("1. completes a check-in by typing (taps and questionnaire items)", async ({
     page,
     context,

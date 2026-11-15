@@ -1,7 +1,18 @@
 import { expect } from "@playwright/test";
-import { signInAsPatient, signInAsStaff, test } from "./helpers";
+import {
+  reofferSuggestionsAnsweredSince,
+  signInAsPatient,
+  signInAsStaff,
+  test,
+} from "./helpers";
 
 test.describe("Interactive Redesign Fixes & Invariants", () => {
+  const startedAt = new Date();
+
+  test.afterAll(async () => {
+    await reofferSuggestionsAnsweredSince("P-SIM-001", startedAt);
+  });
+
   test("1. /check-in handles scale tapping with accessible names, Not Today skip, and plain save explanation", async ({
     page,
     context,
