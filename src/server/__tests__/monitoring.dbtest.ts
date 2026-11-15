@@ -556,6 +556,26 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
       signedInAt: "2026-11-14T20:00:00.000Z",
     };
 
+    // Fresh unseeded patient starts with passive ring_rhythm paused and no device connected
+    const initialSummaryB = await getMonitoringSummary(sessionB, prisma);
+    expect(initialSummaryB.consents.find((c) => c.method === "ring_rhythm")?.enabled).toBe(false);
+    expect(initialSummaryB.consents.find((c) => c.method === "camera_expressivity")?.enabled).toBe(false);
+    expect(initialSummaryB.consents.find((c) => c.method === "home_routine")?.enabled).toBe(false);
+    expect(initialSummaryB.deviceConnections.ring_rhythm).toEqual({
+      connected: false,
+      label: "No device connected",
+    });
+
+    // Pairing is refused (403) while ring_rhythm consent is paused
+    const pausedPairB = await provisionOrRotateHealthConnectPairing(origin, prisma, sessionB);
+    expect(pausedPairB.ok).toBe(false);
+    if (!pausedPairB.ok) {
+      expect(pausedPairB.status).toBe(403);
+    }
+
+    await updateMethodConsent("ring_rhythm", true, prisma, sessionA);
+    await updateMethodConsent("ring_rhythm", true, prisma, sessionB);
+
     const pairA = await provisionOrRotateHealthConnectPairing(origin, prisma, sessionA);
     const pairB = await provisionOrRotateHealthConnectPairing(origin, prisma, sessionB);
     expect(pairA.ok).toBe(true);
@@ -563,6 +583,12 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     if (!pairA.ok || !pairB.ok) return;
 
     expect(pairA.pairing.tokenId).not.toBe(pairB.pairing.tokenId);
+
+    const pairedSummaryB = await getMonitoringSummary(sessionB, prisma);
+    expect(pairedSummaryB.deviceConnections.ring_rhythm).toEqual({
+      connected: true,
+      label: "Phone paired",
+    });
 
     const payloadBody = JSON.stringify({
       sequence: 1,
@@ -586,6 +612,11 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     const summaryA = await getMonitoringSummary(sessionA, prisma);
     expect(summaryB.recentWearableDays.some((d) => d.steps === 8123)).toBe(true);
     expect(summaryA.recentWearableDays.some((d) => d.steps === 8123)).toBe(false);
+    // Simulated/unpaired channels still report No device connected
+    expect(summaryA.deviceConnections.camera_expressivity).toEqual({
+      connected: false,
+      label: "No device connected",
+    });
 
     await updateMethodConsent("ring_rhythm", false, prisma, sessionB);
 

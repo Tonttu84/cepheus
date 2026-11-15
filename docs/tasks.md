@@ -1,6 +1,6 @@
 # Work plan: what is done, what is taken, what is free
 
-Updated against `main` (`d37b27a`) on 15 Nov 2026, about 01:45. This is the one list
+Updated against `main` (`43652d2`) on 15 Nov 2026. This is the one list
 of open work for people and agents. Before you start anything, read it, fetch, and
 check the open trails: two of us built the same sign-in protection in parallel on
 14 Nov because neither list showed the other's work.
@@ -39,6 +39,8 @@ How to use it:
   answers recognised on the device, a camera check while the questions are asked.
   Tested without hardware only.
 - This work plan and the pointer to it in `AGENTS.md` (trails 59 and 61).
+- Monitoring, Fitbit, and Health Connect QR pairing/webhooks bound to authenticated sessions (trail 60, containing trail 55).
+- Passive consent defaults (`ring_rhythm`, `camera_expressivity`, `home_routine` start paused `false` until opted in) and separate device connection status on `/monitoring` (package M / P1.4).
 
 What main does **not** do yet: no screen reads or writes the database through the
 check-in API. The check-in, patient and clinic pages still show generated data.
@@ -102,13 +104,13 @@ branches and goes up as trails as each passes the full gate and a cold review.
 | D1 | **Patient page on storage**: the suggestion comes from storage, the card's two buttons save the choice, the consent switches write consent events | Rest of P1.1 | A | Free once A is published |
 | D2 | **Camera check saves its derived numbers**: a route that accepts only the derived numbers, with the camera consent checked | Not in the earlier list | A (routes) | Taken: `feat/camera-reading-route` |
 | D3 | **GAD-7 on the check-in screen** for patients it is assigned to; check both sample patients | P2.1 | A | Free once A is published |
-| E | **Consistency**: one item id for crisis events (three are in use: "9", "item9SelfHarm", "crisis_button"); the sign-in unit test must not need a running database | Not in the earlier list | A for the id, H for the test | Free |
+| E | **Consistency**: one item id for crisis events (three are in use: "9", "item9SelfHarm", "crisis_button"); the sign-in unit test must not need a running database | Not in the earlier list | A for the id; sign-in test part done in H | Sign-in unit test verified DB-free (`auth.test.ts` + `route-guards.test.ts`); crisis `itemId` still waits on A |
 | F | **Rewards and small tasks** (D48): tables and storage, routes, the patient's page with the balance and the tasks they choose | P2.2 | D1 for the page | Taken: `feat/rewards-storage`, `feat/rewards-screens`; routes free |
 | G | **Hardening**: security headers and a content security policy, stored values parsed on the way out, a test that logs carry no answers or codes; Fitbit calls get time limits and bounded retries | P2.3 | main | Taken: `feat/security-hardening`, `fix/fitbit-time-limits` |
 | I | **Text and spoken answers on `/check-in`**, speech recognised in the browser on the device only | Owner's request | D3 (same screen) | Free |
 | J | **Demo page**: move forward in time (never back), reset, switches for rewards and for counters; moving time forward closes rounds and runs the rule | Owner's request | A, B | Free |
 | K | **Clean the generated data out of the screens** once every screen reads storage | Owner's request | C, D1, D3, F | Last |
-| M | **Passive consent defaults and device status** (P1.4): default `ring_rhythm`, `camera_expressivity` and `home_routine` in `ensureHomeDemoParticipant` (`src/server/monitoring/store.ts`) to `enabled: false` (paused) until the patient opts in, matching D13 and `INITIAL_CONSENT_STATE`; show device connection status (connected or not) apart from the consent permission on `/monitoring` (`src/components/monitoring/consent-section.tsx`); update `monitoring.dbtest.ts` and `e2e/monitoring.spec.ts` to match | P1.4 | Trail 60 (same files) | Free; proposed by the author of trail 59 |
+| M | **Passive consent defaults and device status** (P1.4): default `ring_rhythm`, `camera_expressivity` and `home_routine` in `ensureHomeDemoParticipant` (`src/server/monitoring/store.ts`) and `ensureParticipantConsents` (`src/server/db/monitoring/session-scope.ts`) to `enabled: false` (paused) until the patient opts in, matching D13 and `INITIAL_CONSENT_STATE`; show device connection status (connected or not) apart from the consent permission on `/monitoring` (`src/components/monitoring/consent-section.tsx`); update `monitoring.dbtest.ts` and `e2e/monitoring.spec.ts` to match | P1.4 | Trail 60 (on main) | **Done on this branch** (`feat/passive-consent-and-auth-test`) |
 | L | **Full gate and rehearsal**: `npm run check && npm run test:db && npm run build && npm run test:e2e`, then the whole demo path on the device and in the browser | P2.4, P3.2 | everything | Last |
 
 Choices made for these packages (say so on the trail if you disagree):

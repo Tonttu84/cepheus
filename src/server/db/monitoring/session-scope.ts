@@ -6,6 +6,7 @@ import {
   ALL_CONSENT_METHODS,
   DEMO_CLINIC_ID,
   ensureHomeDemoParticipant,
+  isDefaultEnabledForMethod,
 } from "@/server/monitoring/store";
 
 export const DEFAULT_AUTH_CLINIC_CODE = "sim-clinic-01";
@@ -15,30 +16,27 @@ export async function ensureParticipantConsents(
   clinicId: string | null,
   prisma: PrismaClient
 ): Promise<void> {
-  for (const methodKey of ALL_CONSENT_METHODS) {
+  const rows = ALL_CONSENT_METHODS.map((methodKey) => {
     const meta = MEASUREMENT_METHODS.find((m) => m.method === methodKey);
-    await prisma.measurementConsent.upsert({
-      where: {
-        participantId_method: {
-          participantId,
-          method: methodKey,
-        },
-      },
-      update: {},
-      create: {
-        participantId,
-        clinicId,
-        method: methodKey,
-        broadArea: meta?.broadArea ?? "daily_routine",
-        recordedDescription:
-          meta?.recordedDescription ??
-          "Derived numerical summaries only; video/audio never leave the device.",
-        enabled: true,
-        isPersonalSign: meta?.isPersonalSignDefault ?? false,
-        consentedAt: new Date(),
-      },
-    });
-  }
+    const defaultEnabled = isDefaultEnabledForMethod(methodKey);
+    return {
+      participantId,
+      clinicId,
+      method: methodKey,
+      broadArea: meta?.broadArea ?? "daily_routine",
+      recordedDescription:
+        meta?.recordedDescription ??
+        "Derived numerical summaries only; video/audio never leave the device.",
+      enabled: defaultEnabled,
+      isPersonalSign: meta?.isPersonalSignDefault ?? false,
+      consentedAt: defaultEnabled ? new Date() : null,
+    };
+  });
+
+  await prisma.measurementConsent.createMany({
+    data: rows,
+    skipDuplicates: true,
+  });
 }
 
 async function resolveByParticipantId(
@@ -93,17 +91,32 @@ async function resolveByPatientSession(
   });
 
   if (!participant) {
-    participant = await prisma.participant.create({
-      data: {
-        clinicId: clinic.id,
-        participantCode: session.participantCode,
-        externalId: preset?.externalId ?? session.actor.patientId,
-        label: session.label,
-        source: "synthetic",
-        isSimulated: session.isSimulated,
-        takingPart: true,
-      },
-    });
+    const externalId = preset?.externalId ?? session.actor.patientId;
+    try {
+      participant = await prisma.participant.create({
+        data: {
+          clinicId: clinic.id,
+          participantCode: session.participantCode,
+          externalId,
+          label: session.label,
+          source: "synthetic",
+          isSimulated: session.isSimulated,
+          takingPart: true,
+        },
+      });
+    } catch (err) {
+      if ((err as { code?: string })?.code !== "P2002") throw err;
+      participant = await prisma.participant.findFirst({
+        where: {
+          OR: [
+            { id: session.actor.patientId },
+            { participantCode: session.participantCode },
+            { externalId },
+          ],
+        },
+      });
+      if (!participant) throw err;
+    }
   }
 
   await ensureParticipantConsents(
