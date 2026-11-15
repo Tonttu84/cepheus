@@ -11,7 +11,7 @@
  * - Zero external imports outside src/domain/.
  */
 
-export type VoiceChoiceMode = "tap" | "phq9";
+export type VoiceChoiceMode = "tap" | "phq9" | "gad7";
 
 export type ParsedVoiceChoice =
   | { readonly kind: "score"; readonly value: number }
@@ -145,6 +145,11 @@ export function parseSpokenChoice(
   transcript: string,
   mode: VoiceChoiceMode
 ): ParsedVoiceChoice {
+  const lower = transcript.toLowerCase();
+  if (/-\s*\d|\bminus\b|\bnegative\b/.test(lower)) {
+    return { kind: "unclear" };
+  }
+
   const norm = normalizeTranscript(transcript);
   if (!norm) {
     return { kind: "unclear" };
