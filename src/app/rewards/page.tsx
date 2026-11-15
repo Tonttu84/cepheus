@@ -96,9 +96,17 @@ export default async function RewardsPage() {
         <h3 className="font-display text-xl font-semibold tracking-tight text-ink-primary mb-4">
           My balance
         </h3>
-        <div className="text-3xl font-semibold text-ink-primary mb-4">
-          {formatCentsToEuros(account.balanceCents)} <span className="text-sm font-normal text-ink-secondary bg-surface-subtle px-2 py-0.5 rounded ml-2 border border-border-hairline align-middle inline-block">simulated</span>
+        <div className="flex flex-wrap items-baseline gap-3 mb-2">
+          <div className="text-3xl font-semibold text-ink-primary">
+            {formatCentsToEuros(account.balanceCents)}{" "}
+            <span className="text-sm font-normal text-ink-secondary bg-surface-subtle px-2 py-0.5 rounded ml-2 border border-border-hairline align-middle inline-block">
+              simulated
+            </span>
+          </div>
         </div>
+        <p className="text-sm text-ink-secondary mb-4">
+          Amounts and payouts are simulated in this demonstration and no real money is paid.
+        </p>
 
         {account.entries.length > 0 && (
           <div className="space-y-2 mb-6">

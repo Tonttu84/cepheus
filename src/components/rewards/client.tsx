@@ -219,13 +219,19 @@ export function PayoutSection({
   const [isPending, startTransition] = useTransition();
   const [payoutRequested, setPayoutRequested] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [clientRequestId] = useState(() => crypto.randomUUID());
   const router = useRouter();
 
   const handlePayout = () => {
+    if (isPending || payoutRequested) return;
     setErrorMessage(null);
     startTransition(async () => {
       try {
-        const res = await fetch("/api/rewards/payout", { method: "POST" });
+        const res = await fetch("/api/rewards/payout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestId: clientRequestId }),
+        });
         if (!res.ok) {
           setErrorMessage("It could not be saved and nothing was lost.");
           return;
@@ -246,20 +252,30 @@ export function PayoutSection({
         </div>
       )}
       {!payoutAvailable && balanceCents < payoutThresholdCents && (
-        <p className="text-sm text-ink-secondary">
-          A payout can be requested from 10 euros.
-        </p>
+        <div className="space-y-1">
+          <p className="text-sm text-ink-secondary">
+            A payout can be requested from 10 euros.
+          </p>
+          <p className="text-sm text-ink-secondary">
+            Amounts and payouts are simulated in this demonstration and no real money is paid.
+          </p>
+        </div>
       )}
       {payoutAvailable && !payoutRequested && (
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={handlePayout}
-          aria-label="Request payout"
-          className="min-h-12 rounded-xl px-6 py-3 text-sm font-semibold bg-accent-sage text-white hover:bg-accent-sage-hover transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Request Payout
-        </button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <button
+            type="button"
+            disabled={isPending || payoutRequested}
+            onClick={handlePayout}
+            aria-label="Request payout"
+            className="min-h-12 rounded-xl px-6 py-3 text-sm font-semibold bg-accent-sage text-white hover:bg-accent-sage-hover transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Request Payout
+          </button>
+          <p className="text-sm text-ink-secondary">
+            Amounts and payouts are simulated in this demonstration and no real money is paid.
+          </p>
+        </div>
       )}
       {payoutRequested && (
         <p className="text-sm font-medium text-accent-sage-hover" role="status">
