@@ -69,12 +69,16 @@ async function updateOnePatient(patientId: string, ports: Ports): Promise<void> 
   }
 }
 
+export type ClinicFlagsDeps = Pick<RouteDeps, "ports" | "clinicPatientIds"> & {
+  readonly resolveDevicePatient?: RouteDeps["resolveDevicePatient"];
+};
+
 /**
  * Brings every patient of one clinic up to date: closes elapsed rounds and
  * runs the warning rule for each patient. Catches per patient on storage
  * failure and carries on so one patient cannot hide others' flags.
  */
-export async function bringClinicUpToDate(clinicId: string, deps: RouteDeps): Promise<void> {
+export async function bringClinicUpToDate(clinicId: string, deps: ClinicFlagsDeps): Promise<void> {
   const patientIds = await deps.clinicPatientIds(clinicId);
   for (const patientId of patientIds) {
     await updateOnePatient(patientId, deps.ports);
@@ -320,7 +324,7 @@ async function flagsOfPatient(actor: StaffActor, patientId: string, ports: Ports
  * the access rules (a patient without consent for care contributes none).
  * Newest first.
  */
-export async function listClinicFlags(actor: StaffActor, deps: RouteDeps): Promise<ClinicFlagView[]> {
+export async function listClinicFlags(actor: StaffActor, deps: ClinicFlagsDeps): Promise<ClinicFlagView[]> {
   await bringClinicUpToDate(actor.clinicId, deps);
   const patientIds = await deps.clinicPatientIds(actor.clinicId);
   const flags: ClinicFlagView[] = [];
