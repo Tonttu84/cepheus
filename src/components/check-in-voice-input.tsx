@@ -6,68 +6,10 @@ import {
   parseSpokenChoice,
   type VoiceChoiceMode,
 } from "@/domain/arduino/voice";
-
-interface BrowserSpeechRecognitionResultItem {
-  transcript?: string;
-}
-
-interface BrowserSpeechRecognitionEvent {
-  results?: ArrayLike<ArrayLike<BrowserSpeechRecognitionResultItem>>;
-}
-
-interface BrowserSpeechRecognitionErrorEvent {
-  error?: string;
-}
-
-interface BrowserSpeechRecognition {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null;
-  onerror: ((event: BrowserSpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-}
-
-type SpeechRecognitionCtor = new () => BrowserSpeechRecognition;
-
-function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
-function startBrowserRecognition(handlers: {
-  onResult: (transcript: string) => void;
-  onError: (code: string) => void;
-  onEnd: () => void;
-}): BrowserSpeechRecognition | null {
-  const Ctor = getSpeechRecognitionCtor();
-  if (!Ctor) {
-    return null;
-  }
-  const rec = new Ctor();
-  rec.lang = "en-US";
-  rec.continuous = false;
-  rec.interimResults = false;
-  rec.maxAlternatives = 1;
-  rec.onresult = (event) => {
-    handlers.onResult(event.results?.[0]?.[0]?.transcript ?? "");
-  };
-  rec.onerror = (event) => {
-    handlers.onError(event.error ?? "unavailable");
-  };
-  rec.onend = handlers.onEnd;
-  rec.start();
-  return rec;
-}
+import {
+  getOnDeviceSpeechRecognizer,
+  type SpeechRecognitionController,
+} from "@/components/check-in/on-device-speech";
 
 function VoiceCrisisAlert() {
   return (
@@ -172,9 +114,84 @@ function SpeakButton({
   );
 }
 
+export interface ProcessVoiceOrTextInputOptions {
+  raw: string;
+  source: "spoken" | "typed";
+  mode: VoiceChoiceMode;
+  activeItemLabel: string | null;
+  activeItemId?: string;
+  onSelectScore: (score: number) => void;
+  onNotToday: () => void;
+  onCrisisHelp: () => void;
+}
+
+export interface ProcessVoiceOrTextInputResult {
+  kind: "score" | "not_today" | "crisis_help" | "unclear";
+  feedback: string;
+  crisisVisible?: boolean;
+}
+
+export function processVoiceOrTextInput({
+  raw,
+  source,
+  mode,
+  activeItemLabel,
+  activeItemId,
+  onSelectScore,
+  onNotToday,
+  onCrisisHelp,
+}: ProcessVoiceOrTextInputOptions): ProcessVoiceOrTextInputResult {
+  const parsed = parseSpokenChoice(raw, mode);
+  if (parsed.kind === "crisis_help") {
+    onCrisisHelp();
+    return {
+      kind: "crisis_help",
+      feedback: "Showing direct emergency and nurse support links.",
+      crisisVisible: true,
+    };
+  }
+  if (parsed.kind === "not_today") {
+    onNotToday();
+    return {
+      kind: "not_today",
+      feedback: "Applied: Not today.",
+    };
+  }
+  if (parsed.kind === "score") {
+    if (!activeItemLabel) {
+      return {
+        kind: "unclear",
+        feedback:
+          "All prompts are already answered — tap any word pill below to change one.",
+      };
+    }
+    const isItem9Crisis = activeItemId === "9" && parsed.value > 0;
+    if (isItem9Crisis) {
+      onCrisisHelp();
+    }
+    const maxScore = mode === "tap" ? 4 : 3;
+    onSelectScore(parsed.value);
+    return {
+      kind: "score",
+      feedback: `Applied ${parsed.value} of ${maxScore} to ${activeItemLabel} (${source}).`,
+      crisisVisible: isItem9Crisis,
+    };
+  }
+  const maxScore = mode === "tap" ? 4 : 3;
+  const example =
+    mode === "tap"
+      ? "Low, Okay, Good, Very good"
+      : "Not at all, Several days, Nearly every day";
+  return {
+    kind: "unclear",
+    feedback: `Could not match that to 0–${maxScore} or Not today. Try saying or typing 0–${maxScore}, ${example}, or Not today.`,
+  };
+}
+
 export interface CheckInVoiceInputProps {
   activeItemLabel: string | null;
-  activeItemChoices?: readonly [string, string, string, string, string];
+  activeItemId?: string;
+  activeItemChoices?: readonly string[];
   disabled?: boolean;
   mode?: VoiceChoiceMode;
   onSelectScore: (score: number) => void;
@@ -184,6 +201,7 @@ export interface CheckInVoiceInputProps {
 
 export function CheckInVoiceInput({
   activeItemLabel,
+  activeItemId,
   activeItemChoices,
   disabled = false,
   mode = "tap",
@@ -192,45 +210,49 @@ export function CheckInVoiceInput({
   onCrisisHelp,
 }: CheckInVoiceInputProps) {
   const [textValue, setTextValue] = useState("");
+  const [voiceAvailable, setVoiceAvailable] = useState(false);
   const [listening, setListening] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [crisisVisible, setCrisisVisible] = useState(false);
-  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const controllerRef = useRef<SpeechRecognitionController | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+    const recognizer = getOnDeviceSpeechRecognizer();
+    recognizer
+      .isAvailable()
+      .then((avail) => {
+        if (mounted) {
+          setVoiceAvailable(avail);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setVoiceAvailable(false);
+        }
+      });
     return () => {
-      recognitionRef.current?.stop();
-      recognitionRef.current = null;
+      mounted = false;
+      controllerRef.current?.stop();
+      controllerRef.current = null;
     };
   }, []);
 
   function applyTranscript(raw: string, source: "spoken" | "typed") {
-    const parsed = parseSpokenChoice(raw, mode);
-    if (parsed.kind === "crisis_help") {
+    const result = processVoiceOrTextInput({
+      raw,
+      source,
+      mode,
+      activeItemLabel,
+      activeItemId,
+      onSelectScore,
+      onNotToday,
+      onCrisisHelp,
+    });
+    setFeedback(result.feedback);
+    if (result.crisisVisible) {
       setCrisisVisible(true);
-      setFeedback("Showing direct emergency and nurse support links.");
-      onCrisisHelp();
-      return;
     }
-    if (parsed.kind === "not_today") {
-      setFeedback("Applied: Not today.");
-      onNotToday();
-      return;
-    }
-    if (parsed.kind === "score") {
-      if (!activeItemLabel) {
-        setFeedback(
-          "All prompts are already answered — tap any word pill below to change one."
-        );
-        return;
-      }
-      setFeedback(`Applied ${parsed.value} of 4 to ${activeItemLabel} (${source}).`);
-      onSelectScore(parsed.value);
-      return;
-    }
-    setFeedback(
-      "Could not match that to 0–4 or Not today. Try saying or typing 0–4, Low, Okay, Good, Very good, or Not today."
-    );
   }
 
   function handleTextSubmit(event: FormEvent<HTMLFormElement>) {
@@ -243,48 +265,42 @@ export function CheckInVoiceInput({
   }
 
   function handleToggleSpeech() {
-    if (disabled) return;
+    if (disabled || !voiceAvailable) return;
     if (listening) {
-      recognitionRef.current?.stop();
+      controllerRef.current?.stop();
       setListening(false);
       return;
     }
     try {
-      const started = startBrowserRecognition({
+      const recognizer = getOnDeviceSpeechRecognizer();
+      const ctrl = recognizer.startListening({
         onResult: (transcript) => {
           setListening(false);
           applyTranscript(transcript, "spoken");
         },
-        onError: (code) => {
+        onError: () => {
           setListening(false);
           setFeedback(
-            code === "not-allowed"
-              ? "Microphone permission was declined. You can type an answer or tap 0–4."
-              : "Could not recognise speech clearly. You can try again, type, or tap 0–4."
+            "Could not recognise speech clearly. You can try again, type, or tap below."
           );
         },
         onEnd: () => setListening(false),
       });
-      if (!started) {
-        setFeedback(
-          "Browser speech recognition is unavailable here. Type an answer below or tap 0–4."
-        );
-        return;
-      }
-      recognitionRef.current = started;
+      controllerRef.current = ctrl;
       setFeedback("Listening on this device...");
       setListening(true);
     } catch {
       setListening(false);
-      setFeedback("Unable to start browser speech recognition.");
+      setFeedback("Unable to start on-device speech recognition.");
     }
   }
 
+  const maxScore = mode === "tap" ? 4 : 3;
   const promptHint = activeItemLabel
     ? `Answering: ${activeItemLabel}`
     : "All prompts answered (tap any pill below to change)";
   const placeholder = activeItemChoices
-    ? `Type: ${activeItemChoices.join(", ")}, 0–4, or Not today`
+    ? `Type: ${activeItemChoices.join(", ")}, 0–${maxScore}, or Not today`
     : "All prompts answered — type Not today or Help, or tap a pill below";
 
   return (
@@ -295,18 +311,22 @@ export function CheckInVoiceInput({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-ink-primary">
-            Speak or type an answer
+            {voiceAvailable ? "Speak or type an answer" : "Type an answer"}
           </p>
           <p className="text-xs text-ink-secondary">
-            {promptHint} · Uses your browser&apos;s speech tool when you tap
-            Speak; Cepheus never records, keeps, or uploads audio.
+            {promptHint}
+            {voiceAvailable
+              ? " · Uses confirmed on-device speech recognition when you tap Speak; Cepheus never records, keeps, or uploads audio."
+              : " · Cepheus never records, keeps, or uploads audio."}
           </p>
         </div>
-        <SpeakButton
-          listening={listening}
-          disabled={disabled}
-          onClick={handleToggleSpeech}
-        />
+        {voiceAvailable ? (
+          <SpeakButton
+            listening={listening}
+            disabled={disabled}
+            onClick={handleToggleSpeech}
+          />
+        ) : null}
       </div>
 
       <VoiceAnswerForm

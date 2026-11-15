@@ -307,4 +307,40 @@ describe('recordNurseCallOutcome', () => {
     );
     expect(res.ok).toBe(false);
   });
+
+  it('records a requested nurse call once even when submitted twice', async () => {
+    const { ports } = createFakePorts('2026-11-16T18:00:00.000Z');
+    await ports.patients.savePatient({
+      patientId: 'patient-1',
+      clinicId: CLINIC_A,
+      schedule: { weekdays: [1, 4], timeOfDay: '18:00', timeZone: 'Europe/Helsinki', enrolmentDate: '2026-11-16' },
+      consent: { taking_part: true, methods: { ring: false, camera: false }, rule_check: true },
+    });
+
+    const first = await recordNurseCallOutcome(
+      staffA,
+      { patientId: 'patient-1', flagId: 'flag-1', status: 'requested' },
+      ports
+    );
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(first.value.status).toBe('requested');
+    expect(first.value.flagStatus).toBe('nurse_call_requested');
+    expect(first.value.requestedAt).toBe('2026-11-16T18:00:00.000Z');
+    expect(first.value.requestedBy).toBe('nurse-1');
+
+    const second = await recordNurseCallOutcome(
+      staffA,
+      { patientId: 'patient-1', flagId: 'flag-1', status: 'requested' },
+      ports
+    );
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.value.id).toBe(first.value.id);
+
+    const records = await ports.calls.getNurseCallRecords('patient-1');
+    expect(records).toHaveLength(1);
+    expect(records[0].status).toBe('requested');
+    expect(records[0].staffUserId).toBe('nurse-1');
+  });
 });

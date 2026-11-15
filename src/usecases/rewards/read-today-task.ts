@@ -4,7 +4,6 @@ import { DEFAULT_REWARDS_CONFIG, validateRewardsConfig } from "../../domain/rewa
 import type { RewardsConfig } from "../../domain/rewards/types";
 import { getTaskByKey } from "../../domain/small-tasks/catalogue";
 import {
-  createTaskRecord,
   determineOfferedTask,
   isCheckInDay,
 } from "../../domain/small-tasks/rotation";
@@ -79,21 +78,14 @@ export async function readTodayTask(
 
     const preferred = await ports.preferences.getPreferences(input.patientId);
     const history = await ports.taskRecords.getHistory(input.patientId);
+    const completedHistory = history.filter(
+      (r) => r.status === "completed" || r.localDate === localDate
+    );
     const task = determineOfferedTask({
       preferredKeys: preferred,
-      history,
+      history: completedHistory,
       localDate,
     });
-
-    const newRecord = createTaskRecord({
-      id: `task-${input.patientId}-${localDate}`,
-      patientId: input.patientId,
-      localDate,
-      taskKey: task.key,
-      status: "offered",
-    });
-
-    await ports.taskRecords.saveTaskRecord(newRecord);
 
     return {
       offered: true,

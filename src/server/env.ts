@@ -28,6 +28,8 @@ export interface AppEnv {
   STORE_ITEM_ANSWERS: boolean;
   /** Bearer key for the system-only routes; empty means those routes refuse every caller. */
   SYSTEM_API_KEY: string;
+  /** Maximum number of sign-in attempts per 60-second window before 429 response. Defaults to 10. */
+  SIGN_IN_RATE_LIMIT_MAX: number;
 }
 
 const optionalTrimmedString = z
@@ -204,6 +206,7 @@ const rawEnvSchema = z
     VERDA_GEMMA_MODEL: optionalTrimmedString,
     STORE_ITEM_ANSWERS: optionalTrimmedString,
     SYSTEM_API_KEY: optionalTrimmedString,
+    SIGN_IN_RATE_LIMIT_MAX: optionalTrimmedString,
   })
   .superRefine((val, ctx) => {
     const isProduction = val.NODE_ENV === "production";
@@ -224,6 +227,16 @@ const rawEnvSchema = z
     }
     if (val.SYSTEM_API_KEY.length > 0 && val.SYSTEM_API_KEY.length < 32) {
       addCustomIssue(ctx, "SYSTEM_API_KEY", "must be at least 32 characters when set");
+    }
+    if (val.SIGN_IN_RATE_LIMIT_MAX.length > 0) {
+      const parsedInt = Number(val.SIGN_IN_RATE_LIMIT_MAX);
+      if (!Number.isInteger(parsedInt) || parsedInt <= 0) {
+        addCustomIssue(
+          ctx,
+          "SIGN_IN_RATE_LIMIT_MAX",
+          "Invalid environment variable: SIGN_IN_RATE_LIMIT_MAX (must be a positive integer)"
+        );
+      }
     }
     if (isProduction && !isBuildPhase) {
       validateProductionSecrets(val, ctx);
@@ -281,6 +294,10 @@ export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
     VERDA_GEMMA_MODEL: result.data.VERDA_GEMMA_MODEL || "google/gemma-3-27b-it",
     STORE_ITEM_ANSWERS: result.data.STORE_ITEM_ANSWERS.toLowerCase() === "true",
     SYSTEM_API_KEY: result.data.SYSTEM_API_KEY,
+    SIGN_IN_RATE_LIMIT_MAX:
+      result.data.SIGN_IN_RATE_LIMIT_MAX.length > 0
+        ? Number.parseInt(result.data.SIGN_IN_RATE_LIMIT_MAX, 10)
+        : 10,
   };
 }
 

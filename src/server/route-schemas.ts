@@ -49,6 +49,13 @@ export const CheckInGad7RequestSchema = z
   .strict()
   .meta({ description: "One GAD-7 item answer" });
 
+export const CheckInCrisisRequestSchema = z
+  .object({
+    screen: z.literal("check-in").meta({ description: "Screen the crisis help request came from" }),
+  })
+  .strict()
+  .meta({ description: "A typed or spoken request for help on the check-in screen (carries no text)" });
+
 export const CheckInExtraAnswerRequestSchema = z
   .object({
     itemId: z

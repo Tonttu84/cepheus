@@ -5,10 +5,15 @@ import { CheckInVoiceInput } from "@/components/check-in-voice-input";
 import { CRISIS_RESOURCES, PHQ9_ITEMS } from "@/lib/constants";
 import {
   fetchCheckInState,
+  submitCheckInCrisisAlert,
+  submitCheckInGad7,
   submitCheckInNotToday,
   submitCheckInPhq9,
   submitCheckInTaps,
 } from "@/lib/check-in-client";
+import { GAD7_TEXT_EN } from "@/domain/instruments";
+import type { VoiceChoiceMode } from "@/domain/arduino/voice";
+import { ExtraQuestion, type ExtraItemData } from "./check-in/extra-question";
 
 export interface CheckInPromptItem {
   key: string;
@@ -217,7 +222,7 @@ function Phq9Section({
   onSelect,
 }: Phq9SectionProps) {
   return (
-    <div className="mt-10 border-t border-border-hairline pt-8">
+    <div className="mt-10 border-t border-border-hairline pt-8" data-testid="phq9-section">
       <div className="mb-6 space-y-1">
         <h3 className="font-display text-lg font-semibold text-ink-primary sm:text-xl">
           Fortnightly PHQ-9 questions
@@ -230,7 +235,7 @@ function Phq9Section({
 
       <div className="divide-y divide-border-hairline">
         {PHQ9_ITEMS.map((item) => (
-          <div key={item.number} className="py-5 first:pt-0 last:pb-0">
+          <div key={item.number} className="py-5 first:pt-0 last:pb-0" data-testid={`phq9-question-${item.number}`}>
             <p className="font-display text-base font-medium leading-snug text-ink-primary">
               <span className="font-semibold">{item.number}.</span>{" "}
               {item.prompt}
@@ -261,6 +266,65 @@ function Phq9Section({
                       {choiceIndex}
                     </span>{" "}
                     — {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface Gad7SectionProps {
+  gad7Answers: Record<string, number>;
+  isSubmitting: boolean;
+  onSelect: (itemId: string, choiceIndex: number) => void;
+}
+
+function Gad7Section({
+  gad7Answers,
+  isSubmitting,
+  onSelect,
+}: Gad7SectionProps) {
+  return (
+    <div className="mt-10 border-t border-border-hairline pt-8" data-testid="gad7-section">
+      <div className="mb-6 space-y-1">
+        <h3 className="font-display text-lg font-semibold text-ink-primary sm:text-xl">
+          Fortnightly GAD-7 anxiety questions
+        </h3>
+        <p className="text-xs text-ink-secondary">
+          Over the last 2 weeks, how often have you been bothered by the following problems?
+        </p>
+      </div>
+
+      <div className="divide-y divide-border-hairline">
+        {GAD7_TEXT_EN.items.map((item) => (
+          <div key={item.id} className="py-5 first:pt-0 last:pb-0" data-testid={`gad7-question-${item.id}`}>
+            <p className="font-display text-base font-medium leading-snug text-ink-primary">
+              <span className="font-semibold">{item.id}.</span> {item.text}
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {PHQ9_CHOICE_LABELS.map((label, choiceIndex) => {
+                const isChosen = gad7Answers[item.id] === choiceIndex;
+                return (
+                  <button
+                    key={choiceIndex}
+                    type="button"
+                    disabled={isSubmitting}
+                    aria-label={`GAD-7 Question ${item.id}: ${choiceIndex} of 3`}
+                    aria-pressed={isChosen}
+                    onClick={() => onSelect(item.id, choiceIndex)}
+                    className={`min-h-11 rounded-xl border px-3 py-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
+                      isSubmitting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                    } ${
+                      isChosen
+                        ? "border-accent-sage bg-accent-sage text-white font-semibold"
+                        : "border-border-tactile bg-surface-card text-ink-primary hover:border-accent-sage hover:bg-accent-sage-soft/60"
+                    }`}
+                  >
+                    <span className="tabular-nums font-semibold">{choiceIndex}</span> — {label}
                   </button>
                 );
               })}
@@ -324,7 +388,9 @@ function CheckInStatusBanners({
           className="mt-6 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
           <p className="font-semibold">
-            This is a preview of a simulated round and nothing is sent yet.
+            The answers of this round are saved. A round left unanswered is
+            recorded as not answered and never scored as zero, and data for
+            sample patients is simulated.
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
             Taking a day off from check-ins is completely fine.
@@ -338,10 +404,12 @@ function CheckInStatusBanners({
           className="mt-6 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 p-4 text-sm text-accent-sage-hover"
         >
           <p className="font-semibold">
-            This is a preview of a simulated round and nothing is sent yet.
+            The answers of this round are saved. A round left unanswered is
+            recorded as not answered and never scored as zero, and data for
+            sample patients is simulated.
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
-            All {itemCount} answers selected. Nothing else needed right now.
+            All {itemCount} answers selected.
           </p>
         </div>
       ) : null}
@@ -419,7 +487,10 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPhq9Due, setIsPhq9Due] = useState(false);
   const [phq9Answers, setPhq9Answers] = useState<Record<string, number>>({});
+  const [isGad7Due, setIsGad7Due] = useState(false);
+  const [gad7Answers, setGad7Answers] = useState<Record<string, number>>({});
   const [showCrisisPath, setShowCrisisPath] = useState(false);
+  const [extraItem, setExtraItem] = useState<ExtraItemData | null>(null);
   const rowRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
@@ -429,6 +500,10 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
       if (res.ok) {
         if (res.taps === "not_today") setSkippedToday(true);
         setIsPhq9Due(res.isPhq9Due);
+        setIsGad7Due(Boolean(res.isGad7Due));
+        if (res.extraItem) {
+          setExtraItem(res.extraItem as ExtraItemData);
+        }
       } else if (res.status === 401) {
         setAuthRequired(true);
       } else if (res.status === 503 || res.saved === false) {
@@ -442,11 +517,49 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
 
   const answeredCount = Object.keys(answers).length;
   const isComplete = answeredCount === items.length;
-  const nextUnansweredIndex = items.findIndex(
+
+  const nextUnansweredTapIndex = items.findIndex(
     (item) => answers[item.key] === undefined
   );
-  const nextUnanswered =
-    nextUnansweredIndex >= 0 ? items[nextUnansweredIndex] : null;
+  const nextUnansweredTap =
+    nextUnansweredTapIndex >= 0 ? items[nextUnansweredTapIndex] : null;
+
+  const nextUnansweredPhq9Item =
+    isPhq9Due && !skippedToday
+      ? PHQ9_ITEMS.find((item) => phq9Answers[String(item.number)] === undefined)
+      : null;
+
+  const nextUnansweredGad7Item =
+    isGad7Due && !skippedToday && !nextUnansweredPhq9Item
+      ? GAD7_TEXT_EN.items.find((item) => gad7Answers[item.id] === undefined)
+      : null;
+
+  let activeItemLabel: string | null = null;
+  let activeItemId: string | undefined = undefined;
+  let activeItemChoices: readonly string[] | undefined = undefined;
+  let activeMode: VoiceChoiceMode = "tap";
+
+  if (nextUnansweredTap) {
+    activeItemLabel = nextUnansweredTap.label;
+    activeItemId = nextUnansweredTap.key;
+    activeItemChoices = resolveChoiceLabels(nextUnansweredTap);
+    activeMode = "tap";
+  } else if (nextUnansweredPhq9Item) {
+    activeItemLabel = `Question ${nextUnansweredPhq9Item.number}`;
+    activeItemId = String(nextUnansweredPhq9Item.number);
+    activeItemChoices = PHQ9_CHOICE_LABELS;
+    activeMode = "phq9";
+  } else if (nextUnansweredGad7Item) {
+    activeItemLabel = `GAD-7 Question ${nextUnansweredGad7Item.id}`;
+    activeItemId = nextUnansweredGad7Item.id;
+    activeItemChoices = PHQ9_CHOICE_LABELS;
+    activeMode = "gad7";
+  }
+
+  function handleCrisisHelp() {
+    setShowCrisisPath(true);
+    void submitCheckInCrisisAlert();
+  }
 
   function handleApiFailure(res: { ok: boolean; status: number; saved?: boolean }) {
     if (res.status === 401) setAuthRequired(true);
@@ -478,6 +591,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
         if (res.ok) {
           setSkippedToday(true);
           setIsPhq9Due(false);
+          setIsGad7Due(false);
         } else {
           handleApiFailure(res);
         }
@@ -487,7 +601,7 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
 
   function handlePhq9Select(itemNumber: number, choice: number) {
     if (isSubmitting) return;
-    if (itemNumber === 9 && choice > 0) setShowCrisisPath(true);
+    if (itemNumber === 9 && choice > 0) handleCrisisHelp();
     setErrorMessage(null);
     setPhq9Answers((prev) => ({ ...prev, [String(itemNumber)]: choice }));
     setIsSubmitting(true);
@@ -499,9 +613,26 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
       .finally(() => setIsSubmitting(false));
   }
 
+  function handleGad7Select(itemId: string, choice: number) {
+    if (isSubmitting) return;
+    setErrorMessage(null);
+    setGad7Answers((prev) => ({ ...prev, [itemId]: choice }));
+    setIsSubmitting(true);
+    submitCheckInGad7({ itemId, value: choice })
+      .then((res) => {
+        if (!res.ok) handleApiFailure(res);
+      })
+      .finally(() => setIsSubmitting(false));
+  }
+
   function handleVoiceOrTextScore(choice: number) {
-    if (!nextUnanswered || nextUnansweredIndex < 0) return;
-    handleSelectFour(nextUnansweredIndex, nextUnanswered.key, choice);
+    if (nextUnansweredTap && nextUnansweredTapIndex >= 0) {
+      handleSelectFour(nextUnansweredTapIndex, nextUnansweredTap.key, choice);
+    } else if (nextUnansweredPhq9Item) {
+      handlePhq9Select(nextUnansweredPhq9Item.number, choice);
+    } else if (nextUnansweredGad7Item) {
+      handleGad7Select(nextUnansweredGad7Item.id, choice);
+    }
   }
 
   return (
@@ -527,15 +658,14 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
       />
 
       <CheckInVoiceInput
-        activeItemLabel={nextUnanswered?.label ?? null}
-        activeItemChoices={
-          nextUnanswered ? resolveChoiceLabels(nextUnanswered) : undefined
-        }
+        activeItemLabel={activeItemLabel}
+        activeItemId={activeItemId}
+        activeItemChoices={activeItemChoices}
         disabled={isSubmitting}
-        mode="tap"
+        mode={activeMode}
         onSelectScore={handleVoiceOrTextScore}
         onNotToday={handleSkip}
-        onCrisisHelp={() => setShowCrisisPath(true)}
+        onCrisisHelp={handleCrisisHelp}
       />
 
       <div className="mt-7 divide-y divide-border-hairline">
@@ -554,11 +684,21 @@ export function CheckInInteractive({ items }: CheckInInteractiveProps) {
         ))}
       </div>
 
+      <ExtraQuestion extraItem={extraItem} disabled={isSubmitting || skippedToday} />
+
       {isPhq9Due && !skippedToday ? (
         <Phq9Section
           phq9Answers={phq9Answers}
           isSubmitting={isSubmitting}
           onSelect={handlePhq9Select}
+        />
+      ) : null}
+
+      {isGad7Due && !skippedToday ? (
+        <Gad7Section
+          gad7Answers={gad7Answers}
+          isSubmitting={isSubmitting}
+          onSelect={handleGad7Select}
         />
       ) : null}
     </section>

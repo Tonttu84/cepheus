@@ -2,6 +2,7 @@ import { requireStaffPageSession } from "@/server/auth";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { SessionContextPill } from "@/components/session-context-banner";
 import { ForestDivider } from "@/components/forest-divider";
+import { ClinicCrisisAlerts } from "@/components/clinic-crisis-alerts";
 import { ClinicFlagsView } from "@/components/clinic-flags-view";
 
 export default async function ClinicPage() {
@@ -32,6 +33,8 @@ export default async function ClinicPage() {
           </p>
         </div>
       </header>
+
+      <ClinicCrisisAlerts />
 
       <ClinicFlagsView />
 

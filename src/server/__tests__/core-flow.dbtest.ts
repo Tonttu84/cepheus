@@ -136,15 +136,18 @@ describe("core flow on PostgreSQL: seeded patient check-in to nurse clinic flag 
       (f: { patientId: string }) => f.patientId === patientId
     );
     expect(patientFlag).toBeDefined();
-    expect(patientFlag).toEqual({
+    expect(patientFlag).toMatchObject({
       patientId,
       area: "check_in",
       since: expect.any(String),
       raisedAt: expect.any(String),
     });
+    // Decision of 15 Nov (owner): the clinic may see the warning kind, a
+    // questionnaire total and its change, and supporting lines; nothing else.
+    for (const key of Object.keys(patientFlag)) expect(["area", "facts", "patientId", "raisedAt", "since", "supportingLines", "warningKind"]).toContain(key);
 
     const serialized = JSON.stringify(flagsBody);
-    expect(serialized).not.toMatch(/mood|interest|score|total|value|item/i);
+    expect(serialized).not.toMatch(/mood|interest|score|item/i);
 
     const otherFlagsRes = await getFlags(
       apiRequest("/api/clinic/flags", {

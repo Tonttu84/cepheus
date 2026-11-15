@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { getPrisma } from "../src/lib/db";
-import { signInAsPatient } from "./helpers";
+import { signInAsPatient, test } from "./helpers";
 
 test.describe("Package I: On-device text and spoken answers on /check-in", () => {
   test.afterAll(async () => {
@@ -61,7 +61,11 @@ test.describe("Package I: On-device text and spoken answers on /check-in", () =>
     await signInAsPatient(page, context);
     await page.addInitScript(() => {
       class MockSpeechRecognition {
+        static available(opts?: { langs?: string[]; processLocally?: boolean }) {
+          return Promise.resolve(opts?.processLocally ? true : false);
+        }
         lang = "en-US";
+        processLocally = true;
         continuous = false;
         interimResults = false;
         maxAlternatives = 1;
@@ -77,6 +81,7 @@ test.describe("Package I: On-device text and spoken answers on /check-in", () =>
           }, 20);
         }
         stop() {}
+        abort() {}
       }
       (window as unknown as { SpeechRecognition: unknown }).SpeechRecognition =
         MockSpeechRecognition;

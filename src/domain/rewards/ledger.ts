@@ -45,7 +45,10 @@ export function buildAccountSummary(params: BuildAccountSummaryParams): AccountS
   return {
     balanceCents,
     entries: params.entries,
-    counts: params.counts,
+    counts: {
+      ...params.counts,
+      walks: params.counts.walks ?? 0,
+    },
     payoutThresholdCents: thresholdCents,
     payoutAvailable: canRequestPayout(balanceCents, thresholdCents),
     centsToPayout: calculateCentsToPayout(balanceCents, thresholdCents),

@@ -145,6 +145,7 @@ export function MonitoringDashboard() {
       <ForestDivider variant="clearing" />
       <ConsentSection
         consents={summary?.consents ?? []}
+        detailedAnswersEnabled={summary?.detailedAnswersEnabled ?? false}
         deviceConnections={resolveDeviceConnections(
           summary,
           fitbitStatus,

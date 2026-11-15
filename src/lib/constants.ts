@@ -86,7 +86,8 @@ export type MeasurementMethodKey =
   | "speech_rate"
   | "ambiguous_faces"
   | "home_routine"
-  | "financial_routine";
+  | "financial_routine"
+  | "detailed_answers";
 
 export interface MeasurementMethodDescriptor {
   method: MeasurementMethodKey;
@@ -178,6 +179,16 @@ export const MEASUREMENT_METHODS: MeasurementMethodDescriptor[] = [
     isPersonalSignDefault: false,
     recordedDescription:
       "Stores only coarse period counts, never merchants or transactions. Even if shared, the clinic only ever sees the words 'financial routine'.",
+  },
+  {
+    method: "detailed_answers",
+    label: "Keep individual answers",
+    broadArea: "check_in",
+    core: false,
+    defaultEnabled: false,
+    isPersonalSignDefault: false,
+    recordedDescription:
+      "Keep my individual answers so the service can learn what helps me. Kept on the service's server in the EU, never on this phone; only your own answers from now on. Kept so it can be used for personalisation later. Can be withdrawn at any time, and withdrawing deletes what was kept.",
   },
 ];
 

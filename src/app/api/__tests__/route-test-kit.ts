@@ -4,6 +4,7 @@ import { _resetEnv } from "@/server/env";
 import { _resetRateLimits } from "@/server/security";
 import { DEFAULT_EXTRA_ITEMS_CONFIG, type ExtraItemsConfig } from "@/domain/extra-items";
 import { createFakePorts } from "@/usecases/testing";
+import { createFakeRewardsPorts } from "@/usecases/rewards/testing/fake-ports";
 import type { PatientRecord } from "@/usecases/ports";
 
 /** Shared set-up for the route tests: environment, fake storage, sessions sealed by trail 53's module. */
@@ -48,6 +49,7 @@ export function setUpRoutes(now = ROUND_1_OPEN, extraItems: ExtraItemsConfig = D
   const clinicPatients: Record<string, string[]> = {};
   setRouteDepsForTests(() => ({
     ports: fake.ports,
+    rewardsPorts: createFakeRewardsPorts(),
     clinicPatientIds: async (clinicId) => clinicPatients[clinicId] ?? [],
     resolveDevicePatient: async () => ({ patientId: PATIENT_ID, clinicId: CLINIC_ID }),
   }));

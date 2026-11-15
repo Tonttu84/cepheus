@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { getPrisma } from "@/lib/db";
-import type { Ports } from "@/usecases/ports";
+import type { Clock, Ports } from "@/usecases/ports";
 import { createAccessLogRepository } from "./access-log";
 import { createCallRepository } from "./calls";
 import { getEnv } from "@/server/env";
@@ -13,9 +13,12 @@ import {
 } from "./effects";
 import { createExtraAnswerRepository } from "./extra-answers";
 import { createGad7Repository } from "./gad7";
+import { createHomeMonitoringRepository } from "./home-monitoring";
 import { createPatientRepository, getClinicPatientIds } from "./patients";
 import { createPhq9Repository } from "./phq9";
 import { createRoundRepository } from "./rounds";
+import { createSuggestionRepository } from "./suggestions";
+import { createCameraRepository } from "./camera";
 
 export { getClinicPatientIds };
 
@@ -26,12 +29,13 @@ export { getClinicPatientIds };
  */
 export function createPrismaPorts(
   prisma: PrismaClient = getPrisma(),
-  options: DbContextOptions = { storeItemAnswers: getEnv().STORE_ITEM_ANSWERS }
+  options: DbContextOptions = { storeItemAnswers: getEnv().STORE_ITEM_ANSWERS },
+  clock?: Clock
 ): Ports {
   const ctx = createDbContext(prisma, options);
 
   return {
-    clock: { now: () => new Date().toISOString() },
+    clock: clock ?? { now: () => new Date().toISOString() },
     patients: createPatientRepository(ctx),
     rounds: createRoundRepository(ctx),
     phq9: createPhq9Repository(ctx),
@@ -43,6 +47,18 @@ export function createPrismaPorts(
     baselineNotWell: createBaselineNotWellRepository(ctx),
     accessLog: createAccessLogRepository(ctx),
     extraAnswers: createExtraAnswerRepository(ctx),
+    homeMonitoring: createHomeMonitoringRepository(ctx),
+    camera: createCameraRepository(ctx),
     unitOfWork: ctx.unitOfWork,
+    suggestions: createSuggestionRepository(ctx),
   };
 }
+
+export { clearSimulatedAnswers, resetSimulatedData, type ResetOptions } from "./reset";
+export {
+  getSimulatedPatientSummaries,
+  getSimulatedPatientIds,
+  checkDemoNeedsReset,
+  type SimulatedPatientDemoSummary,
+} from "./demo-patients";
+export { createPrismaRewardsPorts } from "./rewards-factory";

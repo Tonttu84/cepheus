@@ -164,6 +164,11 @@ export class FakeTaskRecordRepository implements TaskRecordRepository {
     const records = this.recordsByPatient.get(patientId) ?? [];
     return records.filter((r) => r.status === "completed").length;
   }
+
+  async getCompletedWalksCount(patientId: string): Promise<number> {
+    const records = this.recordsByPatient.get(patientId) ?? [];
+    return records.filter((r) => r.status === "completed" && r.taskKey === "short_walk").length;
+  }
 }
 
 export class FakePatientScheduleReader implements PatientScheduleReader {

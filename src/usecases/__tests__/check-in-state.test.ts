@@ -127,4 +127,56 @@ describe('CheckInState and Taps Status (Points 4 and 5)', () => {
     expect(nextRound.value.openRound?.number).toBe(2);
     expect(nextRound.value.isPhq9Due).toBe(true);
   });
+
+  it('reports isGad7Due and gad7Progress when patient has gad7 assigned and open round is due', async () => {
+    const { ports } = createFakePorts('2026-11-16T16:00:00.000Z');
+    await ports.patients.savePatient({
+      ...sampleRecord,
+      questionnaires: ['phq9', 'gad7'],
+    });
+
+    const res = await getCheckInState(patientActor, { patientId }, ports);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+
+    expect(res.value.isGad7Due).toBe(true);
+    expect(res.value.gad7Progress).toBe('not_started');
+  });
+
+  it('omits isGad7Due when patient does not have gad7 assigned', async () => {
+    const { ports } = createFakePorts('2026-11-16T16:00:00.000Z');
+    await ports.patients.savePatient({
+      ...sampleRecord,
+      questionnaires: ['phq9'],
+    });
+
+    const res = await getCheckInState(patientActor, { patientId }, ports);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+
+    expect(res.value.isGad7Due).toBeUndefined();
+    expect(res.value.gad7Progress).toBeUndefined();
+  });
+
+  it('after "Not today" no GAD-7 is due in that round, and it carries over to next round', async () => {
+    const { ports, clock } = createFakePorts('2026-11-16T16:00:00.000Z');
+    await ports.patients.savePatient({
+      ...sampleRecord,
+      questionnaires: ['phq9', 'gad7'],
+    });
+
+    const notToday = await submitNotToday(patientActor, { patientId }, ports);
+    expect(notToday.ok).toBe(true);
+
+    const sameRound = await getCheckInState(patientActor, { patientId }, ports);
+    expect(sameRound.ok).toBe(true);
+    if (!sameRound.ok) return;
+    expect(sameRound.value.isGad7Due).toBe(false);
+
+    clock.setNow('2026-11-19T16:00:00.000Z');
+    const nextRound = await getCheckInState(patientActor, { patientId }, ports);
+    expect(nextRound.ok).toBe(true);
+    if (!nextRound.ok) return;
+    expect(nextRound.value.isGad7Due).toBe(true);
+  });
 });

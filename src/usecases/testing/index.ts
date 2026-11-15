@@ -11,6 +11,7 @@ export {
   FakeCrisisRepository,
   FakeBaselineNotWellRepository,
   FakeAccessLogRepository,
+  FakeSuggestionRepository,
   FakeUnitOfWork,
   createFakePorts,
 } from './fake-ports';

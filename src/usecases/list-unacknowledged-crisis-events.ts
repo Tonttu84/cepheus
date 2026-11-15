@@ -1,17 +1,19 @@
 import { decideAccess, type Actor, type TargetData, type Purpose } from '../domain/access';
+import { CRISIS_EVENT_ITEM_ID } from '../domain/crisis';
 import type { Ports, UseCaseResult } from './ports';
 
 export interface UnacknowledgedCrisisEventView {
   readonly patientId: string;
   readonly roundNumber: number;
   readonly occurredAt: string;
+  readonly description: string;
 }
 
 const USE_CASE_PURPOSE: Purpose = 'care';
 
 /**
  * Lists unacknowledged crisis events for patients of the staff caller's clinic.
- * Returns patient, round, and time; never exposes item values or answers.
+ * Returns patient, round, time, and description; never exposes raw item values.
  */
 export async function listUnacknowledgedCrisisEvents(
   actor: Actor,
@@ -57,10 +59,18 @@ export async function listUnacknowledgedCrisisEvents(
       });
     }
 
+    let description = 'Unknown crisis event';
+    if (event.itemId === CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9) {
+      description = 'PHQ-9 item 9 answered above zero';
+    } else if (event.itemId === CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP) {
+      description = 'a person asked for help';
+    }
+
     views.push({
       patientId: event.patientId,
       roundNumber: event.roundNumber,
       occurredAt: event.occurredAt,
+      description,
     });
   }
 

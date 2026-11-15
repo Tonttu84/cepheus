@@ -1,15 +1,19 @@
 "use client";
 
+import React from "react";
 import type { CameraSessionOutput } from "@/domain/camera";
+import { SimulatedBadge } from "@/components/simulated-badge";
 
 interface CameraCompletedViewProps {
   sessionResult: CameraSessionOutput & { hasNumbers: true };
   onReset: () => void;
+  canSave?: boolean;
 }
 
 export function CameraCompletedView({
   sessionResult,
   onReset,
+  canSave = true,
 }: CameraCompletedViewProps) {
   return (
     <section
@@ -18,10 +22,13 @@ export function CameraCompletedView({
       className="space-y-8 rounded-2xl border border-border-hairline bg-surface-card p-7 sm:p-10"
     >
       <div className="border-b border-border-hairline pb-5">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-sage-border bg-accent-sage-soft px-3 py-1 text-xs font-medium text-accent-sage-hover">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent-sage" />
-          Check-in finished
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-sage-border bg-accent-sage-soft px-3 py-1 text-xs font-medium text-accent-sage-hover">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent-sage" />
+            Check-in finished
+          </span>
+          <SimulatedBadge subtitle="" />
+        </div>
         <h2 className="font-display mt-3.5 text-2xl font-semibold text-ink-primary sm:text-3xl">
           Your camera check-in is complete
         </h2>
@@ -29,6 +36,15 @@ export function CameraCompletedView({
           Camera access has been closed and all tracks were stopped. The video
           frames were analysed in memory and discarded.
         </p>
+        {!canSave ? (
+          <p
+            role="status"
+            className="mt-2 text-xs font-medium text-ink-muted"
+          >
+            Saving is off. Camera wellbeing check is paused or not consented;
+            measurements are not saved.
+          </p>
+        ) : null}
       </div>
 
       <details

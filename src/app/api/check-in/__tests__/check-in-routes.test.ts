@@ -12,6 +12,7 @@ import { POST as postNotToday } from "@/app/api/check-in/not-today/route";
 import { POST as postPhq9 } from "@/app/api/check-in/phq9/route";
 import { POST as postGad7 } from "@/app/api/check-in/gad7/route";
 import { POST as postExtra } from "@/app/api/check-in/extra-answer/route";
+import { POST as postCrisis } from "@/app/api/check-in/crisis/route";
 import { setRouteDepsForTests } from "@/server/api";
 import { DEFAULT_EXTRA_ITEMS_CONFIG } from "@/domain/extra-items";
 import {
@@ -42,6 +43,10 @@ function tapsRequest(body: unknown = { mood: 3, interest: 2 }, cookie: string | 
 
 function phq9Request(body: unknown, cookie: string | null = patientCookie()) {
   return apiRequest("/api/check-in/phq9", { body, cookie });
+}
+
+function crisisRequest(body: unknown = { screen: "check-in" }, cookie: string | null = patientCookie()) {
+  return apiRequest("/api/check-in/crisis", { body, cookie });
 }
 
 describe("check-in routes", () => {
@@ -242,6 +247,88 @@ describe("check-in routes", () => {
       const res = await postExtra(apiRequest("/api/check-in/extra-answer", { body: { itemId: offered.id, value: 2 }, cookie: patientCookie() }));
       expect(res.status).toBe(200);
       expect(await fake.ports.extraAnswers.getExtraAnswers(PATIENT_ID)).toHaveLength(1);
+    });
+  });
+
+  describe("crisis alert from check-in screen (POST /api/check-in/crisis)", () => {
+    it("refuses callers without a patient session with 401 and includes the crisis path", async () => {
+      const unauth = await postCrisis(crisisRequest({ screen: "check-in" }, null));
+      expect(unauth.status).toBe(401);
+      expectCrisisPath(await json(unauth));
+
+      const tampered = `${patientCookie().slice(0, -4)}AAAA`;
+      const badCookie = await postCrisis(crisisRequest({ screen: "check-in" }, tampered));
+      expect(badCookie.status).toBe(401);
+      expectCrisisPath(await json(badCookie));
+    });
+
+    it("refuses staff callers and patient sessions from another clinic with 403 and includes the crisis path", async () => {
+      const staffRes = await postCrisis(crisisRequest({ screen: "check-in" }, staffCookie()));
+      expect(staffRes.status).toBe(403);
+      expectCrisisPath(await json(staffRes));
+
+      const wrongClinic = await postCrisis(crisisRequest({ screen: "check-in" }, patientCookie(PATIENT_ID, "clinic-2")));
+      expect(wrongClinic.status).toBe(403);
+      expectCrisisPath(await json(wrongClinic));
+    });
+
+    it("refuses requests carrying any typed/spoken words or invalid schemas with 400 without echoing words", async () => {
+      const marker = "private-patient-text-marker";
+      const badCases = [
+        crisisRequest({ screen: "check-in", text: marker }),
+        crisisRequest({ screen: "check-in", transcript: marker }),
+        crisisRequest({ screen: "check-in", words: marker }),
+        crisisRequest({ screen: "unknown-screen" }),
+        crisisRequest({}),
+      ];
+
+      for (const req of badCases) {
+        const res = await postCrisis(req);
+        expect(res.status).toBe(400);
+        const text = await res.text();
+        const body = JSON.parse(text) as Record<string, unknown>;
+        expectCrisisPath(body);
+        expect(text).not.toContain(marker);
+      }
+    });
+
+    it("saves a crisis event, returns the crisis path and resources, and marks duplicate: false on first call", async () => {
+      const res = await postCrisis(crisisRequest());
+      expect(res.status).toBe(200);
+      const body = await json(res);
+      expect(body).toMatchObject({
+        ok: true,
+        saved: true,
+        duplicate: false,
+      });
+      expectCrisisPath(body);
+
+      const events = await fake.ports.crisis.getCrisisEvents(PATIENT_ID);
+      expect(events).toHaveLength(1);
+      expect(events[0].itemId).toBe("asked_for_help");
+      expect(events[0].value).toBe(1);
+    });
+
+    it("merges duplicate crisis alerts while the first is unacknowledged without creating a pile of alerts", async () => {
+      const first = await postCrisis(crisisRequest());
+      expect(first.status).toBe(200);
+      const firstBody = await json(first);
+      expect(firstBody.duplicate).toBe(false);
+
+      // Second press/request while unacknowledged
+      const second = await postCrisis(crisisRequest());
+      expect(second.status).toBe(200);
+      const secondBody = await json(second);
+      expect(secondBody).toMatchObject({
+        ok: true,
+        saved: true,
+        duplicate: true,
+      });
+      expectCrisisPath(secondBody);
+
+      // Storage still holds exactly one event
+      const events = await fake.ports.crisis.getCrisisEvents(PATIENT_ID);
+      expect(events).toHaveLength(1);
     });
   });
 

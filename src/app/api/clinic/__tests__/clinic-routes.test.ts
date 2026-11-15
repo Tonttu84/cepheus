@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CRISIS_EVENT_ITEM_ID } from "@/domain/crisis";
 import { GET as getFlags } from "@/app/api/clinic/flags/route";
 import { GET as getCrisisEvents } from "@/app/api/clinic/crisis-events/route";
 import { POST as acknowledgeCrisis } from "@/app/api/clinic/crisis-events/acknowledge/route";
-import { POST as recordNurseCall } from "@/app/api/clinic/nurse-calls/route";
+import { GET as getNurseCalls, POST as recordNurseCall } from "@/app/api/clinic/nurse-calls/route";
 import { setRouteDepsForTests } from "@/server/api";
+import { createFakeRewardsPorts } from "@/usecases/rewards/testing/fake-ports";
 import type { StoredWarning } from "@/usecases/ports";
 import {
   allKeys,
@@ -46,6 +48,10 @@ function nurseCallsRequest(cookie: string | null, body?: unknown, query = "") {
   return apiRequest(`/api/clinic/nurse-calls${query}`, { method: "POST", cookie, body });
 }
 
+function getNurseCallsRequest(cookie: string | null, query = "") {
+  return apiRequest(`/api/clinic/nurse-calls${query}`, { method: "GET", cookie });
+}
+
 describe("GET /api/clinic/flags", () => {
   let fake: ReturnType<typeof setUpRoutes>;
 
@@ -81,13 +87,21 @@ describe("GET /api/clinic/flags", () => {
     expect(body.flags.map((f) => f.patientId)).toEqual(["own-2", "own-1"]);
   });
 
-  it("never contains answers, scores, totals or the rule's trigger", async () => {
+  it("never contains individual answers or item scores (decision D45)", async () => {
     const body = await (await getFlags(flagsRequest(staffCookie()))).json();
     const keys = allKeys(body);
-    for (const forbidden of ["answers", "value", "score", "total", "mood", "interest", "kind", "causedby"]) {
+    for (const forbidden of ["answers", "mood", "interest", "item1", "item9"]) {
       expect(keys).not.toContain(forbidden);
     }
-    expect(Object.keys(body.flags[0]).sort()).toEqual(["area", "patientId", "raisedAt", "since"]);
+    expect(Object.keys(body.flags[0]).sort()).toEqual([
+      "area",
+      "facts",
+      "patientId",
+      "raisedAt",
+      "since",
+      "supportingLines",
+      "warningKind",
+    ]);
   });
 
   it("logs each staff read of a patient's flags", async () => {
@@ -113,6 +127,7 @@ describe("GET /api/clinic/flags", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     setRouteDepsForTests(() => ({
       ports: fake.ports,
+      rewardsPorts: createFakeRewardsPorts(),
       clinicPatientIds: async () => {
         throw new Error("connection refused");
       },
@@ -234,7 +249,7 @@ describe("GET /api/clinic/crisis-events", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-1",
       roundNumber: 1,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 2,
       occurredAt: "2026-11-16T16:00:00.000Z",
       acknowledgedAt: null,
@@ -242,7 +257,7 @@ describe("GET /api/clinic/crisis-events", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-2",
       roundNumber: 1,
-      itemId: "crisis_button",
+      itemId: CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP,
       value: 1,
       occurredAt: "2026-11-16T17:00:00.000Z",
       acknowledgedAt: null,
@@ -251,7 +266,7 @@ describe("GET /api/clinic/crisis-events", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-1",
       roundNumber: 2,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 1,
       occurredAt: "2026-11-16T18:00:00.000Z",
       acknowledgedAt: "2026-11-16T18:30:00.000Z",
@@ -260,7 +275,7 @@ describe("GET /api/clinic/crisis-events", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "other-1",
       roundNumber: 1,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 3,
       occurredAt: "2026-11-16T16:30:00.000Z",
       acknowledgedAt: null,
@@ -275,8 +290,10 @@ describe("GET /api/clinic/crisis-events", () => {
   it("lists unacknowledged crisis events of caller clinic only and never contains item values", async () => {
     const res = await getCrisisEvents(crisisEventsRequest(staffCookie()));
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; crisisEvents: { patientId: string; roundNumber: number; occurredAt: string }[] };
+    const body = (await res.json()) as { ok: boolean; crisisEvents: { patientId: string; roundNumber: number; occurredAt: string; description: string }[] };
     expect(body.crisisEvents.map((e) => e.patientId)).toEqual(["own-1", "own-2"]);
+    expect(body.crisisEvents.find((e) => e.patientId === "own-1")?.description).toBe("PHQ-9 item 9 answered above zero");
+    expect(body.crisisEvents.find((e) => e.patientId === "own-2")?.description).toBe("a person asked for help");
 
     const keys = allKeys(body);
     for (const forbidden of ["answers", "value", "score", "total", "mood", "interest"]) {
@@ -310,6 +327,7 @@ describe("GET /api/clinic/crisis-events", () => {
           },
         },
       },
+      rewardsPorts: createFakeRewardsPorts(),
       clinicPatientIds: async () => [],
     }));
     const res = await getCrisisEvents(crisisEventsRequest(staffCookie()));
@@ -328,7 +346,7 @@ describe("POST /api/clinic/crisis-events/acknowledge", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-1",
       roundNumber: 1,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 2,
       occurredAt: "2026-11-16T16:00:00.000Z",
       acknowledgedAt: null,
@@ -336,7 +354,7 @@ describe("POST /api/clinic/crisis-events/acknowledge", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-1",
       roundNumber: 2,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 1,
       occurredAt: "2026-11-16T17:00:00.000Z",
       acknowledgedAt: "2026-11-16T17:30:00.000Z",
@@ -372,6 +390,28 @@ describe("POST /api/clinic/crisis-events/acknowledge", () => {
       acknowledgeCrisisRequest(staffCookie(), { patientId: "own-1", roundNumber: 2 })
     );
     expect(res.status).toBe(409);
+  });
+
+  it("acknowledging an alert twice is harmless and preserves original acknowledgment details", async () => {
+    const res1 = await acknowledgeCrisis(
+      acknowledgeCrisisRequest(staffCookie(), { patientId: "own-1", roundNumber: 1 })
+    );
+    expect(res1.status).toBe(200);
+    const body1 = await res1.json();
+    expect(body1.acknowledged).toBe(true);
+    expect(body1.acknowledgedByStaffId).toBe("staff-1");
+    const originalTime = body1.acknowledgedAt;
+
+    const res2 = await acknowledgeCrisis(
+      acknowledgeCrisisRequest(staffCookie(), { patientId: "own-1", roundNumber: 1 })
+    );
+    expect(res2.status).toBe(409);
+
+    const events = await fake.ports.crisis.getCrisisEvents("own-1");
+    const ev = events.find((e) => e.roundNumber === 1);
+    expect(ev).toBeDefined();
+    expect(ev?.acknowledgedAt).toBe(originalTime);
+    expect(ev?.acknowledgedByStaffId).toBe("staff-1");
   });
 
   it("returns 404 when patient or crisis event is not found", async () => {
@@ -412,6 +452,7 @@ describe("POST /api/clinic/crisis-events/acknowledge", () => {
           },
         },
       },
+      rewardsPorts: createFakeRewardsPorts(),
       clinicPatientIds: async () => [],
     }));
     const res = await acknowledgeCrisis(
@@ -480,6 +521,38 @@ describe("POST /api/clinic/nurse-calls", () => {
     expect(calls).toEqual([{ patientId: "own-1", date: "2026-11-16", position: "after" }]);
   });
 
+  it("records a nurse call once even when requested twice (idempotency)", async () => {
+    const firstRes = await recordNurseCall(
+      nurseCallsRequest(staffCookie(), {
+        patientId: "own-1",
+        flagId: "flag-abc",
+        status: "requested",
+      })
+    );
+    expect(firstRes.status).toBe(200);
+    const firstBody = await firstRes.json();
+    expect(firstBody.ok).toBe(true);
+    expect(firstBody.saved).toBe(true);
+    expect(firstBody.status).toBe("requested");
+    expect(firstBody.flagStatus).toBe("nurse_call_requested");
+    expect(firstBody.requestedBy).toBe("staff-1");
+    expect(firstBody.requestedAt).toBeDefined();
+
+    const secondRes = await recordNurseCall(
+      nurseCallsRequest(staffCookie(), {
+        patientId: "own-1",
+        flagId: "flag-abc",
+        status: "requested",
+      })
+    );
+    expect(secondRes.status).toBe(200);
+    const secondBody = await secondRes.json();
+    expect(secondBody.id).toBe(firstBody.id);
+
+    const records = await fake.ports.calls.getNurseCallRecords("own-1");
+    expect(records.filter((r) => r.status === "requested")).toHaveLength(1);
+  });
+
   it("updates the flag to booster_offered when action is booster_tms_cluster", async () => {
     const res = await recordNurseCall(
       nurseCallsRequest(staffCookie(), {
@@ -542,6 +615,7 @@ describe("POST /api/clinic/nurse-calls", () => {
           },
         },
       },
+      rewardsPorts: createFakeRewardsPorts(),
       clinicPatientIds: async () => [],
     }));
     const res = await recordNurseCall(
@@ -550,3 +624,53 @@ describe("POST /api/clinic/nurse-calls", () => {
     expect(res.status).toBe(503);
   });
 });
+
+describe("GET /api/clinic/nurse-calls", () => {
+  let fake: ReturnType<typeof setUpRoutes>;
+
+  beforeEach(async () => {
+    fake = setUpRoutes();
+    await fake.ports.patients.savePatient(patientRecord({ patientId: "own-1" }));
+    await fake.ports.patients.savePatient(patientRecord({ patientId: "other-1", clinicId: OTHER_CLINIC_ID }));
+
+    await fake.ports.calls.saveNurseCallRecord({
+      patientId: "own-1",
+      clinicId: CLINIC_ID,
+      status: "requested",
+      staffUserId: "staff-1",
+      requestedAt: "2026-11-16T18:00:00.000Z",
+    });
+
+    fake.clinicPatients[CLINIC_ID] = ["own-1"];
+    fake.clinicPatients[OTHER_CLINIC_ID] = ["other-1"];
+  });
+
+  afterEach(() => {
+    tearDownRoutes();
+    vi.restoreAllMocks();
+  });
+
+  it("lists nurse calls of the caller's clinic only and staff of another clinic get nothing", async () => {
+    const res = await getNurseCalls(getNurseCallsRequest(staffCookie()));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; nurseCalls: { patientId: string; status: string }[] };
+    expect(body.ok).toBe(true);
+    expect(body.nurseCalls).toHaveLength(1);
+    expect(body.nurseCalls[0].patientId).toBe("own-1");
+    expect(body.nurseCalls[0].status).toBe("requested");
+
+    const otherRes = await getNurseCalls(getNurseCallsRequest(staffCookie(OTHER_CLINIC_ID)));
+    expect(otherRes.status).toBe(200);
+    const otherBody = (await otherRes.json()) as { ok: boolean; nurseCalls: { patientId: string }[] };
+    expect(otherBody.ok).toBe(true);
+    expect(otherBody.nurseCalls).toHaveLength(0);
+  });
+
+  it("refuses patients (403), callers without session (401), and query parameters (400)", async () => {
+    expect((await getNurseCalls(getNurseCallsRequest(patientCookie("own-1")))).status).toBe(403);
+    expect((await getNurseCalls(getNurseCallsRequest(null))).status).toBe(401);
+    const withQuery = await getNurseCalls(getNurseCallsRequest(staffCookie(), "?patientId=own-1"));
+    expect(withQuery.status).toBe(400);
+  });
+});
+

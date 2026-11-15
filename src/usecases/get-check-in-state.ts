@@ -138,6 +138,7 @@ export async function getCheckInState(
       const patient = await ports.patients.getPatient(input.patientId);
       if (!patient) throw new Error('Patient not found');
 
+      const isGad7Assigned = Boolean(patient.questionnaires?.includes('gad7'));
       const openRound = getOpenRound(patient.schedule, now);
       if (!openRound) {
         returnValue = {
@@ -147,14 +148,16 @@ export async function getCheckInState(
           phq9Progress: 'not_started',
           hasSuggestionWaiting: false,
           extraItem: null,
+          ...(isGad7Assigned ? { isGad7Due: false, gad7Progress: 'not_started' } : {}),
         };
         return;
       }
 
-      const [storedRounds, storedPhq9s, smallDips] = await Promise.all([
+      const [storedRounds, storedPhq9s, smallDips, storedGad7s] = await Promise.all([
         ports.rounds.getRounds(patient.patientId),
         ports.phq9.getPhq9s(patient.patientId),
         ports.smallDips.getSmallDips(patient.patientId),
+        isGad7Assigned && ports.gad7 ? ports.gad7.getGad7s(patient.patientId) : Promise.resolve([]),
       ]);
 
       const currentRoundRecord = storedRounds.find((r) => r.roundNumber === openRound.number);
@@ -173,6 +176,20 @@ export async function getCheckInState(
       const extraConfig = ports.extraItemsConfig ?? DEFAULT_EXTRA_ITEMS_CONFIG;
       const extraItem = getOfferedExtraItem(openRound.number, extraConfig);
 
+      let isGad7Due = false;
+      let gad7Progress: Phq9Progress = 'not_started';
+      if (isGad7Assigned) {
+        const asProgress: StoredPhq9[] = storedGad7s.map((g) => ({
+          patientId: g.patientId,
+          roundNumber: g.roundNumber,
+          progress: typeof g.total === 'number' ? 'completed' : 'unfinished',
+          answers: [],
+        }));
+        const gad7History = buildPhq9DueHistory(openRound.number, storedRounds, asProgress);
+        isGad7Due = taps !== 'not_today' && isPhq9Due(openRound.number, gad7History);
+        gad7Progress = resolvePhq9Progress(openRound.number, isGad7Due, asProgress);
+      }
+
       returnValue = {
         openRound: {
           number: openRound.number,
@@ -185,6 +202,7 @@ export async function getCheckInState(
         phq9Progress,
         hasSuggestionWaiting,
         extraItem,
+        ...(isGad7Assigned ? { isGad7Due, gad7Progress } : {}),
       };
     });
   } catch (err) {

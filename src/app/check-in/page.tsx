@@ -35,9 +35,9 @@ export default async function CheckInPage() {
             <strong className="font-semibold text-ink-primary">
               &ldquo;Not today&rdquo;
             </strong>{" "}
-            whenever you want to rest. This is a preview of a simulated round
-            and nothing is sent yet. It is never scored as zero and never held
-            against you.
+            whenever you want to rest. The answers of this round are saved. A
+            round left unanswered is recorded as not answered and never scored
+            as zero, and data for sample patients is simulated.
           </p>
         </div>
 

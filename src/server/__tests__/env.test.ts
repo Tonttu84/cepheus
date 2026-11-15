@@ -365,4 +365,54 @@ describe("Environment Check (src/server/env.ts)", () => {
       /^(?!.*short-secret-value).*$/s
     );
   });
+
+  describe("SIGN_IN_RATE_LIMIT_MAX setting", () => {
+    const devUrl =
+      "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus";
+    const prodUrl = "postgresql://user:pass@localhost:5433/prod";
+
+    it("defaults to today's value (10) when unset or empty", () => {
+      expect(parseEnv({ DATABASE_URL: devUrl }).SIGN_IN_RATE_LIMIT_MAX).toBe(10);
+      expect(
+        parseEnv({ DATABASE_URL: devUrl, SIGN_IN_RATE_LIMIT_MAX: "" })
+          .SIGN_IN_RATE_LIMIT_MAX
+      ).toBe(10);
+      expect(
+        parseEnv({ DATABASE_URL: devUrl, SIGN_IN_RATE_LIMIT_MAX: "   " })
+          .SIGN_IN_RATE_LIMIT_MAX
+      ).toBe(10);
+    });
+
+    it("uses default (10) in production when variable is absent", () => {
+      const prodEnv = parseEnv({
+        NODE_ENV: "production",
+        DATABASE_URL: prodUrl,
+        APP_SESSION_SECRET: "a".repeat(32),
+      });
+      expect(prodEnv.SIGN_IN_RATE_LIMIT_MAX).toBe(10);
+    });
+
+    it("accepts a positive integer string and parses it as a number", () => {
+      const parsed = parseEnv({
+        DATABASE_URL: devUrl,
+        SIGN_IN_RATE_LIMIT_MAX: "1000",
+      });
+      expect(parsed.SIGN_IN_RATE_LIMIT_MAX).toBe(1000);
+    });
+
+    it("rejects invalid, zero, or negative rate limit values", () => {
+      expect(() =>
+        parseEnv({ DATABASE_URL: devUrl, SIGN_IN_RATE_LIMIT_MAX: "0" })
+      ).toThrowError(/SIGN_IN_RATE_LIMIT_MAX/);
+      expect(() =>
+        parseEnv({ DATABASE_URL: devUrl, SIGN_IN_RATE_LIMIT_MAX: "-5" })
+      ).toThrowError(/SIGN_IN_RATE_LIMIT_MAX/);
+      expect(() =>
+        parseEnv({ DATABASE_URL: devUrl, SIGN_IN_RATE_LIMIT_MAX: "not-a-number" })
+      ).toThrowError(/SIGN_IN_RATE_LIMIT_MAX/);
+      expect(() =>
+        parseEnv({ DATABASE_URL: devUrl, SIGN_IN_RATE_LIMIT_MAX: "12.5" })
+      ).toThrowError(/SIGN_IN_RATE_LIMIT_MAX/);
+    });
+  });
 });

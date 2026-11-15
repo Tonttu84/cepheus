@@ -22,23 +22,35 @@ function answersFromColumns(row: Phq9Assessment) {
   });
 }
 
+async function shouldStoreItemAnswers(ctx: DbContext, patientId: string): Promise<boolean> {
+  const latest = await ctx.client().consentEvent.findFirst({
+    where: { participantId: patientId, layer: "detailed_answers" },
+    orderBy: [{ recordedAt: "desc" }, { id: "desc" }],
+    select: { enabled: true },
+  });
+  if (latest !== null) {
+    return latest.enabled;
+  }
+  return ctx.storeItemAnswers;
+}
+
 /**
  * With item answers off, an unfinished questionnaire's answers come from
  * memory (none after a restart) and a completed one keeps its total only.
  */
-function answersOf(ctx: DbContext, row: Phq9Assessment, progress: Phq9Progress) {
-  if (ctx.storeItemAnswers) return answersFromColumns(row);
+function answersOf(ctx: DbContext, row: Phq9Assessment, progress: Phq9Progress, storeItems: boolean) {
+  if (storeItems) return answersFromColumns(row);
   if (progress !== "unfinished") return [];
   return ctx.answers().get(row.participantId, "phq9", row.roundNumber) ?? [];
 }
 
-function toStoredPhq9(ctx: DbContext, row: Phq9Assessment): StoredPhq9 {
+function toStoredPhq9(ctx: DbContext, row: Phq9Assessment, storeItems: boolean): StoredPhq9 {
   const progress = progressFromColumn(row.status);
   return {
     patientId: row.participantId,
     roundNumber: row.roundNumber,
     progress,
-    answers: answersOf(ctx, row, progress),
+    answers: answersOf(ctx, row, progress, storeItems),
     total: row.totalScore,
     completedAt: row.completedAt?.toISOString() ?? null,
     completedInRoundNumber: row.completedInRoundNumber,
@@ -52,8 +64,8 @@ function itemColumns(answers: StoredPhq9["answers"]) {
   );
 }
 
-function rememberAnswers(ctx: DbContext, assessment: StoredPhq9): void {
-  if (ctx.storeItemAnswers) return;
+function rememberAnswers(ctx: DbContext, assessment: StoredPhq9, storeItems: boolean): void {
+  if (storeItems) return;
   const { patientId, roundNumber } = assessment;
   if (assessment.progress === "completed") ctx.answers().delete(patientId, "phq9", roundNumber);
   else ctx.answers().set(patientId, "phq9", roundNumber, assessment.answers);
@@ -61,11 +73,12 @@ function rememberAnswers(ctx: DbContext, assessment: StoredPhq9): void {
 
 export function createPhq9Repository(ctx: DbContext): Phq9Repository {
   async function getPhq9s(patientId: string) {
+    const storeItems = await shouldStoreItemAnswers(ctx, patientId);
     const rows = await ctx.client().phq9Assessment.findMany({
       where: { participantId: patientId },
       orderBy: { roundNumber: "asc" },
     });
-    return rows.map((row) => toStoredPhq9(ctx, row));
+    return rows.map((row) => toStoredPhq9(ctx, row, storeItems));
   }
 
   return {
@@ -80,6 +93,7 @@ export function createPhq9Repository(ctx: DbContext): Phq9Repository {
       const { clinicId, isSimulated, schedule } = await loadParticipantScope(ctx.client(), assessment.patientId);
       if (!schedule) throw new Error("Patient has no schedule");
       const round = listRounds(schedule, assessment.roundNumber).at(-1)!;
+      const storeItems = await shouldStoreItemAnswers(ctx, assessment.patientId);
       const columns = {
         clinicId,
         ...roundColumnsFor(schedule, round.localDate),
@@ -88,7 +102,7 @@ export function createPhq9Repository(ctx: DbContext): Phq9Repository {
         totalScore: assessment.total ?? null,
         completedAt: assessment.completedAt ? new Date(assessment.completedAt) : null,
         completedInRoundNumber: assessment.completedInRoundNumber ?? null,
-        ...itemColumns(ctx.storeItemAnswers ? assessment.answers : []),
+        ...itemColumns(storeItems ? assessment.answers : []),
       };
       await ctx.client().phq9Assessment.upsert({
         where: {
@@ -105,7 +119,7 @@ export function createPhq9Repository(ctx: DbContext): Phq9Repository {
         },
         update: columns,
       });
-      rememberAnswers(ctx, assessment);
+      rememberAnswers(ctx, assessment, storeItems);
     },
   };
 }

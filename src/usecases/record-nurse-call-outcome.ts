@@ -24,11 +24,13 @@ export interface RecordNurseCallOutcomeInput {
 export interface RecordNurseCallOutcomeResult {
   readonly id: string;
   readonly patientId: string;
-  readonly flagId?: string | null;
+  readonly flagId: string | null;
   readonly status: NurseCallStatus;
-  readonly outcomeTier?: NurseCallOutcomeTier | null;
-  readonly actionTaken?: NurseCallActionTaken | null;
+  readonly outcomeTier: NurseCallOutcomeTier | null;
+  readonly actionTaken: NurseCallActionTaken | null;
   readonly flagStatus?: string | null;
+  readonly requestedAt?: string;
+  readonly requestedBy?: string | null;
 }
 
 const USE_CASE_PURPOSE: Purpose = 'care';
@@ -55,7 +57,7 @@ function computeFlagStatus(
   outcomeTier?: NurseCallOutcomeTier | null,
   watchNextRounds?: number
 ): string {
-  if (status === 'unreachable') return 'nurse_call_requested';
+  if (status === 'requested' || status === 'unreachable') return 'nurse_call_requested';
   if (actionTaken === 'booster_tms_cluster') return 'booster_offered';
   if (actionTaken === 'advice_and_medication_check' || outcomeTier === 'rough_patch' || (watchNextRounds ?? 0) > 0) {
     return 'watching';
@@ -136,6 +138,27 @@ export async function recordNurseCallOutcome(
       const date = input.date ?? now.slice(0, 10);
       const position = input.position ?? 'after';
 
+      if (status === 'requested') {
+        const existingRecords = await ports.calls.getNurseCallRecords(input.patientId);
+        const existingRequested = existingRecords.find(
+          (r) => r.status === 'requested' && (!input.flagId || r.flagId === input.flagId)
+        );
+        if (existingRequested) {
+          resultValue = {
+            id: existingRequested.id ?? 'recorded-call',
+            patientId: input.patientId,
+            flagId: existingRequested.flagId ?? input.flagId ?? null,
+            status: 'requested',
+            outcomeTier: null,
+            actionTaken: null,
+            flagStatus: 'nurse_call_requested',
+            requestedAt: existingRequested.requestedAt ?? now,
+            requestedBy: existingRequested.staffUserId ?? actor.staffId,
+          };
+          return;
+        }
+      }
+
       const watchRounds =
         input.watchNextRounds !== undefined
           ? input.watchNextRounds
@@ -160,15 +183,15 @@ export async function recordNurseCallOutcome(
         flagId: input.flagId ?? null,
         staffUserId: actor.staffId,
         requestedAt: now,
-        completedAt: status === 'unreachable' ? null : now,
+        completedAt: status === 'completed' ? now : null,
         status,
         outcomeTier: input.outcomeTier ?? null,
         actionTaken: input.actionTaken ?? null,
         medicationChecked: input.medicationChecked ?? false,
         watchNextRounds: watchRounds,
         boosterSessionsPlanned: boosterPlanned,
-        date: status === 'unreachable' ? null : date,
-        position: status === 'unreachable' ? null : position,
+        date: status === 'completed' ? date : null,
+        position: status === 'completed' ? position : null,
       });
 
       if (input.flagId && flagStatus) {
@@ -195,6 +218,8 @@ export async function recordNurseCallOutcome(
         outcomeTier: input.outcomeTier ?? null,
         actionTaken: input.actionTaken ?? null,
         flagStatus,
+        requestedAt: stored.requestedAt ?? now,
+        requestedBy: stored.staffUserId ?? actor.staffId,
       };
     });
   } catch (error) {

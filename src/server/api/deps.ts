@@ -1,9 +1,15 @@
-import { createPrismaPorts, getClinicPatientIds } from "@/server/db";
+import { DEFAULT_EXTRA_ITEMS_CONFIG } from "@/domain/extra-items";
+import { getDemoClock } from "@/server/api/clock";
+import { isExtraQuestionEnabled } from "@/server/api/settings";
+import { createPrismaPorts, createPrismaRewardsPorts, getClinicPatientIds } from "@/server/db";
 import { ensureHomeDemoParticipant } from "@/server/monitoring/store";
 import type { Ports } from "@/usecases/ports";
+import type { RewardsPorts } from "@/usecases/rewards/ports";
+import { getRewardsSettings } from "./rewards-settings";
 
 export interface RouteDeps {
   readonly ports: Ports;
+  readonly rewardsPorts: RewardsPorts;
   /** The ids of every patient of one clinic; the ports have no such listing. */
   readonly clinicPatientIds: (clinicId: string) => Promise<readonly string[]>;
   /** Maps a device to the patient it belongs to (D43). */
@@ -22,8 +28,17 @@ export async function defaultResolveDevicePatient(): Promise<{ patientId: string
 }
 
 function createDefaultDeps(): RouteDeps {
+  const ports = createPrismaPorts(undefined, undefined, getDemoClock());
+  const settings = getRewardsSettings();
   return {
-    ports: createPrismaPorts(),
+    ports: {
+      ...ports,
+      extraItemsConfig: {
+        ...DEFAULT_EXTRA_ITEMS_CONFIG,
+        enabled: isExtraQuestionEnabled(),
+      },
+    },
+    rewardsPorts: createPrismaRewardsPorts({ enabled: settings.rewardsEnabled }),
     clinicPatientIds: (clinicId: string) => getClinicPatientIds(clinicId),
     resolveDevicePatient: defaultResolveDevicePatient,
   };

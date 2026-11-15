@@ -23,9 +23,18 @@ import type {
   AccessLogRepository,
   StoredExtraAnswer,
   ExtraAnswerRepository,
+  StoredSuggestion,
+  SuggestionStatus,
+  SuggestionRepository,
+  StoredCameraReading,
+  CameraRepository,
   UnitOfWork,
   Ports,
+  HomeMonitoringFacts,
+  HomeMonitoringQuery,
+  HomeMonitoringRepository,
 } from '../ports';
+import type { ConsentState } from '../../domain/consent';
 import { DEFAULT_EXTRA_ITEMS_CONFIG, type ExtraItemsConfig } from '../../domain/extra-items';
 
 export class FakeClock implements Clock {
@@ -54,6 +63,8 @@ interface FakeStorageState {
   baselineNotWell: Record<string, StoredBaselineNotWellNotice[]>;
   accessLogs: StoredAccessLogEntry[];
   extraAnswers: Record<string, StoredExtraAnswer[]>;
+  suggestions: Record<string, StoredSuggestion[]>;
+  camera: Record<string, StoredCameraReading[]>;
 }
 
 function createEmptyState(): FakeStorageState {
@@ -71,6 +82,8 @@ function createEmptyState(): FakeStorageState {
     baselineNotWell: {},
     accessLogs: [],
     extraAnswers: {},
+    suggestions: {},
+    camera: {},
   };
 }
 
@@ -104,6 +117,21 @@ export class FakePatientRepository implements PatientRepository {
   }
 
   async savePatient(record: PatientRecord): Promise<void> {
+    const previous = this.ctx.state.patients[record.patientId];
+    if (previous?.consent.detailed_answers && !record.consent.detailed_answers) {
+      if (this.ctx.state.phq9[record.patientId]) {
+        this.ctx.state.phq9[record.patientId] = this.ctx.state.phq9[record.patientId].map((p) => ({
+          ...p,
+          answers: [],
+        }));
+      }
+      if (this.ctx.state.gad7[record.patientId]) {
+        this.ctx.state.gad7[record.patientId] = this.ctx.state.gad7[record.patientId].map((g) => ({
+          ...g,
+          answers: [],
+        }));
+      }
+    }
     this.ctx.state.patients[record.patientId] = structuredClone(record);
   }
 }
@@ -161,12 +189,21 @@ export class FakePhq9Repository implements Phq9Repository {
     if (!this.ctx.state.phq9[assessment.patientId]) {
       this.ctx.state.phq9[assessment.patientId] = [];
     }
+    const patientConsent = this.ctx.state.patients[assessment.patientId]?.consent;
+    const storeItemAnswers = patientConsent?.detailed_answers === true;
+    const toSave: StoredPhq9 = {
+      ...structuredClone(assessment),
+      answers:
+        assessment.progress === 'unfinished' || storeItemAnswers
+          ? structuredClone(assessment.answers)
+          : [],
+    };
     const list = this.ctx.state.phq9[assessment.patientId];
     const idx = list.findIndex((p) => p.roundNumber === assessment.roundNumber);
     if (idx >= 0) {
-      list[idx] = structuredClone(assessment);
+      list[idx] = toSave;
     } else {
-      list.push(structuredClone(assessment));
+      list.push(toSave);
     }
   }
 }
@@ -186,12 +223,18 @@ export class FakeGad7Repository implements Gad7Repository {
     if (!this.ctx.state.gad7[assessment.patientId]) {
       this.ctx.state.gad7[assessment.patientId] = [];
     }
+    const patientConsent = this.ctx.state.patients[assessment.patientId]?.consent;
+    const shouldStrip = patientConsent?.detailed_answers === false && typeof assessment.total === 'number';
+    const toSave: StoredGad7 = {
+      ...structuredClone(assessment),
+      answers: shouldStrip ? [] : structuredClone(assessment.answers),
+    };
     const list = this.ctx.state.gad7[assessment.patientId];
     const idx = list.findIndex((g) => g.roundNumber === assessment.roundNumber);
     if (idx >= 0) {
-      list[idx] = structuredClone(assessment);
+      list[idx] = toSave;
     } else {
-      list.push(structuredClone(assessment));
+      list.push(toSave);
     }
   }
 }
@@ -385,6 +428,86 @@ export class FakeExtraAnswerRepository implements ExtraAnswerRepository {
   }
 }
 
+export class FakeSuggestionRepository implements SuggestionRepository {
+  constructor(private ctx: FakeStorageContext) {}
+
+  async getLatestSuggestion(patientId: string): Promise<StoredSuggestion | null> {
+    const list = this.ctx.state.suggestions[patientId] ?? [];
+    if (list.length === 0) return null;
+    return structuredClone(list[list.length - 1]);
+  }
+
+  async getSuggestion(suggestionId: string): Promise<StoredSuggestion | null> {
+    for (const list of Object.values(this.ctx.state.suggestions)) {
+      const found = list.find((s) => s.id === suggestionId);
+      if (found) return structuredClone(found);
+    }
+    return null;
+  }
+
+  async hasUnansweredSuggestion(patientId: string): Promise<boolean> {
+    const list = this.ctx.state.suggestions[patientId] ?? [];
+    return list.some((s) => s.status === 'shown');
+  }
+
+  async saveSuggestion(suggestion: StoredSuggestion): Promise<void> {
+    if (!this.ctx.state.suggestions[suggestion.patientId]) {
+      this.ctx.state.suggestions[suggestion.patientId] = [];
+    }
+    const list = this.ctx.state.suggestions[suggestion.patientId];
+    const isSimulated =
+      suggestion.isSimulated ??
+      this.ctx.state.patients[suggestion.patientId]?.isSimulated ??
+      false;
+    const toSave: StoredSuggestion = {
+      ...suggestion,
+      isSimulated,
+    };
+    const idx = list.findIndex((s) => s.id === suggestion.id);
+    if (idx >= 0) {
+      list[idx] = structuredClone(toSave);
+    } else {
+      list.push(structuredClone(toSave));
+    }
+  }
+
+  async updateSuggestionChoice(
+    suggestionId: string,
+    status: SuggestionStatus,
+    respondedAt: string
+  ): Promise<void> {
+    for (const list of Object.values(this.ctx.state.suggestions)) {
+      const found = list.find((s) => s.id === suggestionId);
+      if (found) {
+        const updated: StoredSuggestion = {
+          ...found,
+          status,
+          respondedAt,
+        };
+        const idx = list.indexOf(found);
+        list[idx] = updated;
+        return;
+      }
+    }
+  }
+}
+
+export class FakeCameraRepository implements CameraRepository {
+  constructor(private ctx: FakeStorageContext) {}
+
+  async getCameraReadings(patientId: string): Promise<readonly StoredCameraReading[]> {
+    const list = this.ctx.state.camera[patientId] ?? [];
+    return structuredClone(list);
+  }
+
+  async saveCameraReading(reading: StoredCameraReading): Promise<void> {
+    if (!this.ctx.state.camera[reading.participantId]) {
+      this.ctx.state.camera[reading.participantId] = [];
+    }
+    this.ctx.state.camera[reading.participantId].push(structuredClone(reading));
+  }
+}
+
 export class FakeUnitOfWork implements UnitOfWork {
   public failNext = false;
   private activePromise: Promise<void> | null = null;
@@ -424,6 +547,77 @@ export class FakeUnitOfWork implements UnitOfWork {
   }
 }
 
+export class FakeHomeMonitoringRepository implements HomeMonitoringRepository {
+  public ringDays: Record<string, { date: string; ringActive: boolean; wearMinutes?: number }[]> = {};
+  public rhythmWindows: Record<
+    string,
+    { windowEndDate: string; sriZScore?: number | null; raZScore?: number | null; isZScore?: number | null }[]
+  > = {};
+  public cameraReadings: Record<string, { date: string; source: string }[]> = {};
+
+  async getSupportingFacts(
+    query: HomeMonitoringQuery,
+    consent: ConsentState
+  ): Promise<HomeMonitoringFacts> {
+    if (!consent.taking_part) return { supportingLines: [] };
+
+    const supportingLines: string[] = [];
+    let wearableWornLine: string | null = null;
+    let rhythmShiftLine: string | null = null;
+    let checkDoneLine: string | null = null;
+
+    if (consent.methods.ring) {
+      const days = this.ringDays[query.patientId]?.filter((d) => d.date >= query.sinceDate) ?? [];
+      if (days.length > 0) {
+        const worn = days.filter((d) => d.ringActive || (d.wearMinutes ?? 0) > 0).length;
+        wearableWornLine = query.isSilenceOrMissed
+          ? `ring worn on ${worn} of ${days.length} days during the missed rounds`
+          : `ring worn on ${worn} of ${days.length} days during the lower rounds`;
+        supportingLines.push(wearableWornLine);
+      }
+
+      const windows = this.rhythmWindows[query.patientId] ?? [];
+      const hasSriShift = windows.some(
+        (w) => w.sriZScore != null && (w.sriZScore <= -1.0 || Math.abs(w.sriZScore) >= 1.0)
+      );
+      const hasRaShift = windows.some(
+        (w) =>
+          (w.raZScore != null && Math.abs(w.raZScore) >= 1.0) ||
+          (w.isZScore != null && Math.abs(w.isZScore) >= 1.0)
+      );
+
+      if (hasSriShift && hasRaShift) {
+        rhythmShiftLine = "day-night rhythm and sleep regularity shifted against earlier weeks";
+        supportingLines.push(rhythmShiftLine);
+      } else if (hasSriShift) {
+        rhythmShiftLine = "sleep regularity shifted against earlier weeks";
+        supportingLines.push(rhythmShiftLine);
+      } else if (hasRaShift) {
+        rhythmShiftLine = "day-night rhythm shifted against earlier weeks";
+        supportingLines.push(rhythmShiftLine);
+      }
+    }
+
+    if (consent.methods.camera) {
+      const readings =
+        this.cameraReadings[query.patientId]?.filter((r) => r.date >= query.sinceDate) ?? [];
+      if (readings.length > 0) {
+        checkDoneLine = readings.some((r) => r.source === "arduino_uno_q")
+          ? "bedside check done during this time"
+          : "camera check done during this time";
+        supportingLines.push(checkDoneLine);
+      }
+    }
+
+    return {
+      wearableWornLine,
+      rhythmShiftLine,
+      checkDoneLine,
+      supportingLines: supportingLines.slice(0, 3),
+    };
+  }
+}
+
 export function createFakePorts(
   initialClockIso: string = '2026-11-16T18:00:00.000Z',
   extraItemsConfig: ExtraItemsConfig = DEFAULT_EXTRA_ITEMS_CONFIG
@@ -450,9 +644,13 @@ export function createFakePorts(
     baselineNotWell: new FakeBaselineNotWellRepository(ctx),
     accessLog: new FakeAccessLogRepository(ctx),
     extraAnswers: new FakeExtraAnswerRepository(ctx),
+    camera: new FakeCameraRepository(ctx),
     extraItemsConfig,
+    homeMonitoring: new FakeHomeMonitoringRepository(),
     unitOfWork,
+    suggestions: new FakeSuggestionRepository(ctx),
   };
 
   return { ports, clock, ctx, unitOfWork };
 }
+

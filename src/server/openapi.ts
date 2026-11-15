@@ -1,7 +1,9 @@
 import type { z } from "zod";
 import { createDocument, type ZodOpenApiOperationObject, type ZodOpenApiPathsObject } from "zod-openapi";
+import { CameraReadingInputSchema } from "@/lib/schemas";
 import {
   AcknowledgeCrisisEventRequestSchema,
+  CheckInCrisisRequestSchema,
   CheckInExtraAnswerRequestSchema,
   CheckInGad7RequestSchema,
   CheckInNotTodayRequestSchema,
@@ -44,6 +46,13 @@ export const API_ROUTES: readonly RouteEntry[] = [
   },
   { path: "/api/check-in/gad7", method: "post", caller: "patient", summary: "One GAD-7 item (D35)", body: CheckInGad7RequestSchema },
   {
+    path: "/api/check-in/crisis",
+    method: "post",
+    caller: "patient",
+    summary: "A typed or spoken request for help on the check-in screen",
+    body: CheckInCrisisRequestSchema,
+  },
+  {
     path: "/api/check-in/extra-answer",
     method: "post",
     caller: "patient",
@@ -66,6 +75,12 @@ export const API_ROUTES: readonly RouteEntry[] = [
   },
   {
     path: "/api/clinic/nurse-calls",
+    method: "get",
+    caller: "staff",
+    summary: "Nurse call records for patients of the caller's clinic",
+  },
+  {
+    path: "/api/clinic/nurse-calls",
     method: "post",
     caller: "staff",
     summary: "Record the outcome of a nurse call about a flag",
@@ -78,6 +93,24 @@ export const API_ROUTES: readonly RouteEntry[] = [
     caller: "system",
     summary: "Run the warning rule for one patient",
     pathParams: PatientEvaluateParamsSchema,
+  },
+  { path: "/api/patient/consent", method: "get", caller: "patient", summary: "Get the patient's consent switches" },
+  { path: "/api/patient/consent", method: "post", caller: "patient", summary: "Update a consent switch" },
+  { path: "/api/patient/suggestion", method: "get", caller: "patient", summary: "Get the patient's current suggestion" },
+  { path: "/api/patient/suggestion", method: "post", caller: "patient", summary: "Record a choice for the patient's suggestion" },
+  { path: "/api/rewards/account", method: "get", caller: "patient", summary: "The patient's rewards account, balance and today's task" },
+  { path: "/api/rewards/payout", method: "post", caller: "patient", summary: "Request simulated payout of rewards balance (minimum 10 euros)" },
+  { path: "/api/rewards/preferences", method: "get", caller: "patient", summary: "Read small task preferences" },
+  { path: "/api/rewards/preferences", method: "post", caller: "patient", summary: "Update small task preferences" },
+  { path: "/api/rewards/task/done", method: "post", caller: "patient", summary: "Mark today's small task done" },
+  { path: "/api/rewards/task/not-today", method: "post", caller: "patient", summary: 'Mark today\'s small task "not today"' },
+  { path: "/api/rewards/today-task", method: "get", caller: "patient", summary: "Read today's offered small task" },
+  {
+    path: "/api/camera/readings",
+    method: "post",
+    caller: "patient",
+    summary: "Store a camera check reading of summary numbers",
+    body: CameraReadingInputSchema,
   },
   { path: "/api/openapi.json", method: "get", caller: "anyone", summary: "This document" },
 ];

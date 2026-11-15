@@ -1,5 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { getPrisma } from "../src/lib/db";
+import { test } from "./helpers";
 
 const BASE_ORIGIN = "http://127.0.0.1:3100";
 

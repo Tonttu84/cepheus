@@ -44,10 +44,12 @@ type ParticipantRow = NonNullable<Awaited<ReturnType<typeof readParticipant>>>;
 function consentOf(row: ParticipantRow): ConsentState {
   const enabled = (method: string) =>
     row.consents.some((consent) => consent.method === method && consent.enabled);
+  const hasDetailedAnswers = row.consents.some((consent) => consent.method === "detailed_answers");
   return {
     taking_part: row.takingPart,
     methods: { ring: enabled(RING_METHOD), camera: enabled(CAMERA_METHOD) },
     rule_check: row.ruleCheckConsent,
+    ...(hasDetailedAnswers ? { detailed_answers: enabled("detailed_answers") } : {}),
   };
 }
 
@@ -80,6 +82,16 @@ function consentEventsFor(stored: ConsentState | null, record: PatientRecord) {
     { layer: "rule_check", method: null, before: stored?.rule_check, enabled: consent.rule_check },
     { layer: "method", method: RING_METHOD, before: stored?.methods.ring, enabled: consent.methods.ring },
     { layer: "method", method: CAMERA_METHOD, before: stored?.methods.camera, enabled: consent.methods.camera },
+    ...(consent.detailed_answers !== undefined
+      ? [
+          {
+            layer: "detailed_answers",
+            method: null,
+            before: stored?.detailed_answers,
+            enabled: consent.detailed_answers,
+          },
+        ]
+      : []),
   ];
   return switches
     .filter((change) => change.before !== change.enabled)
@@ -103,7 +115,48 @@ async function savePatientRecord(ctx: DbContext, record: PatientRecord): Promise
   const rows = [
     consentRow(RING_METHOD, record.clinicId, record.consent.methods.ring),
     consentRow(CAMERA_METHOD, record.clinicId, record.consent.methods.camera),
+    ...(record.consent.detailed_answers !== undefined
+      ? [consentRow("detailed_answers", record.clinicId, record.consent.detailed_answers)]
+      : []),
   ];
+
+  const latestEvent = await ctx.client().consentEvent.findFirst({
+    where: { participantId: record.patientId, layer: "detailed_answers" },
+    orderBy: [{ recordedAt: "desc" }, { id: "desc" }],
+    select: { enabled: true },
+  });
+  const previouslyEnabled = latestEvent !== null ? latestEvent.enabled : (stored ? consentOf(stored).detailed_answers === true : false);
+  const withdrawingLayer3 = previouslyEnabled && record.consent.detailed_answers === false;
+
+  if (withdrawingLayer3) {
+    await ctx.client().phq9Assessment.updateMany({
+      where: { participantId: record.patientId },
+      data: {
+        item1Interest: null,
+        item2Mood: null,
+        item3Sleep: null,
+        item4Energy: null,
+        item5Appetite: null,
+        item6SelfWorth: null,
+        item7Concentration: null,
+        item8Psychomotor: null,
+        item9SelfHarm: null,
+      },
+    });
+    await ctx.client().gad7Assessment.updateMany({
+      where: { participantId: record.patientId },
+      data: {
+        item1Nervous: null,
+        item2ControlWorry: null,
+        item3ExcessiveWorry: null,
+        item4Relaxing: null,
+        item5Restless: null,
+        item6Irritable: null,
+        item7Afraid: null,
+      },
+    });
+  }
+
   await ctx.client().participant.upsert({
     where: { id: record.patientId },
     create: {

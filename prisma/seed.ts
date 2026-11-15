@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import { pathToFileURL } from "node:url";
 import { addDays, getOpenRound, listRounds, type Schedule } from "../src/domain/rounds";
 import { SIMULATED_STAFF_PRESETS } from "../src/lib/auth-types";
+import { PATIENT_SUGGESTIONS } from "../src/lib/constants";
 import {
   DEFAULT_SIMULATION_SEED,
   generateSimulatedPersonWeeks,
@@ -132,6 +132,12 @@ export const SAMPLE_PARTICIPANTS: readonly SampleParticipant[] = [
     label: "Sample participant · Depression & anxiety",
     questionnaires: ["phq9", "gad7"],
   },
+  {
+    participantCode: "P-SIM-NEW-01",
+    externalId: "sim-sample-new-01",
+    label: "Sample participant · new, consent not yet given",
+    questionnaires: ["phq9"],
+  },
 ];
 
 export function consentEventRows(participantId: string, clinicId: string) {
@@ -145,13 +151,40 @@ export function consentEventRows(participantId: string, clinicId: string) {
   }));
 }
 
+export async function createSampleSuggestion(
+  tx: Prisma.TransactionClient,
+  participantId: string,
+  clinicId: string,
+  now: Date,
+  actionIndex = 0
+): Promise<void> {
+  const template = PATIENT_SUGGESTIONS[actionIndex % PATIENT_SUGGESTIONS.length];
+  await tx.patientSuggestion.create({
+    data: {
+      participantId,
+      clinicId,
+      createdAt: now,
+      date: localDateIn(TIME_ZONE, now),
+      reason: "practice",
+      actionKey: template.actionKey,
+      actionTitle: template.actionTitle,
+      actionDetail: template.actionDetail,
+      effortTier: template.effortTier,
+      status: "shown",
+      armType: "intervention",
+      isSimulated: true,
+    },
+  });
+}
+
 export async function createSampleParticipants(
   tx: Prisma.TransactionClient,
   clinicId: string,
   now: Date
 ): Promise<string[]> {
   const ids: string[] = [];
-  for (const sample of SAMPLE_PARTICIPANTS) {
+  for (const [index, sample] of SAMPLE_PARTICIPANTS.entries()) {
+    const isNew = sample.participantCode === "P-SIM-NEW-01";
     const row = await tx.participant.create({
       data: {
         clinicId,
@@ -161,12 +194,17 @@ export async function createSampleParticipants(
         source: "synthetic",
         isSimulated: true,
         ...liveScheduleAt(now, 1),
-        takingPart: true,
-        ruleCheckConsent: true,
+        takingPart: !isNew,
+        ruleCheckConsent: !isNew,
         questionnairesJson: JSON.stringify(sample.questionnaires),
       },
     });
-    await tx.consentEvent.createMany({ data: consentEventRows(row.id, clinicId) });
+    if (!isNew) {
+      await tx.consentEvent.createMany({ data: consentEventRows(row.id, clinicId) });
+    }
+    if (sample.participantCode === "P-SIM-DEP-01") {
+      await createSampleSuggestion(tx, row.id, clinicId, now, index);
+    }
     ids.push(row.id);
   }
   return ids;
@@ -285,17 +323,20 @@ export async function seedDatabase(
       const participantId = participant.id;
 
       await tx.measurementConsent.createMany({
-        data: dataset.consents.map((c) => ({
-          participantId,
-          clinicId,
-          method: c.method,
-          broadArea: c.broadArea,
-          recordedDescription: c.recordedDescription,
-          enabled: c.enabled,
-          isPersonalSign: c.isPersonalSign,
-          consentedAt: c.consentedAt,
-          revokedAt: c.revokedAt,
-        })),
+        data: dataset.consents.map((c) => {
+          const isCore = c.method === "check_in" || c.method === "phq9";
+          return {
+            participantId,
+            clinicId,
+            method: c.method,
+            broadArea: c.broadArea,
+            recordedDescription: c.recordedDescription,
+            enabled: isCore ? c.enabled : false,
+            isPersonalSign: c.isPersonalSign,
+            consentedAt: isCore ? c.consentedAt : null,
+            revokedAt: isCore ? c.revokedAt : null,
+          };
+        }),
       });
 
       await tx.consentEvent.createMany({
@@ -478,6 +519,10 @@ export async function seedDatabase(
         })),
       });
 
+      // Give each simulated patient one OPEN suggestion in addition to any history,
+      // so the demo starts with something to answer.
+      await createSampleSuggestion(tx, participantId, clinicId, now, 0);
+
       await tx.clinicFlag.createMany({
         data: dataset.clinicFlags.map((f) => ({
           participantId,
@@ -513,7 +558,7 @@ export async function seedDatabase(
           cameraReadings: dataset.cameraReadings.length,
           routineReadings: dataset.routineReadings.length,
           personalBaselines: dataset.personalBaselines.length,
-          patientSuggestions: dataset.patientSuggestions.length,
+          patientSuggestions: dataset.patientSuggestions.length + 1,
           clinicFlags: dataset.clinicFlags.length,
         },
       };
@@ -529,8 +574,8 @@ export async function seedDatabase(
 
 const isMainModule =
   typeof process !== "undefined" &&
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+  typeof process.argv[1] === "string" &&
+  /[\\/]prisma[\\/]seed\.ts$/.test(process.argv[1]);
 
 if (isMainModule) {
   seedDatabase()

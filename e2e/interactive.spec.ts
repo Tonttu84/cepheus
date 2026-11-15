@@ -1,8 +1,19 @@
-import { expect, test } from "@playwright/test";
-import { signInAsPatient, signInAsStaff } from "./helpers";
+import { expect } from "@playwright/test";
+import {
+  reofferSuggestionsAnsweredSince,
+  signInAsPatient,
+  signInAsStaff,
+  test,
+} from "./helpers";
 
 test.describe("Interactive Redesign Fixes & Invariants", () => {
-  test("1. /check-in handles scale tapping with accessible names, Not Today skip, and no saving claims", async ({
+  const startedAt = new Date();
+
+  test.afterAll(async () => {
+    await reofferSuggestionsAnsweredSince("P-SIM-001", startedAt);
+  });
+
+  test("1. /check-in handles scale tapping with accessible names, Not Today skip, and plain save explanation", async ({
     page,
     context,
   }) => {
@@ -28,54 +39,59 @@ test.describe("Interactive Redesign Fixes & Invariants", () => {
     const notTodayButton = page.getByTestId("not-today-button");
     await notTodayButton.click();
 
-    // Assert preview status message appears and contains "simulated"
+    // Assert status message explains answers are saved, missed is never scored zero, and data is simulated
     const statusMessage = page.getByRole("status");
     await expect(statusMessage).toBeVisible();
+    await expect(statusMessage).toContainText("The answers of this round are saved");
+    await expect(statusMessage).toContainText("never scored as zero");
     await expect(statusMessage).toContainText("simulated");
-
-    // Assert page contains none of the words "saved", "recorded", "queued"
-    const bodyText = await page.locator("body").innerText();
-    expect(bodyText.toLowerCase()).not.toContain("saved");
-    expect(bodyText.toLowerCase()).not.toContain("recorded");
-    expect(bodyText.toLowerCase()).not.toContain("queued");
   });
 
-  test("2. /patient action buttons show simulated status message", async ({
+  test("2. /patient stores the choice, says so, and offers no second answer", async ({
     page,
     context,
   }) => {
     await signInAsPatient(page, context);
     await page.goto("/patient");
 
+    // The page is labelled as simulated data.
+    await expect(page.getByTestId("simulated-badge").first()).toContainText("Simulated data");
+
     const acceptButton = page.getByTestId("patient-suggestion-accept");
     await acceptButton.click();
+
+    // The choice is stored, so the message states it instead of calling itself a preview.
     const status = page.getByRole("status");
     await expect(status).toBeVisible();
-    await expect(status).toContainText("simulated");
+    await expect(status).toContainText("You’ve chosen to try this today");
+    await expect(status).not.toContainText("nothing is sent yet");
 
-    const skipButton = page.getByTestId("patient-suggestion-skip");
-    await skipButton.click();
-    await expect(page.getByRole("status")).toBeVisible();
-    await expect(page.getByRole("status")).toContainText("simulated");
+    // An answered suggestion has no buttons: one answer a day.
+    await expect(page.getByTestId("patient-suggestion-accept")).toHaveCount(0);
+    await expect(page.getByTestId("patient-suggestion-skip")).toHaveCount(0);
   });
 
-  test("3. /clinic action buttons show simulated status message", async ({
+  test("3. /clinic nurse call is stored and named on a flag labelled simulated", async ({
     page,
     context,
   }) => {
     await signInAsStaff(page, context, { ensureFlag: true });
     await page.goto("/clinic");
 
-    const nurseCallButton = page.getByTestId("clinic-action-nurse-call");
-    await nurseCallButton.click();
-    const status = page.getByRole("status");
-    await expect(status).toBeVisible();
-    await expect(status).toContainText("simulated");
+    const flagCard = page.getByTestId("clinic-flag-card").first();
+    await expect(flagCard).toContainText("Simulated flag");
 
-    const boosterButton = page.getByTestId("clinic-action-booster");
-    await boosterButton.click();
-    await expect(page.getByRole("status")).toBeVisible();
-    await expect(page.getByRole("status")).toContainText("simulated");
+    const nurseCallButton = flagCard.getByTestId("clinic-action-nurse-call");
+    await nurseCallButton.click();
+
+    // The request is stored, so the message names who asked instead of calling itself a preview.
+    const status = flagCard.getByTestId("nurse-call-status");
+    await expect(status).toBeVisible();
+    await expect(status).toHaveRole("status");
+    await expect(status).toContainText("Nurse call requested by");
+
+    // The booster offer is not a button on the card: it is an outcome a nurse records after the call.
+    await expect(page.getByTestId("clinic-action-booster")).toHaveCount(0);
   });
 
   test("4. / and /check-in show all crisis links in viewport at 375px, 640px, and 768px", async ({

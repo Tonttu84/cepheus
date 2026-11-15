@@ -1,5 +1,5 @@
 import { decideAccess, type Actor, type TargetData, type Purpose } from '../domain/access';
-import { isCrisis } from '../domain/crisis';
+import { isCrisis, CRISIS_EVENT_ITEM_ID } from '../domain/crisis';
 import { PHQ9_ITEMS, scorePhq9, type Phq9Answer } from '../domain/instruments';
 import {
   getOpenRound,
@@ -236,7 +236,7 @@ export async function submitPhq9Answer(
           await ports.crisis.saveCrisisEvent({
             patientId: patient.patientId,
             roundNumber: questionnaireRoundNumber,
-            itemId: input.itemId,
+            itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
             value: input.value,
             occurredAt: now,
           });

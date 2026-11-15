@@ -5,6 +5,7 @@ import type {
   PatientAuthSession,
   StaffAuthSession,
 } from "@/lib/auth-types";
+import { getRouteDeps } from "@/server/api";
 import { readServerSession, readSessionFromRequest } from "./session";
 
 export type ApiSessionResult<T extends AuthSession = AuthSession> =
@@ -56,7 +57,19 @@ export function requireApiSession(
   return { ok: true, session };
 }
 
-export async function requirePatientPageSession(): Promise<PatientAuthSession> {
+async function checkPatientTakingPart(patientId: string): Promise<boolean> {
+  try {
+    const { ports } = getRouteDeps();
+    const switches = await ports.patients.getPatientAccessSwitches(patientId);
+    return switches?.consent.taking_part ?? false;
+  } catch {
+    return false;
+  }
+}
+
+export async function requirePatientPageSession(options?: {
+  allowUnconsented?: boolean;
+}): Promise<PatientAuthSession> {
   const session = await readServerSession();
   if (!session) {
     redirect("/sign-in");
@@ -64,6 +77,14 @@ export async function requirePatientPageSession(): Promise<PatientAuthSession> {
   if (session.kind !== "patient") {
     redirect("/clinic");
   }
+
+  if (!options?.allowUnconsented) {
+    const takingPart = await checkPatientTakingPart(session.actor.patientId);
+    if (!takingPart) {
+      redirect("/consent");
+    }
+  }
+
   return session;
 }
 

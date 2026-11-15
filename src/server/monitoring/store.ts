@@ -29,6 +29,7 @@ export const ALL_CONSENT_METHODS = [
   "ring_rhythm",
   "camera_expressivity",
   "home_routine",
+  "detailed_answers",
 ] as const;
 export type MonitoredMethodKey = (typeof ALL_CONSENT_METHODS)[number];
 export type PassiveMethodKey = (typeof MONITORED_METHODS)[number];
@@ -83,6 +84,12 @@ export interface MonitoringSummaryPayload {
   viewerKind: "patient" | "staff";
   readingsRedactedForStaff: boolean;
   consents: MonitoringConsentSummary[];
+  /**
+   * Whether the patient chose to have individual answers kept, as stored.
+   * Only in the patient's own view; without it the switch on the monitoring
+   * page showed "Paused" whatever was stored and could not be switched off.
+   */
+  detailedAnswersEnabled?: boolean;
   deviceConnections: DeviceConnectionsMap;
   latestRhythmWindow: {
     windowEndDate: string;
@@ -170,6 +177,7 @@ export async function loadConsentContext(
   const ring = flagOf("ring_rhythm");
   const camera = flagOf("camera_expressivity");
   const routine = flagOf("home_routine");
+  const detailedAnswers = flagOf("detailed_answers");
 
   return {
     methodFlags: {
@@ -178,6 +186,7 @@ export async function loadConsentContext(
       ring_rhythm: ring,
       camera_expressivity: camera,
       home_routine: routine,
+      detailed_answers: detailedAnswers,
     },
     consentState: {
       taking_part: checkIn || phq9,
@@ -186,6 +195,7 @@ export async function loadConsentContext(
         camera: camera || routine,
       },
       rule_check: false,
+      detailed_answers: detailedAnswers,
     },
   };
 }
@@ -326,6 +336,8 @@ export async function updateMethodConsent(
     throw new Error(`Access denied updating consent: ${access.reason}`);
   }
 
+  const meta = MEASUREMENT_METHODS.find((m) => m.method === method);
+
   const existing = await prisma.measurementConsent.findUnique({
     where: {
       participantId_method: {
@@ -335,27 +347,40 @@ export async function updateMethodConsent(
     },
   });
 
-  const updated = await prisma.measurementConsent.update({
+  const updated = await prisma.measurementConsent.upsert({
     where: {
       participantId_method: {
         participantId: participant.id,
         method,
       },
     },
-    data: {
+    create: {
+      participantId: participant.id,
+      clinicId: effectiveClinicId,
+      method,
+      broadArea: meta?.broadArea ?? "daily_routine",
+      recordedDescription: meta?.recordedDescription ?? "",
+      enabled,
+      isPersonalSign: meta?.isPersonalSignDefault ?? false,
+      consentedAt: enabled ? new Date() : null,
+      revokedAt: enabled ? null : new Date(),
+    },
+    update: {
       enabled,
       consentedAt: enabled ? new Date() : undefined,
       revokedAt: enabled ? null : new Date(),
     },
   });
 
-  if (existing && existing.enabled !== enabled) {
+  if (!existing || existing.enabled !== enabled) {
+    const isDetailed = method === "detailed_answers";
+    const isTakingPart = method === "check_in";
     await prisma.consentEvent.create({
       data: {
         participantId: participant.id,
         clinicId: participant.clinicId,
-        layer: "method",
-        method,
+        layer: isDetailed ? "detailed_answers" : isTakingPart ? "taking_part" : "method",
+        method: isDetailed || isTakingPart ? null : method,
         enabled,
         noticeVersion: "v1",
       },
@@ -369,7 +394,35 @@ export async function updateMethodConsent(
     });
   }
 
-  const meta = MEASUREMENT_METHODS.find((m) => m.method === method);
+  if (method === "detailed_answers" && !enabled) {
+    await prisma.phq9Assessment.updateMany({
+      where: { participantId: participant.id },
+      data: {
+        item1Interest: null,
+        item2Mood: null,
+        item3Sleep: null,
+        item4Energy: null,
+        item5Appetite: null,
+        item6SelfWorth: null,
+        item7Concentration: null,
+        item8Psychomotor: null,
+        item9SelfHarm: null,
+      },
+    });
+    await prisma.gad7Assessment.updateMany({
+      where: { participantId: participant.id },
+      data: {
+        item1Nervous: null,
+        item2ControlWorry: null,
+        item3ExcessiveWorry: null,
+        item4Relaxing: null,
+        item5Restless: null,
+        item6Irritable: null,
+        item7Afraid: null,
+      },
+    });
+  }
+
   return {
     method: updated.method,
     label: meta?.label ?? updated.method,
@@ -864,6 +917,12 @@ export async function getMonitoringSummary(
     where: { participantId: participant.id, method: { in: [...MONITORED_METHODS] } },
   });
   const consents = formatConsentSummaries(consentsRows);
+  const detailedAnswers = await prisma.measurementConsent.findUnique({
+    where: {
+      participantId_method: { participantId: participant.id, method: "detailed_answers" },
+    },
+    select: { enabled: true },
+  });
 
   const [deviceConnections, rhythmWindow, ringDays, cameraReadings, routineReadings] =
     await Promise.all([
@@ -906,6 +965,7 @@ export async function getMonitoringSummary(
     viewerKind: "patient",
     readingsRedactedForStaff: false,
     consents,
+    detailedAnswersEnabled: detailedAnswers?.enabled ?? false,
     deviceConnections,
     latestRhythmWindow: rhythmWindow
       ? {

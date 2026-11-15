@@ -85,9 +85,12 @@ export async function markTaskDone(
     if (!recordToComplete) {
       const preferred = await ports.preferences.getPreferences(input.patientId);
       const history = await ports.taskRecords.getHistory(input.patientId);
+      const completedHistory = history.filter(
+        (r) => r.status === "completed" || r.localDate === localDate
+      );
       const offeredTask = determineOfferedTask({
         preferredKeys: preferred,
-        history,
+        history: completedHistory,
         localDate,
       });
 

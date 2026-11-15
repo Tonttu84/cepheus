@@ -4,6 +4,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { CrisisHelpBar } from "@/components/crisis-help-bar";
 import { SiteNav } from "@/components/site-nav";
 import { readServerSession } from "@/server/auth";
+import { getRewardsSettings } from "@/server/api/rewards-settings";
 
 export const metadata: Metadata = {
   title: "Cepheus · Beyond the Clinic",
@@ -17,13 +18,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialSession = await readServerSession();
+  const settings = getRewardsSettings();
 
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col text-ink-primary antialiased selection:bg-accent-sage/15 selection:text-ink-primary">
         <AuthProvider initialSession={initialSession}>
           <CrisisHelpBar />
-          <SiteNav />
+          <SiteNav rewardsEnabled={settings.rewardsEnabled} />
           <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
             {children}
           </main>

@@ -1,5 +1,5 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { signInAsPatient } from "./helpers";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { signInAsPatient, test } from "./helpers";
 
 /**
  * Case 1 (D45): nothing is kept on the person's device. After the real

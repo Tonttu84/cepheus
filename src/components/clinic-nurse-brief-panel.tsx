@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import type { WarningKind } from "@/domain/ai-support";
+import { SimulatedBadge } from "@/components/simulated-badge";
 
 interface NurseBriefState {
   provider: string;
@@ -12,26 +14,40 @@ interface NurseBriefState {
   };
 }
 
-const SOURCE_METRICS = [
+export interface NurseBriefMetricItem {
+  readonly label: string;
+  readonly valueText: string;
+}
+
+const DEFAULT_SOURCE_METRICS: readonly NurseBriefMetricItem[] = [
   { label: "Unanswered rounds", valueText: "2" },
   { label: "Sleep regularity shift", valueText: "-18%" },
-] as const;
+];
 
 export function ClinicNurseBriefPanel({
   participantCode,
   sinceDate,
   broadAreas,
   ringActiveDuringSilence,
+  triggerKind,
+  metrics,
 }: {
   participantCode: string;
   sinceDate: string;
   broadAreas: readonly string[];
   ringActiveDuringSilence: boolean | null;
+  triggerKind?: WarningKind;
+  metrics?: readonly NurseBriefMetricItem[];
 }) {
   const [busy, setBusy] = useState(false);
   const [brief, setBrief] = useState<NurseBriefState | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+
+  const activeTriggerKind: WarningKind =
+    triggerKind ?? (ringActiveDuringSilence ? "silence" : "sustained_dip");
+  const activeMetrics: readonly NurseBriefMetricItem[] =
+    metrics && metrics.length > 0 ? metrics : DEFAULT_SOURCE_METRICS;
 
   async function handleGenerateBrief() {
     setBusy(true);
@@ -44,10 +60,10 @@ export function ClinicNurseBriefPanel({
         body: JSON.stringify({
           participantCode,
           sinceDate,
-          triggerKind: "silence",
+          triggerKind: activeTriggerKind,
           broadAreas: [...broadAreas],
           ringActiveDuringSilence,
-          metrics: SOURCE_METRICS,
+          metrics: activeMetrics,
           isSimulated: true,
         }),
       });
@@ -83,9 +99,12 @@ export function ClinicNurseBriefPanel({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold text-stone-900">
-            Nurse Pre-Call Brief (Optional EU Verda + Gemma formatter)
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold text-stone-900">
+              Nurse Pre-Call Brief (Optional EU Verda + Gemma formatter)
+            </h3>
+            <SimulatedBadge subtitle="" />
+          </div>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-stone-600">
             Formats pseudonymous broad-area shifts into a brief summary and
             non-judgmental phone openers. Off by default unless{" "}
@@ -131,7 +150,7 @@ export function ClinicNurseBriefPanel({
           >
             <strong>Source metrics passed in:</strong> Since {sinceDate} · Areas:{" "}
             {broadAreas.join(", ")} ·{" "}
-            {SOURCE_METRICS.map((m) => `${m.label}: ${m.valueText}`).join(" · ")}
+            {activeMetrics.map((m) => `${m.label}: ${m.valueText}`).join(" · ")}
           </div>
 
           <p className="text-sm leading-relaxed text-stone-800">

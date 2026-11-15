@@ -11,6 +11,7 @@ import {
   getClientKey,
   verifySameOrigin,
 } from "@/server/security";
+import { env } from "@/server/env";
 
 async function handlePatientSignIn(
   participantCode: string
@@ -66,7 +67,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const rateLimit = checkRateLimit(
     getClientKey(request, "auth-signin"),
-    10,
+    env.SIGN_IN_RATE_LIMIT_MAX,
     60_000
   );
   if (!rateLimit.allowed) {

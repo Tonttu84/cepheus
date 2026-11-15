@@ -5,6 +5,7 @@ import { createFakePorts } from '../testing';
 import { submitTaps } from '../submit-taps';
 import { submitPhq9Answer } from '../submit-phq9-answer';
 import { evaluatePatient } from '../evaluate-patient';
+import { CRISIS_EVENT_ITEM_ID } from '../../domain/crisis';
 
 describe('Crisis Rule & Unit of Work Rollback', () => {
   const patientId = 'crisis-patient-1';
@@ -61,7 +62,7 @@ describe('Crisis Rule & Unit of Work Rollback', () => {
       // Crisis event is stored immediately
       const crisisEvents = await ports.crisis.getCrisisEvents(patientId);
       expect(crisisEvents).toHaveLength(1);
-      expect(crisisEvents[0].itemId).toBe('9');
+      expect(crisisEvents[0].itemId).toBe(CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9);
       expect(crisisEvents[0].value).toBe(value);
       expect(crisisEvents[0].roundNumber).toBe(1);
 
@@ -235,7 +236,7 @@ describe('Crisis Rule & Unit of Work Rollback', () => {
     // Exactly one crisis event stored
     const crisisEvents = await ports.crisis.getCrisisEvents(patientId);
     expect(crisisEvents).toHaveLength(1);
-    expect(crisisEvents[0].itemId).toBe('9');
+    expect(crisisEvents[0].itemId).toBe(CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9);
     expect(crisisEvents[0].value).toBe(2);
 
     // PHQ-9 is stored and completed

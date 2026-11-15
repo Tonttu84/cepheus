@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import type { PatientActor, StaffActor, SystemActor } from "@/domain/access";
+import { CRISIS_EVENT_ITEM_ID } from "@/domain/crisis";
 import { getPrisma } from "@/lib/db";
 import {
   closeElapsedRounds,
@@ -208,7 +209,7 @@ describe("Use cases on the PostgreSQL ports (*.dbtest.ts)", () => {
 
     const events = await ports.crisis.getCrisisEvents(patientId);
     expect(events).toHaveLength(1);
-    expect(events[0]).toMatchObject({ roundNumber: 1, itemId: "9", value: 2, occurredAt: ROUND_1_OPEN });
+    expect(events[0]).toMatchObject({ roundNumber: 1, itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9, value: 2, occurredAt: ROUND_1_OPEN });
     expect(await ports.warnings.getWarnings(patientId)).toHaveLength(0);
 
     const evaluated = await evaluatePatient(systemActor, { patientId }, ports);

@@ -148,13 +148,17 @@ describe("the routes on PostgreSQL (*.dbtest.ts)", () => {
     const flags = await (await getFlags(request("/api/clinic/flags", { method: "GET", cookie: nurseCookie }))).json();
     expect(flags.ok).toBe(true);
     expect(flags.flags.length).toBeGreaterThan(0);
-    expect(flags.flags[0]).toEqual({
+    const patientFlag = flags.flags.find((f: { patientId: string }) => f.patientId === patientId);
+    expect(patientFlag).toMatchObject({
       patientId,
       area: "check_in",
       since: expect.any(String),
       raisedAt: expect.any(String),
     });
-    expect(JSON.stringify(flags)).not.toMatch(/total|score|value/i);
+    // Decision of 15 Nov (owner): the clinic may see the warning kind, a
+    // questionnaire total and its change, and supporting lines; nothing else.
+    for (const key of Object.keys(patientFlag)) expect(["area", "facts", "patientId", "raisedAt", "since", "supportingLines", "warningKind"]).toContain(key);
+    expect(JSON.stringify(flags)).not.toMatch(/score|value/i);
   });
 
   it("answers a GAD-7 item for the anxiety sample patient", async () => {

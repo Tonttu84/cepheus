@@ -19,22 +19,34 @@ function answersFromColumns(row: Gad7Assessment) {
   });
 }
 
+async function shouldStoreItemAnswers(ctx: DbContext, patientId: string): Promise<boolean> {
+  const latest = await ctx.client().consentEvent.findFirst({
+    where: { participantId: patientId, layer: "detailed_answers" },
+    orderBy: [{ recordedAt: "desc" }, { id: "desc" }],
+    select: { enabled: true },
+  });
+  if (latest !== null) {
+    return latest.enabled;
+  }
+  return ctx.storeItemAnswers;
+}
+
 /**
  * With item answers off, an unfinished questionnaire's answers come from
  * memory (none after a restart) and a completed one keeps its total only.
  */
-function answersOf(ctx: DbContext, row: Gad7Assessment) {
-  if (ctx.storeItemAnswers) return answersFromColumns(row);
+function answersOf(ctx: DbContext, row: Gad7Assessment, storeItems: boolean) {
+  if (storeItems) return answersFromColumns(row);
   if (row.status === "completed") return [];
   return ctx.answers().get(row.participantId, "gad7", row.roundNumber) ?? [];
 }
 
-function toStoredGad7(ctx: DbContext, row: Gad7Assessment): StoredGad7 {
+function toStoredGad7(ctx: DbContext, row: Gad7Assessment, storeItems: boolean): StoredGad7 {
   const completed = row.status === "completed";
   return {
     patientId: row.participantId,
     roundNumber: row.roundNumber,
-    answers: answersOf(ctx, row),
+    answers: answersOf(ctx, row, storeItems),
     total: row.totalScore,
     completedAt: row.completedAt?.toISOString() ?? null,
     date: completed ? row.date : null,
@@ -47,8 +59,8 @@ function itemColumns(answers: StoredGad7["answers"]) {
   );
 }
 
-function rememberAnswers(ctx: DbContext, assessment: StoredGad7): void {
-  if (ctx.storeItemAnswers) return;
+function rememberAnswers(ctx: DbContext, assessment: StoredGad7, storeItems: boolean): void {
+  if (storeItems) return;
   const { patientId, roundNumber } = assessment;
   if (isCompleted(assessment)) ctx.answers().delete(patientId, "gad7", roundNumber);
   else ctx.answers().set(patientId, "gad7", roundNumber, assessment.answers);
@@ -57,17 +69,19 @@ function rememberAnswers(ctx: DbContext, assessment: StoredGad7): void {
 export function createGad7Repository(ctx: DbContext): Gad7Repository {
   return {
     async getGad7s(patientId) {
+      const storeItems = await shouldStoreItemAnswers(ctx, patientId);
       const rows = await ctx.client().gad7Assessment.findMany({
         where: { participantId: patientId },
         orderBy: { roundNumber: "asc" },
       });
-      return rows.map((row) => toStoredGad7(ctx, row));
+      return rows.map((row) => toStoredGad7(ctx, row, storeItems));
     },
 
     async saveGad7(assessment) {
       const { clinicId, isSimulated, schedule } = await loadParticipantScope(ctx.client(), assessment.patientId);
       if (!schedule) throw new Error("Patient has no schedule");
       const round = listRounds(schedule, assessment.roundNumber).at(-1)!;
+      const storeItems = await shouldStoreItemAnswers(ctx, assessment.patientId);
       const columns = {
         clinicId,
         ...roundColumnsFor(schedule, round.localDate),
@@ -75,7 +89,7 @@ export function createGad7Repository(ctx: DbContext): Gad7Repository {
         status: isCompleted(assessment) ? "completed" : "in_progress",
         totalScore: assessment.total ?? null,
         completedAt: assessment.completedAt ? new Date(assessment.completedAt) : null,
-        ...itemColumns(ctx.storeItemAnswers ? assessment.answers : []),
+        ...itemColumns(storeItems ? assessment.answers : []),
       };
       await ctx.client().gad7Assessment.upsert({
         where: {
@@ -92,7 +106,7 @@ export function createGad7Repository(ctx: DbContext): Gad7Repository {
         },
         update: columns,
       });
-      rememberAnswers(ctx, assessment);
+      rememberAnswers(ctx, assessment, storeItems);
     },
   };
 }

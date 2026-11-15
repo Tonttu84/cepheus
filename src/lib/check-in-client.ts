@@ -11,6 +11,8 @@ export interface CheckInStateResponse {
   readonly phq9Progress: "not_started" | "unfinished" | "completed";
   readonly hasSuggestionWaiting: boolean;
   readonly extraItem: unknown | null;
+  readonly isGad7Due?: boolean;
+  readonly gad7Progress?: "not_started" | "unfinished" | "completed";
 }
 
 export type ClientApiResult<T> =
@@ -143,3 +145,139 @@ export async function submitCheckInPhq9(input: {
     };
   }
 }
+
+export interface SubmitGad7Result {
+  readonly saved: boolean;
+  readonly isComplete: boolean;
+}
+
+export async function submitCheckInGad7(input: {
+  itemId: string;
+  value: number;
+}): Promise<ClientApiResult<SubmitGad7Result>> {
+  try {
+    const res = await fetch("/api/check-in/gad7", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (res.status === 401) {
+      return { ok: false, status: 401, error: "unauthorized" };
+    }
+    if (res.status === 503) {
+      return { ok: false, status: 503, saved: false, error: "service_unavailable" };
+    }
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: res.status,
+        error: data.message ?? `http_${res.status}`,
+      };
+    }
+    return {
+      ok: true,
+      saved: data.saved ?? true,
+      isComplete: data.isComplete ?? false,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 503,
+      saved: false,
+      error: err instanceof Error ? err.message : "network_error",
+    };
+  }
+}
+
+export interface SubmitCrisisAlertResult {
+  readonly saved: boolean;
+  readonly duplicate?: boolean;
+}
+
+export interface SubmitCrisisAlertOptions {
+  readonly maxRetries?: number;
+  readonly timeoutMs?: number;
+  readonly fetchFn?: typeof fetch;
+}
+
+async function sendCrisisAlertRequest(
+  customFetch: typeof fetch,
+  timeoutMs: number
+): Promise<ClientApiResult<SubmitCrisisAlertResult>> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await customFetch("/api/check-in/crisis", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ screen: "check-in" }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (res.status === 401) {
+      return { ok: false, status: 401, error: "unauthorized", showCrisisPath: true };
+    }
+    if (res.status === 403) {
+      return { ok: false, status: 403, error: "forbidden", showCrisisPath: true };
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return {
+        ok: false,
+        status: res.status,
+        error: data.error ?? `http_${res.status}`,
+        showCrisisPath: true,
+      };
+    }
+    const data = await res.json();
+    return { ok: true, saved: data.saved ?? true, duplicate: data.duplicate ?? false };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return {
+      ok: false,
+      status: 503,
+      saved: false,
+      error: err instanceof Error ? err.message : "network_error",
+      showCrisisPath: true,
+    };
+  }
+}
+
+/**
+ * Sends a crisis alert from the check-in screen in the background.
+ *
+ * Rules:
+ * - Carries NO text or transcript, only { screen: "check-in" }.
+ * - Retries a bounded number of times (at most 3 attempts total).
+ * - Each attempt has a strict deadline (timeoutMs, default 5000ms).
+ * - Always preserves showCrisisPath: true even on failure, never blocking the caller.
+ */
+export async function submitCheckInCrisisAlert(
+  options: SubmitCrisisAlertOptions = {}
+): Promise<ClientApiResult<SubmitCrisisAlertResult>> {
+  const maxRetries = options.maxRetries ?? 3;
+  const timeoutMs = options.timeoutMs ?? 5000;
+  const customFetch = options.fetchFn ?? fetch;
+
+  let lastFailure: ClientApiResult<SubmitCrisisAlertResult> = {
+    ok: false,
+    status: 503,
+    saved: false,
+    error: "network_error",
+    showCrisisPath: true,
+  };
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const result = await sendCrisisAlertRequest(customFetch, timeoutMs);
+    if (result.ok || result.status < 500) {
+      return result;
+    }
+    lastFailure = result;
+  }
+
+  return lastFailure;
+}
+

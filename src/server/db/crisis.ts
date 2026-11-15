@@ -2,21 +2,28 @@ import type { CrisisEvent } from "@prisma/client";
 import type { CrisisRepository, StoredCrisisEvent } from "@/usecases/ports";
 import type { DbContext } from "./context";
 import { loadParticipantScope } from "./participant-scope";
-import { PHQ9_COLUMN_BY_ID } from "./phq9-columns";
+import { CRISIS_EVENT_ITEM_ID, type CrisisEventItemId } from "@/domain/crisis";
 
-const ITEM_ID_BY_COLUMN: Record<string, string> = Object.fromEntries(
-  Object.entries(PHQ9_COLUMN_BY_ID).map(([id, column]) => [column, id])
-);
-
-function itemIdToColumn(itemId: string): string {
-  return PHQ9_COLUMN_BY_ID[itemId as keyof typeof PHQ9_COLUMN_BY_ID] ?? itemId;
+function toCanonicalItemId(rawItemId: string): CrisisEventItemId {
+  if (
+    rawItemId === "9" ||
+    rawItemId === "item9SelfHarm" ||
+    rawItemId === "item9SelfHarm_value" ||
+    rawItemId === "phq9_item9"
+  ) {
+    return CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9;
+  }
+  if (rawItemId === "crisis_button") {
+    return CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP;
+  }
+  return rawItemId as CrisisEventItemId;
 }
 
 function toStoredCrisisEvent(row: CrisisEvent): StoredCrisisEvent {
   return {
     patientId: row.participantId,
     roundNumber: row.roundNumber,
-    itemId: row.itemId === "item9SelfHarm" ? "9" : row.itemId,
+    itemId: toCanonicalItemId(row.itemId),
     value: row.value,
     occurredAt: row.occurredAt.toISOString(),
     acknowledgedAt: row.acknowledgedAt?.toISOString() ?? null,
@@ -58,7 +65,7 @@ export function createCrisisRepository(ctx: DbContext): CrisisRepository {
           roundNumber: event.roundNumber,
           clinicId,
           isSimulated,
-          itemId: itemIdToColumn(event.itemId),
+          itemId: event.itemId,
           value: event.value,
           occurredAt: new Date(event.occurredAt),
           acknowledgedAt: event.acknowledgedAt ? new Date(event.acknowledgedAt) : null,

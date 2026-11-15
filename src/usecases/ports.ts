@@ -13,6 +13,7 @@ import type { CallPosition, EvaluatedEffect, QuestionnaireType } from '../domain
 export type { CallPosition };
 import type { ExtraItem, ExtraItemsConfig } from '../domain/extra-items';
 import type { CrisisResource } from '../lib/constants';
+import type { CrisisEventItemId } from '../domain/crisis';
 
 export type UseCaseResult<T, E = unknown> =
   | { readonly ok: true; readonly value: T }
@@ -28,6 +29,7 @@ export interface PatientRecord {
   readonly schedule: Schedule;
   readonly consent: ConsentState;
   readonly questionnaires?: readonly QuestionnaireType[];
+  readonly isSimulated?: boolean;
 }
 
 export interface PatientAccessSwitches {
@@ -176,7 +178,7 @@ export interface SmallDipRepository {
 export interface StoredCrisisEvent {
   readonly patientId: string;
   readonly roundNumber: number;
-  readonly itemId: string;
+  readonly itemId: CrisisEventItemId;
   readonly value: number;
   readonly occurredAt: string;
   readonly acknowledgedAt?: string | null;
@@ -230,12 +232,101 @@ export interface ExtraAnswerRepository {
   saveExtraAnswer(answer: StoredExtraAnswer): Promise<void>;
 }
 
+export type SuggestionStatus = 'shown' | 'accepted' | 'completed' | 'skipped';
+
+export interface StoredSuggestion {
+  readonly id: string;
+  readonly patientId: string;
+  readonly clinicId?: string | null;
+  readonly createdAt: string;
+  readonly date: string;
+  readonly dayIndex?: number | null;
+  readonly reason: string;
+  readonly actionKey: string;
+  readonly actionTitle: string;
+  readonly actionDetail: string | null;
+  readonly effortTier: string;
+  readonly status: SuggestionStatus;
+  readonly respondedAt?: string | null;
+  readonly armType?: string;
+  readonly nextCheckInDelta?: number | null;
+  readonly isSimulated?: boolean;
+}
+
+export interface SuggestionRepository {
+  getLatestSuggestion(patientId: string): Promise<StoredSuggestion | null>;
+  getSuggestion(suggestionId: string): Promise<StoredSuggestion | null>;
+  hasUnansweredSuggestion(patientId: string): Promise<boolean>;
+  saveSuggestion(suggestion: StoredSuggestion): Promise<void>;
+  updateSuggestionChoice(
+    suggestionId: string,
+    status: SuggestionStatus,
+    respondedAt: string
+  ): Promise<void>;
+}
+
+export interface StoredCameraReading {
+  readonly participantId: string;
+  readonly date: string;
+  readonly dayIndex?: number | null;
+  readonly taskId?: string;
+  readonly durationSec: number;
+  readonly sampleRateHz?: number;
+  readonly effectiveFps: number;
+  readonly faceDetectedRatio: number;
+  readonly expressivityScore: number;
+  readonly smileFraction: number;
+  readonly mouthSmileMean?: number | null;
+  readonly mouthSmileSd?: number | null;
+  readonly browInnerUpSd?: number | null;
+  readonly browDownSd?: number | null;
+  readonly browOuterUpSd?: number | null;
+  readonly eyeSquintSd?: number | null;
+  readonly cheekSquintSd?: number | null;
+  readonly jawOpenSd?: number | null;
+  readonly blendshapeStatsJson?: string | null;
+  readonly yawSdDeg: number;
+  readonly pitchSdDeg: number;
+  readonly rollSdDeg?: number | null;
+  readonly angularPathDegPerMin: number;
+  readonly translationSd?: number | null;
+  readonly expressivityZScore?: number | null;
+  readonly headMovementZScore?: number | null;
+  readonly isSimulated?: boolean;
+  readonly source?: string;
+}
+
+export interface CameraRepository {
+  getCameraReadings(patientId: string): Promise<readonly StoredCameraReading[]>;
+  saveCameraReading(reading: StoredCameraReading): Promise<void>;
+}
+
 /**
  * The real implementation must give a use case a consistent view for one patient 
  * (for example by locking that patient's row), so two requests for one patient cannot interleave.
  */
 export interface UnitOfWork {
   execute<T>(work: () => Promise<T>): Promise<T>;
+}
+
+export interface HomeMonitoringFacts {
+  readonly wearableWornLine?: string | null;
+  readonly rhythmShiftLine?: string | null;
+  readonly checkDoneLine?: string | null;
+  readonly supportingLines: readonly string[];
+}
+
+export interface HomeMonitoringQuery {
+  readonly patientId: string;
+  readonly sinceDate: string;
+  readonly isSilenceOrMissed?: boolean;
+}
+
+export interface HomeMonitoringRepository {
+  getSupportingFacts(
+    query: HomeMonitoringQuery,
+    consent: ConsentState
+  ): Promise<HomeMonitoringFacts>;
 }
 
 export interface Ports {
@@ -251,8 +342,11 @@ export interface Ports {
   readonly baselineNotWell: BaselineNotWellRepository;
   readonly accessLog: AccessLogRepository;
   readonly extraAnswers: ExtraAnswerRepository;
+  readonly camera?: CameraRepository;
   readonly extraItemsConfig?: ExtraItemsConfig;
+  readonly homeMonitoring?: HomeMonitoringRepository;
   readonly unitOfWork: UnitOfWork;
+  readonly suggestions: SuggestionRepository;
 }
 
 export interface OpenRoundInfo {
@@ -269,10 +363,13 @@ export interface CheckInState {
   readonly phq9Progress: Phq9Progress;
   readonly hasSuggestionWaiting: boolean;
   readonly extraItem: ExtraItem | null;
+  readonly isGad7Due?: boolean;
+  readonly gad7Progress?: Phq9Progress;
 }
 
 export interface SubmitTapsResult {
   readonly ruleRunNeeded: boolean;
+  readonly roundNumber: number;
 }
 
 export interface SubmitExtraAnswerResult {
@@ -311,5 +408,6 @@ export interface SubmitCrisisButtonResult {
   readonly showCrisisPath: true;
   readonly crisisResources: readonly CrisisResource[];
   readonly roundNumber: number;
+  readonly duplicate?: boolean;
 }
 
