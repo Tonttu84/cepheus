@@ -506,6 +506,10 @@ export async function seedDatabase(
         })),
       });
 
+      // Give each simulated patient one OPEN suggestion in addition to any history,
+      // so the demo starts with something to answer.
+      await createSampleSuggestion(tx, participantId, clinicId, now, 0);
+
       await tx.clinicFlag.createMany({
         data: dataset.clinicFlags.map((f) => ({
           participantId,
@@ -541,7 +545,7 @@ export async function seedDatabase(
           cameraReadings: dataset.cameraReadings.length,
           routineReadings: dataset.routineReadings.length,
           personalBaselines: dataset.personalBaselines.length,
-          patientSuggestions: dataset.patientSuggestions.length,
+          patientSuggestions: dataset.patientSuggestions.length + 1,
           clinicFlags: dataset.clinicFlags.length,
         },
       };

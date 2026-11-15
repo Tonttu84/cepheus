@@ -226,6 +226,28 @@ describe("patient API routes", () => {
       const json = await second.json();
       expect(json.ok).toBe(false);
       expect(json.error).toBe("already_answered");
+      expect(json.status).toBe("accepted");
+    });
+
+    it("returns 409 with stored status when attempting to answer a completed suggestion", async () => {
+      const sug = suggestionRecord("sug-completed", PATIENT_ID, {
+        status: "completed",
+        respondedAt: "2026-11-15T14:00:00.000Z",
+      });
+      await fake.ports.suggestions.saveSuggestion(sug);
+
+      const res = await postSuggestionChoice(
+        patientApiRequest("/api/patient/suggestion", {
+          method: "POST",
+          body: { suggestionId: "sug-completed", choice: "accepted" },
+          cookie: patientCookie(),
+        })
+      );
+      expect(res.status).toBe(409);
+      const json = await res.json();
+      expect(json.ok).toBe(false);
+      expect(json.error).toBe("already_answered");
+      expect(json.status).toBe("completed");
     });
 
     it("refuses when a patient tries to answer another patient's suggestion with 403", async () => {

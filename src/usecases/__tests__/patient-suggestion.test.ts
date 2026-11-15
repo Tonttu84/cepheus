@@ -219,25 +219,42 @@ describe('Patient suggestion use cases', () => {
       const sug = createSuggestion(PATIENT_A);
       await ports.suggestions.saveSuggestion(sug);
 
-      const firstChoice = await recordSuggestionChoice(
+      const first = await recordSuggestionChoice(
         actorPatientA,
         { patientId: PATIENT_A, suggestionId: sug.id, choice: 'accepted' },
         ports
       );
-      expect(firstChoice.ok).toBe(true);
+      expect(first.ok).toBe(true);
 
-      const secondChoice = await recordSuggestionChoice(
+      const second = await recordSuggestionChoice(
         actorPatientA,
         { patientId: PATIENT_A, suggestionId: sug.id, choice: 'skipped' },
         ports
       );
-      expect(secondChoice.ok).toBe(false);
-      if (!secondChoice.ok) {
-        expect(secondChoice.error).toBe('already_answered');
+      expect(second.ok).toBe(false);
+      if (!second.ok) {
+        expect(second.error).toBe('already_answered');
+        expect(second.status).toBe('accepted');
       }
+    });
 
-      const stored = await ports.suggestions.getSuggestion(sug.id);
-      expect(stored?.status).toBe('accepted');
+    it('refuses answering a suggestion that was already completed in history with already_answered and returns stored status', async () => {
+      const sug = createSuggestion(PATIENT_A, {
+        status: 'completed',
+        respondedAt: '2026-11-15T14:00:00.000Z',
+      });
+      await ports.suggestions.saveSuggestion(sug);
+
+      const res = await recordSuggestionChoice(
+        actorPatientA,
+        { patientId: PATIENT_A, suggestionId: sug.id, choice: 'accepted' },
+        ports
+      );
+      expect(res.ok).toBe(false);
+      if (!res.ok) {
+        expect(res.error).toBe('already_answered');
+        expect(res.status).toBe('completed');
+      }
     });
 
     it('refuses when a patient tries to answer another patient suggestion', async () => {

@@ -22,11 +22,14 @@ test.describe("Patient page with storage", () => {
     const acceptedStatus = page.getByTestId("patient-suggestion-accepted-status");
     await expect(acceptedStatus).toBeVisible();
     await expect(acceptedStatus).toContainText("You've chosen to try this today");
+    await expect(page.getByTestId("patient-suggestion-accept")).not.toBeVisible();
+    await expect(page.getByTestId("patient-suggestion-skip")).not.toBeVisible();
 
     // 4. Reload: the choice is persisted and shown
     await page.reload();
     await expect(page.getByTestId("patient-suggestion-accepted-status")).toBeVisible();
-    await expect(page.getByTestId("patient-suggestion-accept")).toBeDisabled();
+    await expect(page.getByTestId("patient-suggestion-accept")).not.toBeVisible();
+    await expect(page.getByTestId("patient-suggestion-skip")).not.toBeVisible();
 
     // 5. Switch a measuring method off (e.g. ring)
     const ringToggle = page.getByTestId("toggle-consent-ring");
@@ -65,11 +68,13 @@ test.describe("Patient page with storage", () => {
     const skippedStatus = page.getByTestId("patient-suggestion-skipped-status");
     await expect(skippedStatus).toBeVisible();
     await expect(skippedStatus).toContainText("Not today");
+    await expect(page.getByTestId("patient-suggestion-skip")).not.toBeVisible();
+    await expect(page.getByTestId("patient-suggestion-accept")).not.toBeVisible();
 
     // 4. Reload: the choice is persisted and shown
     await page.reload();
     await expect(page.getByTestId("patient-suggestion-skipped-status")).toBeVisible();
-    await expect(page.getByTestId("patient-suggestion-skip")).toBeDisabled();
-    await expect(page.getByTestId("patient-suggestion-accept")).toBeDisabled();
+    await expect(page.getByTestId("patient-suggestion-skip")).not.toBeVisible();
+    await expect(page.getByTestId("patient-suggestion-accept")).not.toBeVisible();
   });
 });

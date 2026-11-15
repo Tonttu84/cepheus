@@ -70,7 +70,11 @@ export async function POST(request: Request) {
 
   if (!result.ok) {
     if (result.error === "already_answered") {
-      return NextResponse.json({ ok: false, error: result.error }, { status: 409 });
+      const storedStatus = "status" in result ? result.status : undefined;
+      return NextResponse.json(
+        { ok: false, error: result.error, status: storedStatus },
+        { status: 409 }
+      );
     }
     if (result.error === "not_own_data") {
       return NextResponse.json({ ok: false, error: result.error }, { status: 403 });

@@ -12,13 +12,17 @@ export interface RecordSuggestionChoiceResult {
   readonly status: SuggestionStatus;
 }
 
+export type RecordSuggestionChoiceError = {
+  readonly status?: SuggestionStatus;
+};
+
 const USE_CASE_PURPOSE: Purpose = 'self_access';
 
 export async function recordSuggestionChoice(
   actor: Actor,
   input: RecordSuggestionChoiceInput,
   ports: Ports
-): Promise<UseCaseResult<RecordSuggestionChoiceResult>> {
+): Promise<UseCaseResult<RecordSuggestionChoiceResult, RecordSuggestionChoiceError>> {
   const clinicId = (actor as { clinicId?: string }).clinicId ?? 'unknown';
   const initialTarget: TargetData = {
     kind: 'answers',
@@ -71,6 +75,7 @@ export async function recordSuggestionChoice(
 
   let accessError: string | null = null;
   let executionError: string | null = null;
+  let storedStatus: SuggestionStatus | undefined;
 
   try {
     await ports.unitOfWork.execute(async () => {
@@ -136,6 +141,7 @@ export async function recordSuggestionChoice(
       // Rule: A second choice on the same suggestion is refused
       if (suggestion.status !== 'shown') {
         executionError = 'already_answered';
+        storedStatus = suggestion.status;
         return;
       }
 
@@ -149,6 +155,9 @@ export async function recordSuggestionChoice(
     return { ok: false, error: accessError };
   }
   if (executionError) {
+    if (executionError === 'already_answered' && storedStatus) {
+      return { ok: false, error: executionError, status: storedStatus };
+    }
     return { ok: false, error: executionError };
   }
 

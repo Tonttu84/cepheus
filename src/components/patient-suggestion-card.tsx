@@ -13,6 +13,14 @@ export interface PatientSuggestionView {
   readonly respondedAt?: string | null;
 }
 
+export type AnsweredStatus = "accepted" | "completed" | "skipped";
+
+export function isAnsweredStatus(
+  status: SuggestionStatus | undefined | null
+): status is AnsweredStatus {
+  return status !== undefined && status !== null && status !== "shown";
+}
+
 interface PatientSuggestionCardProps {
   suggestion: PatientSuggestionView | null;
   actionKey?: string;
@@ -23,14 +31,11 @@ export function PatientSuggestionCard({
   actionKey,
 }: PatientSuggestionCardProps) {
   const activeActionKey = actionKey ?? suggestion?.actionKey;
-  const initialChoice =
-    suggestion?.status === "accepted"
-      ? "accepted"
-      : suggestion?.status === "skipped"
-        ? "skipped"
-        : null;
+  const initialChoice: AnsweredStatus | null = isAnsweredStatus(suggestion?.status)
+    ? suggestion.status
+    : null;
 
-  const [choice, setChoice] = useState<"accepted" | "skipped" | null>(initialChoice);
+  const [choice, setChoice] = useState<AnsweredStatus | null>(initialChoice);
   const [submitting, setSubmitting] = useState(false);
 
   if (!suggestion) {
@@ -66,8 +71,16 @@ export function PatientSuggestionCard({
         }),
       });
 
-      if (res.ok || res.status === 409) {
+      if (res.ok) {
         setChoice(selectedChoice);
+      } else if (res.status === 409) {
+        const data = (await res.json().catch(() => null)) as { status?: string } | null;
+        const stored = isAnsweredStatus(data?.status as SuggestionStatus)
+          ? (data!.status as AnsweredStatus)
+          : isAnsweredStatus(suggestion.status)
+            ? suggestion.status
+            : selectedChoice;
+        setChoice(stored);
       }
     } catch {
       // In case of network failure, do not falsely confirm
@@ -102,40 +115,30 @@ export function PatientSuggestionCard({
         </p>
       ) : null}
 
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          data-testid="patient-suggestion-accept"
-          disabled={isAnswered || submitting}
-          onClick={() => handleChoice("accepted")}
-          className={`min-h-12 rounded-xl px-6 py-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer disabled:cursor-default ${
-            choice === "accepted"
-              ? "bg-accent-sage-hover text-white ring-2 ring-accent-sage/30"
-              : choice === "skipped"
-                ? "bg-surface-subtle text-ink-secondary opacity-60 border border-border-hairline"
-                : "bg-accent-sage text-white hover:bg-accent-sage-hover"
-          }`}
-        >
-          I&apos;ll try this today
-        </button>
-        <button
-          type="button"
-          data-testid="patient-suggestion-skip"
-          disabled={isAnswered || submitting}
-          onClick={() => handleChoice("skipped")}
-          className={`min-h-12 rounded-xl border px-6 py-3 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer disabled:cursor-default ${
-            choice === "skipped"
-              ? "border-accent-sage bg-accent-sage-soft text-accent-sage-hover"
-              : choice === "accepted"
-                ? "border-border-hairline bg-surface-subtle text-ink-secondary opacity-60"
-                : "border-border-tactile bg-surface-subtle text-ink-secondary hover:bg-surface-muted hover:text-ink-primary"
-          }`}
-        >
-          Not today
-        </button>
-      </div>
+      {!isAnswered ? (
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            data-testid="patient-suggestion-accept"
+            disabled={submitting}
+            onClick={() => handleChoice("accepted")}
+            className="min-h-12 rounded-xl bg-accent-sage px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-sage-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer disabled:cursor-default"
+          >
+            I&apos;ll try this today
+          </button>
+          <button
+            type="button"
+            data-testid="patient-suggestion-skip"
+            disabled={submitting}
+            onClick={() => handleChoice("skipped")}
+            className="min-h-12 rounded-xl border border-border-tactile bg-surface-subtle px-6 py-3 text-sm font-medium text-ink-secondary transition hover:bg-surface-muted hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer disabled:cursor-default"
+          >
+            Not today
+          </button>
+        </div>
+      ) : null}
 
-      {choice === "accepted" ? (
+      {choice === "accepted" || choice === "completed" ? (
         <div className="mt-6 space-y-4">
           <div
             role="status"
@@ -143,8 +146,9 @@ export function PatientSuggestionCard({
             className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3.5 text-sm font-medium text-accent-sage-hover"
           >
             <span>
-              You&apos;ve chosen to try this today. Take it at your own pace. Even
-              stepping outside for a couple of minutes is enough.
+              {choice === "completed"
+                ? "You completed this step today. Take it at your own pace."
+                : "You\u2019ve chosen to try this today. Take it at your own pace. Even stepping outside for a couple of minutes is enough."}
             </span>
           </div>
           <GuidedActivityWidget actionKey={activeActionKey} />
