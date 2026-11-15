@@ -347,4 +347,22 @@ describe("Environment Check (src/server/env.ts)", () => {
       }
     });
   });
+
+  it("accepts a SYSTEM_API_KEY of at least 32 characters and leaves it empty by default", () => {
+    const url = "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus";
+    expect(parseEnv({ DATABASE_URL: url }).SYSTEM_API_KEY).toBe("");
+    expect(() => parseEnv({ DATABASE_URL: url, SYSTEM_API_KEY: "a".repeat(31) })).toThrowError(
+      /SYSTEM_API_KEY/
+    );
+    expect(parseEnv({ DATABASE_URL: url, SYSTEM_API_KEY: "a".repeat(32) }).SYSTEM_API_KEY).toBe(
+      "a".repeat(32)
+    );
+  });
+
+  it("never puts the SYSTEM_API_KEY value into the error message", () => {
+    const url = "postgresql://cepheus:cepheus-local-only@localhost:5433/cepheus";
+    expect(() => parseEnv({ DATABASE_URL: url, SYSTEM_API_KEY: "short-secret-value" })).toThrowError(
+      /^(?!.*short-secret-value).*$/s
+    );
+  });
 });

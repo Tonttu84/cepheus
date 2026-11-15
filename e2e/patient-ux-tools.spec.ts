@@ -1,7 +1,26 @@
 import { expect, test } from "@playwright/test";
+import { getPrisma } from "../src/lib/db";
 import { signInAsPatient } from "./helpers";
 
 test.describe("Package O: Word-Labelled Tap Pills & Guided Activity Tools", () => {
+  test.afterAll(async () => {
+    const prisma = getPrisma();
+    const patient = await prisma.participant.findFirst({
+      where: { participantCode: "P-SIM-001" },
+    });
+    if (patient) {
+      await prisma.checkInRound.deleteMany({
+        where: { participantId: patient.id, roundNumber: { gt: 1 } },
+      });
+      await prisma.phq9Assessment.deleteMany({
+        where: { participantId: patient.id },
+      });
+      await prisma.clinicFlag.deleteMany({
+        where: { participantId: patient.id, causeType: { not: null } },
+      });
+    }
+  });
+
   test("1. /check-in renders tactile word labels with 0..4 aria labels and completes preview", async ({
     page,
   }) => {

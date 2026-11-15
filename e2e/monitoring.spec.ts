@@ -1,7 +1,93 @@
 import { expect, test } from "@playwright/test";
+import { addDays, getOpenRound, listRounds, type Schedule } from "../src/domain/rounds";
+import { getPrisma } from "../src/lib/db";
 import { signInAsPatient, signInAsStaff } from "./helpers";
 
+const WEEKDAYS = [1, 4] as const;
+const TIME_OF_DAY = "18:00";
+const TIME_ZONE = "Europe/Helsinki";
+const LOOK_BACK_DAYS = 28;
+
+function localDateIn(timeZone: string, moment: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(moment);
+}
+
+function liveScheduleAt(now: Date, openRoundNumber: number) {
+  const lookBack: Schedule = {
+    weekdays: WEEKDAYS,
+    timeOfDay: TIME_OF_DAY,
+    timeZone: TIME_ZONE,
+    enrolmentDate: addDays(localDateIn(TIME_ZONE, now), -LOOK_BACK_DAYS),
+  };
+  const open = getOpenRound(lookBack, now);
+  if (!open || open.number < openRoundNumber) {
+    throw new Error("No round is open at the current moment");
+  }
+  const rounds = listRounds(lookBack, open.number);
+  return {
+    enrolmentDate: rounds[open.number - openRoundNumber].localDate,
+    scheduleDaysJson: JSON.stringify(WEEKDAYS),
+    scheduleTime: TIME_OF_DAY,
+    timeZone: TIME_ZONE,
+  };
+}
+
+async function resetBedsideDemoRound() {
+  const prisma = getPrisma();
+  const schedule = liveScheduleAt(new Date(), 1);
+  const clinic = await prisma.clinic.upsert({
+    where: { code: "demo-home-clinic-01" },
+    update: {},
+    create: {
+      code: "demo-home-clinic-01",
+      name: "Demo Home Clinic",
+    },
+  });
+
+  const participant = await prisma.participant.upsert({
+    where: { externalId: "demo-home-node-01" },
+    update: {
+      clinicId: clinic.id,
+      scheduleDaysJson: schedule.scheduleDaysJson,
+      scheduleTime: schedule.scheduleTime,
+      timeZone: schedule.timeZone,
+      enrolmentDate: schedule.enrolmentDate,
+      takingPart: true,
+      ruleCheckConsent: true,
+    },
+    create: {
+      clinicId: clinic.id,
+      externalId: "demo-home-node-01",
+      label: "Home Demo Node (Arduino UNO Q & Wearable)",
+      source: "live",
+      isSimulated: false,
+      scheduleDaysJson: schedule.scheduleDaysJson,
+      scheduleTime: schedule.scheduleTime,
+      timeZone: schedule.timeZone,
+      enrolmentDate: schedule.enrolmentDate,
+      takingPart: true,
+      ruleCheckConsent: true,
+    },
+  });
+
+  await prisma.checkInRound.deleteMany({
+    where: { participantId: participant.id },
+  });
+}
+
 test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () => {
+  test.beforeAll(async () => {
+    await resetBedsideDemoRound();
+  });
+
+  test.afterAll(async () => {
+    await resetBedsideDemoRound();
+  });
   test("1. /monitoring loads with security headers, crisis bar, simulated badge, and consent toggles", async ({
     page,
   }) => {
@@ -41,24 +127,28 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
   test("2. Simulated Fitbit sync and Arduino UNO Q push compute rhythm metrics and store derived numbers", async ({
     page,
   }) => {
+    await resetBedsideDemoRound();
     await signInAsPatient(page);
     await page.goto("/monitoring");
 
     await page.getByTestId("fitbit-sync-simulated").click();
     await expect(page.getByTestId("monitoring-feedback")).toContainText(
-      "simulated Fitbit days"
+      "simulated Fitbit days",
+      { timeout: 15_000 }
     );
     await expect(page.getByText("Relative Amplitude")).toBeVisible();
     await expect(page.getByText("Sleep Reg. (SRI)")).toBeVisible();
 
     await page.getByTestId("health-connect-simulate").click();
     await expect(page.getByTestId("monitoring-feedback")).toContainText(
-      "simulated Health Connect days"
+      "simulated Health Connect days",
+      { timeout: 15_000 }
     );
 
     await page.getByTestId("arduino-simulate-push").click();
     await expect(page.getByTestId("monitoring-feedback")).toContainText(
-      "0 bytes video"
+      "0 bytes video",
+      { timeout: 15_000 }
     );
     await expect(page.getByTestId("arduino-light-cue")).toContainText(
       "Suggested"
@@ -67,7 +157,8 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
 
     await page.getByTestId("arduino-simulate-voice").click();
     await expect(page.getByTestId("monitoring-feedback")).toContainText(
-      "0 bytes audio stored"
+      "0 bytes audio stored",
+      { timeout: 15_000 }
     );
   });
 

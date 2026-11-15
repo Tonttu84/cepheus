@@ -98,6 +98,13 @@ export function createWarningRepository(ctx: DbContext): WarningRepository {
         })
       );
     },
+
+    async updateFlagStatus(flagId, status) {
+      await ctx.client().clinicFlag.updateMany({
+        where: { id: flagId },
+        data: { status },
+      });
+    },
   };
 }
 

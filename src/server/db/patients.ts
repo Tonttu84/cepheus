@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { PrismaClient } from "@prisma/client";
+import { getPrisma } from "@/lib/db";
 import type { DbContext } from "./context";
 import { UnknownClinicError } from "./errors";
 import { toSchedule } from "./participant-scope";
@@ -158,4 +160,16 @@ export function createPatientRepository(ctx: DbContext): PatientRepository {
       else await ctx.unitOfWork.execute(() => savePatientRecord(ctx, record));
     },
   };
+}
+
+export async function getClinicPatientIds(
+  clinicId: string,
+  prisma: PrismaClient = getPrisma()
+): Promise<readonly string[]> {
+  const rows = await prisma.participant.findMany({
+    where: { clinicId },
+    select: { id: true },
+    orderBy: { id: "asc" },
+  });
+  return rows.map((row) => row.id);
 }
