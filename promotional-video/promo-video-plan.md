@@ -94,7 +94,7 @@ In `gemini-omni-1.2-flash`, pass the reference images in the `input` list and de
 - **Reference Images to Attach:**
   1. `ref_patient_aino.png`
   2. `ref_device_side.png`
-- **Screen Recording Overlay / Insert:** Record `/check-in` showing two `1–5` scale taps, the `"Not today"` button, and the top Crisis Help Bar.
+- **Screen Recording Overlay / Insert:** Record `/check-in` showing the two tactile word-labelled `0–4` scale taps, the `"Not today"` button, and the top Crisis Help Bar (anchored in `scene_03_day18_checkin.mp4`, Trail #71).
 - **Gemini Omni 1.2 Flash Video Prompt:**
   ```text
   [0-4s] Clean cut to a bright morning in the Nordic apartment ("Day 18"). Over-the-shoulder medium shot of Aino from the first reference image sitting at her birch kitchen table in warm daylight, holding her smartphone with the peach-and-white Cepheus Desk Buddy from the second reference image resting on the table to her right.
@@ -130,12 +130,13 @@ In `gemini-omni-1.2-flash`, pass the reference images in the `input` list and de
 - **Transition from Scene 4 / to Scene 6:** Starts with a **hard cut** (jumping from sunny Day 18 to overcast Day 29); ends with a **0.4s dip to warm dark evening shadow** to jump +27 days to Day 56.
 - **Reference Images to Attach:**
   1. `ref_patient_aino.png`
+  2. Mobile screenshot of live `/patient` (`"One small step for today"` / `"Take a 10-minute walk outside"`) so the phone screen faces Aino cleanly (Trail #74).
 - **Screen Recording Overlay / Insert:** `/patient` timeline switched to **Day 29 (Small Dip)** showing the single suggestion card.
 - **Gemini Omni 1.2 Flash Video Prompt:**
   ```text
-  [0-5s] Clean hard cut to an overcast afternoon in the apartment ("Day 29"). Medium shot of Aino from the reference image looking slightly fatigued in her oatmeal cardigan as she glances at a single calm suggestion card on her smartphone.
+  [0-5s] Clean hard cut to an overcast afternoon by the apartment window ("Day 29"). Over-the-shoulder shot of Aino from the reference image in her oatmeal cardigan holding her smartphone with the real /patient screen ("One small step for today" / "Take a 10-minute walk outside") facing her rather than away from her.
   [5-11s] Cut to Aino stepping outside onto a quiet Helsinki tree-lined park path in soft autumn daylight, taking a slow, grounding walk with her hands in her cardigan pockets and her matte-black smart ring visible.
-  [11-12s] Gentle camera tilt toward the darkening evening sky for a clean time-jump transition into Night / Day 56. Gentle, uplifting acoustic guitar chord progression. Use the given image as a character reference for video generation.
+  [11-12s] Gentle camera tilt toward the darkening evening sky for a clean time-jump transition into Night / Day 56. Gentle, uplifting acoustic guitar chord progression. Use the given images as character and UI references for video generation.
   ```
 - **Voiceover:**
   > *"On Day 29, a mild one-round dip doesn't trigger a false alarm or overwhelm the patient. Cepheus offers just one calm, low-effort step for today — like a short walk outside."*

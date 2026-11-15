@@ -1,6 +1,6 @@
 # Work plan: what is done, what is taken, what is free
 
-Updated against `main` (`814c3bd`) on 15 Nov 2026, about 04:00. This is the one list
+Updated against `main` (`baaa0f4`) on 15 Nov 2026, about 05:05. This is the one list
 of open work for people and agents. Before you start anything, read it, fetch, and
 check the open trails: two of us built the same sign-in protection in parallel on
 14 Nov because neither list showed the other's work.
@@ -46,21 +46,18 @@ How to use it:
   needs), stored warning kinds and call positions parsed on the way out of the database, a
   test that scans the source for raw logging, time limits and bounded retries on Fitbit
   calls, and database tests that pick a free port.
-- The promotional video for the submission (`promotional-video/`, trail 64): a backup of the
-  clips and the plan, no code.
+- The promotional video for the submission (`promotional-video/`, trails 64, 71 and 74): clips (`cepheus_promo_full.mp4`, with real `/check-in` UI in scene 3 and over-the-shoulder `/patient` fix in scene 5) and the plan, no code.
+- Core loop (packages A and B, trail 72): check-in and clinic API routes on the shared use cases (`/api/check-in/*`, `/api/clinic/*`, `/api/rounds/close`, `/api/patients/[patientId]/evaluate`, `/api/openapi.json`), seeded clinic/nurse/three simulated patients, `/check-in` and `/clinic` wired to PostgreSQL, closing elapsed rounds when clinic flags are read, and the bedside unit route on shared use cases (D43).
+- Patient UX pills and guided activity tools (package O, trail 70): word-labelled tap pills on `/check-in` and interactive 10-minute walk timer + 3-minute breathing circle on `/patient`.
+- On-device browser voice and typed answers on `/check-in` (package I UI, trail 73): `CheckInVoiceInput` mapped deterministically via `parseSpokenChoice` with immediate crisis path wiring (`feat/pk-checkin` still holds GAD-7 and clinic crisis alerting).
 
-What main does **not** do yet: no screen reads or writes the database through the
-check-in API. The check-in, patient and clinic pages still show generated data. All of
-that is built and waiting to merge, in this order, one merge at a time: the core loop
-(A and B), then check-in with the demo page (D3, I, J), then clinic with the patient
-page and rewards (C, D1, F). See the packages below before starting anything near them.
+What main does **not** do yet: `/patient` suggestion/consent persistence (`D1`), `/clinic` nurse-call/crisis-acknowledge/full-brief wiring (`C`), `/check-in` GAD-7 (`D3`) and typed/spoken clinic alert (`I` backend), `/rewards` (`F`), `/demo` (`J`), `/camera` derived-number saving (`D2`), unified crisis `itemId` (`E`), and `/privacy` (`P`) are still waiting on branches or free. See the packages below before starting anything near them.
 
 ## Open trails
 
 | Trail | What | State |
 | --- | --- | --- |
 | 58 | Patient state over time: a four-state trajectory, suggestions and clinic alarms across the forms, the bedside unit and the health data | Reviewed, to be reworked (findings on the trail): keep the formula as a read-only view computed from what the use cases stored, on top of package A |
-| 66 | Work plan: patient UX packages N and O | Its content is carried into this file (rows N and O below); the trail conflicts with later edits here and can be closed |
 
 ## Who knows which area
 
@@ -105,9 +102,9 @@ branches and goes up as trails as each passes the full gate and a cold review.
 
 | # | Package | Covers | Needs | State |
 | --- | --- | --- | --- | --- |
-| A | **Core loop, one combined trail**: check-in and clinic API routes on the use cases; the seed with a clinic, a nurse and three simulated patients; `/check-in` and `/clinic` on the API; clinic routes for crisis alerts and nurse calls; the bedside unit's route on the shared use cases (D43) | P1.1 (check-in), P1.2 (storage and routes), P1.3 | main | Taken: `feat/core-loop`, combined with B and rebased onto main. Check, build and database tests pass; 3 of 29 browser tests fail (the clinic screen is empty for a freshly seeded nurse, the empty state for another clinic, the simulated bedside voice check-in without an open round) and are being fixed. Merges first |
+| A | **Core loop, one combined trail**: check-in and clinic API routes on the use cases; the seed with a clinic, a nurse and three simulated patients; `/check-in` and `/clinic` on the API; clinic routes for crisis alerts and nurse calls; the bedside unit's route on the shared use cases (D43) | P1.1 (check-in), P1.2 (storage and routes), P1.3 | main | **Done, on main** (trail 72) |
 | H | **Sign-in follow-up**: staff code as a setting (default 123456, real time-based codes when a secret is set), input length limits, generic errors, one-click simulated sign-in, landing on the right page after sign-in, a test that fails when a route is added without a guard, 44 px touch targets, and the Fitbit link tied to the signed-in patient (trail 60 touches the same Fitbit routes: when it merges, keep this handling) | Review findings on trail 57 | main | **Done, on main** |
-| B | **Rounds close and the warning rule runs without an answer**: when staff read their flags, the server first closes elapsed rounds and runs the rule for that clinic's patients. Today the rule runs only when a patient answers, so a silent patient never raises a warning | Not in the earlier list | A (routes) | Taken: on `feat/core-loop` with A |
+| B | **Rounds close and the warning rule runs without an answer**: when staff read their flags, the server first closes elapsed rounds and runs the rule for that clinic's patients. Today the rule runs only when a patient answers, so a silent patient never raises a warning | Not in the earlier list | A (routes) | **Done, on main** (trail 72) |
 | C | **Clinic screen wiring**: the card's buttons record a nurse call through the API; unacknowledged crisis alerts are shown and can be acknowledged; the nurse brief panel gets the flag's real numbers and accepts every warning kind (it accepts two of six today) | Rest of P1.2 | A | Taken: `feat/pk-clinic`, built and reviewed; being combined with D1 on `feat/clinic-patient`. The flag card shows why a flag was raised (kind, a questionnaire's total and its change, missed rounds) and, as supporting lines only, home-monitoring facts |
 | D1 | **Patient page on storage**: the suggestion comes from storage, the card's two buttons save the choice, the consent switches write consent events | Rest of P1.1 | A | Taken: `feat/pk-patient`, built and reviewed; being combined with C on `feat/clinic-patient`. A small dip now stores a suggestion |
 | D2 | **Camera check saves its derived numbers**: a route that accepts only the derived numbers, with the camera consent checked | Not in the earlier list | A (routes) | Free: the branch `feat/camera-reading-route` holds only the routes base, the camera route itself was never written |
@@ -115,7 +112,7 @@ branches and goes up as trails as each passes the full gate and a cold review.
 | E | **Consistency**: one item id for crisis events (three are in use: "9", "item9SelfHarm", "crisis_button"); the sign-in unit test must not need a running database | Not in the earlier list | A for the id; sign-in test part done in H | Sign-in unit test verified DB-free (`auth.test.ts` + `route-guards.test.ts`); crisis `itemId` still waits on A |
 | F | **Rewards and small tasks** (D48): tables and storage, routes, the patient's page with the balance and the tasks they choose | P2.2 | D1 for the page | Taken: `feat/pk-rewards`, built and reviewed: storage, earning from answered rounds (web and bedside), a simulated payout at 10 euros, routes, a `/rewards` page with the counters. Joins `feat/clinic-patient` last |
 | G | **Hardening**: security headers and a content security policy, stored values parsed on the way out, a test that logs carry no answers or codes; Fitbit calls get time limits and bounded retries | P2.3 | main | **Done, on main** (trail 67) |
-| I | **Text and spoken answers on `/check-in`**, speech recognised in the browser on the device only | Owner's request | D3 (same screen) | **UI on this branch** (`feat/check-in-voice-text`, trail 73: modular `CheckInVoiceInput`); clinic crisis alert & GAD-7 stay on `feat/pk-checkin` (`feat/checkin-demo`) |
+| I | **Text and spoken answers on `/check-in`**, speech recognised in the browser on the device only | Owner's request | D3 (same screen) | **UI on main** (trail 73: modular `CheckInVoiceInput`); clinic crisis alert & GAD-7 stay on `feat/pk-checkin` (`feat/checkin-demo`) |
 | J | **Demo page**: move forward in time (never back), reset, switches for rewards and for counters; moving time forward closes rounds and runs the rule | Owner's request | A, B | Taken: `feat/pk-demo`, built and reviewed; combined with D3 and I on `feat/checkin-demo` |
 | K | **Clean the generated data out of the screens** once every screen reads storage | Owner's request | C, D1, D3, F | Last |
 | M | **Passive consent defaults and device status** (P1.4): default `ring_rhythm`, `camera_expressivity` and `home_routine` in `ensureHomeDemoParticipant` (`src/server/monitoring/store.ts`) and `ensureParticipantConsents` (`src/server/db/monitoring/session-scope.ts`) to `enabled: false` (paused) until the patient opts in, matching D13 and `INITIAL_CONSENT_STATE`; show device connection status (connected or not) apart from the consent permission on `/monitoring` (`src/components/monitoring/consent-section.tsx`); update `monitoring.dbtest.ts` and `e2e/monitoring.spec.ts` to match | P1.4 | Trail 60 (on main) | **Done, on main** (trails 65 and 68) |
