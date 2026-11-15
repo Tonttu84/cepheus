@@ -1,5 +1,4 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import { pathToFileURL } from "node:url";
 import { addDays, getOpenRound, listRounds, type Schedule } from "../src/domain/rounds";
 import { SIMULATED_STAFF_PRESETS } from "../src/lib/auth-types";
 import { PATIENT_SUGGESTIONS } from "../src/lib/constants";
@@ -575,8 +574,8 @@ export async function seedDatabase(
 
 const isMainModule =
   typeof process !== "undefined" &&
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+  typeof process.argv[1] === "string" &&
+  /[\\/]prisma[\\/]seed\.ts$/.test(process.argv[1]);
 
 if (isMainModule) {
   seedDatabase()
