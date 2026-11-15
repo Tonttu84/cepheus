@@ -101,7 +101,7 @@ export function PrivacyContent() {
             Sign in to Cepheus
           </Link>
         </div>
-        <p className="text-xs leading-relaxed text-ink-muted">{footerNote}</p>
+        <p className="text-sm leading-relaxed text-ink-muted">{footerNote}</p>
       </footer>
     </article>
   );
