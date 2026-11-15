@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import React, { useEffect, useRef, useState, type FormEvent } from "react";
 import { CRISIS_RESOURCES } from "@/lib/constants";
 import {
   parseSpokenChoice,
@@ -199,6 +199,88 @@ export interface CheckInVoiceInputProps {
   onCrisisHelp: () => void;
 }
 
+let sessionVoiceAvailable: boolean | null = null;
+
+export function _resetVoiceAvailabilityForTesting(): void {
+  sessionVoiceAvailable = null;
+}
+
+export interface ToggleCheckInVoiceOptions {
+  disabled?: boolean;
+  listening: boolean;
+  controller: SpeechRecognitionController | null;
+  onListeningChange: (listening: boolean) => void;
+  onControllerChange: (ctrl: SpeechRecognitionController | null) => void;
+  onFeedback: (feedback: string) => void;
+  onVoiceAvailableChange?: (available: boolean) => void;
+  onTranscript: (transcript: string) => void;
+}
+
+export async function toggleCheckInVoiceRecognition({
+  disabled = false,
+  listening,
+  controller,
+  onListeningChange,
+  onControllerChange,
+  onFeedback,
+  onVoiceAvailableChange,
+  onTranscript,
+}: ToggleCheckInVoiceOptions): Promise<void> {
+  if (disabled) return;
+  if (listening) {
+    controller?.stop();
+    onControllerChange(null);
+    onListeningChange(false);
+    return;
+  }
+
+  const recognizer = getOnDeviceSpeechRecognizer();
+
+  let isAvail = sessionVoiceAvailable;
+  if (isAvail === null) {
+    try {
+      isAvail = await recognizer.isAvailable();
+    } catch {
+      isAvail = false;
+    }
+    sessionVoiceAvailable = isAvail;
+    onVoiceAvailableChange?.(isAvail);
+  }
+
+  if (!isAvail) {
+    onFeedback("On-device speech recognition is not available on this device.");
+    return;
+  }
+
+  try {
+    const ctrl = recognizer.startListening({
+      onResult: (transcript) => {
+        onListeningChange(false);
+        onControllerChange(null);
+        onTranscript(transcript);
+      },
+      onError: () => {
+        onListeningChange(false);
+        onControllerChange(null);
+        onFeedback(
+          "Could not recognise speech clearly. You can try again, type, or tap below."
+        );
+      },
+      onEnd: () => {
+        onListeningChange(false);
+        onControllerChange(null);
+      },
+    });
+    onControllerChange(ctrl);
+    onFeedback("Listening on this device...");
+    onListeningChange(true);
+  } catch {
+    onListeningChange(false);
+    onControllerChange(null);
+    onFeedback("Unable to start on-device speech recognition.");
+  }
+}
+
 export function CheckInVoiceInput({
   activeItemLabel,
   activeItemId,
@@ -210,29 +292,16 @@ export function CheckInVoiceInput({
   onCrisisHelp,
 }: CheckInVoiceInputProps) {
   const [textValue, setTextValue] = useState("");
-  const [voiceAvailable, setVoiceAvailable] = useState(false);
+  const [voiceAvailable, setVoiceAvailable] = useState<boolean | null>(
+    () => sessionVoiceAvailable
+  );
   const [listening, setListening] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [crisisVisible, setCrisisVisible] = useState(false);
   const controllerRef = useRef<SpeechRecognitionController | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-    const recognizer = getOnDeviceSpeechRecognizer();
-    recognizer
-      .isAvailable()
-      .then((avail) => {
-        if (mounted) {
-          setVoiceAvailable(avail);
-        }
-      })
-      .catch(() => {
-        if (mounted) {
-          setVoiceAvailable(false);
-        }
-      });
     return () => {
-      mounted = false;
       controllerRef.current?.stop();
       controllerRef.current = null;
     };
@@ -264,35 +333,19 @@ export function CheckInVoiceInput({
     setTextValue("");
   }
 
-  function handleToggleSpeech() {
-    if (disabled || !voiceAvailable) return;
-    if (listening) {
-      controllerRef.current?.stop();
-      setListening(false);
-      return;
-    }
-    try {
-      const recognizer = getOnDeviceSpeechRecognizer();
-      const ctrl = recognizer.startListening({
-        onResult: (transcript) => {
-          setListening(false);
-          applyTranscript(transcript, "spoken");
-        },
-        onError: () => {
-          setListening(false);
-          setFeedback(
-            "Could not recognise speech clearly. You can try again, type, or tap below."
-          );
-        },
-        onEnd: () => setListening(false),
-      });
-      controllerRef.current = ctrl;
-      setFeedback("Listening on this device...");
-      setListening(true);
-    } catch {
-      setListening(false);
-      setFeedback("Unable to start on-device speech recognition.");
-    }
+  async function handleToggleSpeech() {
+    await toggleCheckInVoiceRecognition({
+      disabled,
+      listening,
+      controller: controllerRef.current,
+      onListeningChange: setListening,
+      onControllerChange: (ctrl) => {
+        controllerRef.current = ctrl;
+      },
+      onFeedback: setFeedback,
+      onVoiceAvailableChange: setVoiceAvailable,
+      onTranscript: (transcript) => applyTranscript(transcript, "spoken"),
+    });
   }
 
   const maxScore = mode === "tap" ? 4 : 3;
@@ -311,16 +364,18 @@ export function CheckInVoiceInput({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-ink-primary">
-            {voiceAvailable ? "Speak or type an answer" : "Type an answer"}
+            {voiceAvailable === false
+              ? "Type an answer"
+              : "Speak or type an answer"}
           </p>
           <p className="text-sm text-ink-secondary">
             {promptHint}
-            {voiceAvailable
-              ? " · Uses confirmed on-device speech recognition when you tap Speak; Cepheus never records, keeps, or uploads audio."
-              : " · Cepheus never records, keeps, or uploads audio."}
+            {voiceAvailable === false
+              ? " · Cepheus never records, keeps, or uploads audio."
+              : " · Uses confirmed on-device speech recognition when you tap Speak; Cepheus never records, keeps, or uploads audio."}
           </p>
         </div>
-        {voiceAvailable ? (
+        {voiceAvailable !== false ? (
           <SpeakButton
             listening={listening}
             disabled={disabled}

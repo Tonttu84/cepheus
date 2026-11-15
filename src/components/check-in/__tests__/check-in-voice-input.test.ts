@@ -1,5 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
-import { processVoiceOrTextInput } from "@/components/check-in-voice-input";
+import React from "react";
+import { renderToString } from "react-dom/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  CheckInVoiceInput,
+  processVoiceOrTextInput,
+  toggleCheckInVoiceRecognition,
+  _resetVoiceAvailabilityForTesting,
+} from "@/components/check-in-voice-input";
+import {
+  setOnDeviceSpeechRecognizer,
+  type OnDeviceSpeechRecognizer,
+  type SpeechRecognitionController,
+} from "../on-device-speech";
 
 describe("CheckInVoiceInput answer processing (processVoiceOrTextInput)", () => {
   it("processes a valid numeric tap answer and forwards the parsed score", () => {
@@ -256,3 +268,180 @@ describe("CheckInVoiceInput answer processing (processVoiceOrTextInput)", () => 
     expect(res.feedback).toContain("All prompts are already answered");
   });
 });
+
+describe("On-device speech availability check timing (on first voice request)", () => {
+  beforeEach(() => {
+    _resetVoiceAvailabilityForTesting();
+    setOnDeviceSpeechRecognizer(null);
+  });
+
+  afterEach(() => {
+    _resetVoiceAvailabilityForTesting();
+    setOnDeviceSpeechRecognizer(null);
+    vi.restoreAllMocks();
+  });
+
+  it("does not call available() on rendering or mounting the screen", () => {
+    const fakeAvailable = vi.fn().mockResolvedValue(true);
+    const fakeRecognizer: OnDeviceSpeechRecognizer = {
+      isAvailable: fakeAvailable,
+      startListening: vi.fn(),
+    };
+    setOnDeviceSpeechRecognizer(fakeRecognizer);
+
+    const html = renderToString(
+      React.createElement(CheckInVoiceInput, {
+        activeItemLabel: "Mood",
+        activeItemId: "moodScore",
+        onSelectScore: vi.fn(),
+        onNotToday: vi.fn(),
+        onCrisisHelp: vi.fn(),
+      })
+    );
+
+    // Initial render offers voice and shows speak answer button
+    expect(html).toContain("Speak or type an answer");
+    expect(html).toContain("Speak answer");
+    expect(fakeAvailable).not.toHaveBeenCalled();
+  });
+
+  it("calls available() exactly once on tapping the voice control and keeps the result for the rest of the visit", async () => {
+    const fakeAvailable = vi.fn().mockResolvedValue(true);
+    const fakeStop = vi.fn();
+    const fakeStart = vi.fn().mockReturnValue({ stop: fakeStop, abort: vi.fn() });
+    const fakeRecognizer: OnDeviceSpeechRecognizer = {
+      isAvailable: fakeAvailable,
+      startListening: fakeStart,
+    };
+    setOnDeviceSpeechRecognizer(fakeRecognizer);
+
+    let listeningState = false;
+    let feedbackText = "";
+    let voiceAvailState = true;
+    let ctrl: SpeechRecognitionController | null = null;
+
+    // First tap: calls available() once and starts listening
+    await toggleCheckInVoiceRecognition({
+      disabled: false,
+      listening: listeningState,
+      controller: ctrl,
+      onListeningChange: (l) => {
+        listeningState = l;
+      },
+      onControllerChange: (c) => {
+        ctrl = c;
+      },
+      onFeedback: (f) => {
+        feedbackText = f;
+      },
+      onVoiceAvailableChange: (a) => {
+        voiceAvailState = a;
+      },
+      onTranscript: vi.fn(),
+    });
+
+    expect(fakeAvailable).toHaveBeenCalledTimes(1);
+    expect(fakeStart).toHaveBeenCalledTimes(1);
+    expect(listeningState).toBe(true);
+    expect(feedbackText).toBe("Listening on this device...");
+
+    // Second tap while listening: stops listening, does NOT call available() again
+    await toggleCheckInVoiceRecognition({
+      disabled: false,
+      listening: listeningState,
+      controller: ctrl,
+      onListeningChange: (l) => {
+        listeningState = l;
+      },
+      onControllerChange: (c) => {
+        ctrl = c;
+      },
+      onFeedback: (f) => {
+        feedbackText = f;
+      },
+      onVoiceAvailableChange: (a) => {
+        voiceAvailState = a;
+      },
+      onTranscript: vi.fn(),
+    });
+
+    expect(fakeStop).toHaveBeenCalledTimes(1);
+    expect(listeningState).toBe(false);
+    expect(fakeAvailable).toHaveBeenCalledTimes(1);
+
+    // Third tap (new answer in same visit): starts listening again, does NOT call available() again
+    await toggleCheckInVoiceRecognition({
+      disabled: false,
+      listening: listeningState,
+      controller: ctrl,
+      onListeningChange: (l) => {
+        listeningState = l;
+      },
+      onControllerChange: (c) => {
+        ctrl = c;
+      },
+      onFeedback: (f) => {
+        feedbackText = f;
+      },
+      onVoiceAvailableChange: (a) => {
+        voiceAvailState = a;
+      },
+      onTranscript: vi.fn(),
+    });
+
+    expect(fakeAvailable).toHaveBeenCalledTimes(1);
+    expect(fakeStart).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows 'not available on this device' message, hides voice button, and keeps typing when unavailable", async () => {
+    const fakeAvailable = vi.fn().mockResolvedValue(false);
+    const fakeStart = vi.fn();
+    const fakeRecognizer: OnDeviceSpeechRecognizer = {
+      isAvailable: fakeAvailable,
+      startListening: fakeStart,
+    };
+    setOnDeviceSpeechRecognizer(fakeRecognizer);
+
+    let listeningState = false;
+    let feedbackText = "";
+    let voiceAvailState: boolean | undefined = undefined;
+
+    await toggleCheckInVoiceRecognition({
+      disabled: false,
+      listening: listeningState,
+      controller: null,
+      onListeningChange: (l) => {
+        listeningState = l;
+      },
+      onControllerChange: vi.fn(),
+      onFeedback: (f) => {
+        feedbackText = f;
+      },
+      onVoiceAvailableChange: (a) => {
+        voiceAvailState = a;
+      },
+      onTranscript: vi.fn(),
+    });
+
+    expect(fakeAvailable).toHaveBeenCalledTimes(1);
+    expect(fakeStart).not.toHaveBeenCalled();
+    expect(listeningState).toBe(false);
+    expect(voiceAvailState).toBe(false);
+    expect(feedbackText).toBe("On-device speech recognition is not available on this device.");
+
+    // Subsequent render reflects unavailable: only typing offered, voice button hidden
+    const html = renderToString(
+      React.createElement(CheckInVoiceInput, {
+        activeItemLabel: "Mood",
+        activeItemId: "moodScore",
+        onSelectScore: vi.fn(),
+        onNotToday: vi.fn(),
+        onCrisisHelp: vi.fn(),
+      })
+    );
+    expect(html).toContain("Type an answer");
+    expect(html).not.toContain("Speak answer");
+    expect(html).toContain("check-in-text-input");
+  });
+});
+

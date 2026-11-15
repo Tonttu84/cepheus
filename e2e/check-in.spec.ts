@@ -279,17 +279,24 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await expect(crisisPath).toContainText("112");
   });
 
-  test("9. voice button is absent when on-device recognition is unavailable and present when available", async ({
+  test("9. voice button is offered initially, checks on-device availability on tap, and hides when unavailable", async ({
     page,
     context,
   }) => {
-    // 1. Without on-device recognition confirmed: voice button is absent
+    // 1. Without on-device recognition confirmed: voice button is offered initially,
+    // and tapping it checks availability, finds it unavailable, shows message, and keeps typing.
     await signInAsPatient(page, context, "P-SIM-001");
     await page.goto("/check-in");
+    await expect(page.getByTestId("check-in-speak-button")).toBeVisible();
+    await expect(page.getByTestId("check-in-text-input")).toBeVisible();
+    await page.getByTestId("check-in-speak-button").click();
+    await expect(page.getByTestId("check-in-voice-feedback")).toContainText(
+      "not available on this device"
+    );
     await expect(page.getByTestId("check-in-speak-button")).toHaveCount(0);
     await expect(page.getByTestId("check-in-text-input")).toBeVisible();
 
-    // 2. With on-device recognition stubbed: voice button is present
+    // 2. With on-device recognition stubbed: voice button is present and starts listening on tap
     await signOutSession(context);
     await page.addInitScript(() => {
       class MockOnDeviceSpeechRecognition {
@@ -316,5 +323,7 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await page.goto("/check-in");
     await expect(page.getByTestId("check-in-speak-button")).toBeVisible();
     await expect(page.getByTestId("check-in-speak-button")).toContainText("Speak answer");
+    await page.getByTestId("check-in-speak-button").click();
+    await expect(page.getByTestId("check-in-speak-button")).toContainText("Stop listening");
   });
 });
