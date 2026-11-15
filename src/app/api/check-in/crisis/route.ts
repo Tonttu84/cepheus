@@ -5,6 +5,7 @@ import {
   orStorageFailure,
   parseInput,
   readJsonBody,
+  refuse,
   respond,
 } from "@/server/api";
 import { requireApiSession } from "@/server/auth";
@@ -22,8 +23,16 @@ const ROUTE = "check-in:crisis";
  * A crisis answer always returns the crisis path and crisis resources.
  */
 export async function POST(request: Request) {
-  // Enforces patient session and rate limits; preserves crisis path on refusal.
-  void requireApiSession; // audit boundary marker
+  const sessionGuard = requireApiSession(request, "patient");
+  if (!sessionGuard.ok) {
+    return refuse(
+      sessionGuard.response.status,
+      sessionGuard.response.status === 401
+        ? "Sign in required."
+        : "Only patient sessions may call this.",
+      true
+    );
+  }
   const guard = guardPatient(request, ROUTE, true);
   if (!guard.ok) return guard.response;
 
