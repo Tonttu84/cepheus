@@ -12,19 +12,25 @@ describe("Privacy Page Content & Demonstrator Governance", () => {
     );
   });
 
-  it("makes no claim of compliance (forbidden words do not appear)", () => {
+  it("makes no claim of demonstration compliance or certification guarantees", () => {
     const rawDataJson = JSON.stringify(PRIVACY_PAGE_DATA).toLowerCase();
 
-    // Compliance claims forbidden by project rules
-    expect(rawDataJson).not.toContain("compliant");
-    expect(rawDataJson).not.toContain("certified");
+    // Does not claim that the demonstration itself is certified or compliant
+    expect(rawDataJson).not.toContain("certified service");
+    expect(rawDataJson).not.toContain("is compliant");
     expect(rawDataJson).not.toContain("guarantee");
+
+    // Distinguishes demonstration status honestly
+    expect(rawDataJson).toContain(
+      "demonstration runs on a laptop with simulated patients only"
+    );
   });
 
-  it("defines the four required privacy sections with clear facts", () => {
-    expect(PRIVACY_PAGE_DATA.sections).toHaveLength(4);
+  it("defines the five required privacy sections with clear facts", () => {
+    expect(PRIVACY_PAGE_DATA.sections).toHaveLength(5);
 
-    const [section1, section2, section3, section4] = PRIVACY_PAGE_DATA.sections;
+    const [section1, section2, section3, section4, section5] =
+      PRIVACY_PAGE_DATA.sections;
 
     // 1. What we collect and what we never store
     expect(section1.id).toBe("collection-and-storage");
@@ -47,6 +53,22 @@ describe("Privacy Page Content & Demonstrator Governance", () => {
     expect(section4.id).toBe("simulated-rewards");
     expect(section4.title.toLowerCase()).toContain("rewards are simulated");
     expect(section4.facts.length).toBeGreaterThanOrEqual(3);
+
+    // 5. What a real deployment requires
+    expect(section5.id).toBe("production-requirements");
+    expect(section5.title.toLowerCase()).toContain(
+      "what a real deployment requires"
+    );
+    expect(section5.summary).toContain(
+      "demonstration runs on a laptop with simulated patients only"
+    );
+    expect(section5.facts.length).toBeGreaterThanOrEqual(4);
+
+    const labels = section5.facts.map((f) => f.label.toLowerCase());
+    expect(labels.some((l) => l.includes("certified provider"))).toBe(true);
+    expect(labels.some((l) => l.includes("outside the eu"))).toBe(true);
+    expect(labels.some((l) => l.includes("strong identification"))).toBe(true);
+    expect(labels.some((l) => l.includes("impact assessment"))).toBe(true);
   });
 
   it("renders the privacy page without throwing or requiring a session", () => {
@@ -57,6 +79,10 @@ describe("Privacy Page Content & Demonstrator Governance", () => {
     expect(html).toContain("Who sees what");
     expect(html).toContain("Your rights and how to stop");
     expect(html).toContain("Rewards are simulated and why");
+    expect(html).toContain("What a real deployment requires");
+    expect(html).toContain(
+      "demonstration runs on a laptop with simulated patients only"
+    );
     expect(html).toContain("Return to Overview");
   });
 

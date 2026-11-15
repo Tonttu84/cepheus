@@ -41,7 +41,7 @@ export function PrivacyContent() {
         </p>
       </header>
 
-      {/* 4 Core Summary Sections */}
+      {/* Core Summary Sections */}
       <div className="space-y-6">
         {sections.map((section, sectionIdx) => (
           <section

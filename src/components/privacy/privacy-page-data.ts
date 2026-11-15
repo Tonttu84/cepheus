@@ -4,7 +4,8 @@
  * Rules:
  * - Mock policies for a hackathon demonstration.
  * - Written by an AI agent, not reviewed by a lawyer, not legal advice.
- * - Makes no claim of compliance (the words "compliant", "certified", "guarantee" do not appear).
+ * - Distinguishes what the design requires of a production deployment
+ *   from what the demonstration does on a developer laptop.
  */
 
 export interface PrivacyFactItem {
@@ -169,6 +170,34 @@ export const PRIVACY_PAGE_DATA: PrivacyPageData = {
           label: "Clinical integrity and ethical care",
           detail:
             "Real monetary rewards could encourage rushed or dishonest responses to collect payouts, undermining clinical accuracy. Paying vulnerable patients in a care relationship also introduces ethical conflicts regarding financial inducement.",
+        },
+      ],
+    },
+    {
+      id: "production-requirements",
+      title: "What a real deployment requires",
+      summary:
+        "The demonstration runs on a laptop with simulated patients only. A real deployment requires certified infrastructure, official identification, and formal data protection governance.",
+      facts: [
+        {
+          label: "EU hosting at a certified provider",
+          detail:
+            "The service and its database must run on servers in the EU/EEA at an infrastructure provider holding healthcare-grade security certifications (such as ISO 27001).",
+        },
+        {
+          label: "No transfers outside the EU",
+          detail:
+            "Personal data never leaves the European Union or European Economic Area. Any AI model used on patient data must be EU-hosted, off by default, and process pseudonymous derived numbers only.",
+        },
+        {
+          label: "Strong identification",
+          detail:
+            "Patient authentication must use official Finnish strong electronic identification (such as Suomi.fi e-Identification via bank ID or mobile certificate), while clinic staff use named accounts with multi-factor authentication.",
+        },
+        {
+          label: "Data Protection Impact Assessment",
+          detail:
+            "A formal Data Protection Impact Assessment (DPIA) must be approved by a designated Data Protection Officer before clinical go-live, under binding Article 28 data processing agreements.",
         },
       ],
     },
