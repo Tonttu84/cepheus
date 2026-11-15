@@ -342,7 +342,7 @@ export async function resetSimulatedData(
     await seedSuggestionsAndFlags(tx, participantId, clinicId, dataset);
     await createSampleSuggestion(tx, participantId, clinicId, now, 0);
     await createSampleParticipants(tx, clinicId, now);
-  });
+  }, { timeout: 60_000, maxWait: 15_000 });
 
   clearSimulatedAnswers(simulatedIdsToDelete, answerStore);
 }
