@@ -26,7 +26,7 @@ export function CrisisHelpBar() {
           <a
             href="tel:112"
             data-testid="crisis-link-112"
-            className="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-2.5 py-1 font-semibold text-rose-950 transition hover:border-rose-400 hover:bg-rose-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-3 py-1 font-semibold text-rose-950 transition hover:border-rose-400 hover:bg-rose-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
           >
             <span
               aria-hidden="true"
@@ -38,7 +38,7 @@ export function CrisisHelpBar() {
           <a
             href="tel:+358925250111"
             data-testid="crisis-link-mieli"
-            className="tabular-nums inline-flex items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-2.5 py-1 font-medium text-ink-primary transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+            className="tabular-nums inline-flex min-h-11 items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-3 py-1 font-medium text-ink-primary transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
           >
             <span>MIELI 09 2525 0111</span>
           </a>
@@ -48,7 +48,7 @@ export function CrisisHelpBar() {
               key={clinic.id}
               href={clinic.href}
               data-testid="crisis-link-clinic"
-              className="tabular-nums inline-flex items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-2.5 py-1 font-medium text-ink-primary transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+              className="tabular-nums inline-flex min-h-11 items-center gap-1 rounded-full border border-border-tactile bg-surface-card px-3 py-1 font-medium text-ink-primary transition hover:border-ink-muted hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
             >
               <span>Nurse {clinic.phone}</span>
             </a>

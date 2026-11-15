@@ -36,7 +36,7 @@ function UnsignedPopover({ onClose }: { onClose: () => void }) {
       role="dialog"
       aria-label="Sign in to Cepheus"
       data-testid="header-auth-popover"
-      className="absolute left-0 top-full z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border-tactile bg-surface-card p-4 shadow-sm sm:left-1/2 sm:-translate-x-1/2"
+      className="absolute right-0 top-full z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border-tactile bg-surface-card p-4 shadow-sm sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className="text-sm font-semibold text-ink-primary">
@@ -110,7 +110,7 @@ function SignedInMenu({
       role="menu"
       aria-label="Account menu"
       data-testid="header-user-menu"
-      className="absolute left-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-border-tactile bg-surface-card p-4 shadow-sm sm:left-1/2 sm:-translate-x-1/2"
+      className="absolute right-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-border-tactile bg-surface-card p-4 shadow-sm sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
     >
       <div className="flex items-start gap-3">
         <span
