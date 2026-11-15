@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { BROAD_AREA_LABELS, type BroadAreaKey } from "@/lib/constants";
+import { SIMULATED_PARTICIPANT_EXTERNAL_ID } from "@/lib/simulation";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import type { ClinicFlagFacts } from "@/server/api/clinic-flags";
 import type { ExpressivityRangeResult } from "@/domain/camera";
@@ -43,6 +44,7 @@ export interface ClinicFlagCardProps {
   initialRequestedCall?: RequestedCallInfo | null;
   onCallRequested?: (info: RequestedCallInfo) => void;
   expressivityShowcase?: ExpressivityRangeResult | null;
+  isSimulated?: boolean;
 }
 
 function formatCallTime(isoString: string): string {
@@ -221,10 +223,10 @@ function FlagFactsSection({
 
 function ExpressivityShowcasePanel({
   showcase,
-  isSamplePatient,
+  isSimulated,
 }: {
   showcase: ExpressivityRangeResult;
-  isSamplePatient: boolean;
+  isSimulated: boolean;
 }) {
   let factText = "";
   if (showcase.status === "insufficient_history") {
@@ -252,7 +254,7 @@ function ExpressivityShowcasePanel({
         {factText}
       </p>
 
-      {isSamplePatient ? (
+      {isSimulated ? (
         <div>
           <SimulatedBadge subtitle="" />
         </div>
@@ -286,6 +288,7 @@ export function ClinicFlagCard({
   initialRequestedCall,
   onCallRequested,
   expressivityShowcase,
+  isSimulated,
 }: ClinicFlagCardProps) {
   const [callInfo, setCallInfo] = useState<RequestedCallInfo | null>(
     initialRequestedCall ?? null
@@ -334,10 +337,16 @@ export function ClinicFlagCard({
         ? facts.expressivityShowcase
         : fetchedShowcase;
 
-  const isSamplePatient =
-    participantExternalId.startsWith("P-SIM") ||
-    participantLabel.toLowerCase().includes("sample") ||
-    participantLabel.toLowerCase().includes("simulated");
+  const isSimulatedCard =
+    isSimulated !== undefined
+      ? isSimulated
+      : facts?.isSimulated !== undefined
+        ? facts.isSimulated
+        : participantExternalId === SIMULATED_PARTICIPANT_EXTERNAL_ID ||
+          participantExternalId.startsWith("P-SIM") ||
+          participantLabel.toLowerCase().includes("sample") ||
+          participantLabel.toLowerCase().includes("simulated") ||
+          true;
 
   useEffect(() => {
     if (initialRequestedCall) {
@@ -438,7 +447,9 @@ export function ClinicFlagCard({
                 ({participantExternalId})
               </span>
             </h2>
-            <SimulatedBadge subtitle="Simulated flag" />
+            {isSimulatedCard ? (
+              <SimulatedBadge subtitle="Simulated flag" />
+            ) : null}
           </div>
           <p className="mt-1.5 text-sm text-ink-secondary">
             TMS course completed:{" "}
@@ -472,7 +483,7 @@ export function ClinicFlagCard({
       {activeShowcase ? (
         <ExpressivityShowcasePanel
           showcase={activeShowcase}
-          isSamplePatient={isSamplePatient}
+          isSimulated={isSimulatedCard}
         />
       ) : null}
 

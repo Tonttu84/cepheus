@@ -30,6 +30,7 @@ export interface ClinicFlagFacts {
   readonly hasOpenCrisisEvent?: boolean;
   readonly supportingLines?: readonly string[];
   readonly expressivityShowcase?: ExpressivityRangeResult | null;
+  readonly isSimulated?: boolean;
 }
 
 /** What the clinic sees of a flag: who, the broad area, when, the warning kind and its facts. */
@@ -41,6 +42,7 @@ export interface ClinicFlagView {
   readonly warningKind?: FlagWarningKind;
   readonly facts?: ClinicFlagFacts;
   readonly supportingLines?: readonly string[];
+  readonly isSimulated?: boolean;
 }
 
 const PURPOSE = "care";

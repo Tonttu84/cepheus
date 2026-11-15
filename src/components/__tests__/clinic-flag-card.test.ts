@@ -2,6 +2,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ClinicFlagCard } from "../clinic-flag-card";
+import { SIMULATED_PARTICIPANT_EXTERNAL_ID } from "@/lib/simulation";
 import type { ExpressivityRangeResult } from "@/domain/camera";
 
 const BASE_PROPS = {
@@ -137,5 +138,57 @@ describe("ClinicFlagCard - Expressivity Showcase Panel", () => {
       })
     );
     expect(aboveHtml).toContain("Latest camera check: above this person&#x27;s usual range (5 readings).");
+  });
+
+  it("renders simulated badge in showcase panel for the main sample patient sim-post-tms-01", () => {
+    const showcase: ExpressivityRangeResult = {
+      status: "within_usual_range",
+      kind: "usual_range",
+      position: "within_usual_range",
+      mean: 0.35,
+      lower: 0.25,
+      upper: 0.45,
+      sd: 0.05,
+      sampleCount: 6,
+    };
+
+    const html = renderToString(
+      React.createElement(ClinicFlagCard, {
+        ...BASE_PROPS,
+        participantExternalId: SIMULATED_PARTICIPANT_EXTERNAL_ID,
+        participantLabel: `Participant ${SIMULATED_PARTICIPANT_EXTERNAL_ID}`,
+        expressivityShowcase: showcase,
+      })
+    );
+
+    const panelHtml = html.slice(
+      html.indexOf('data-testid="clinic-expressivity-showcase-panel"')
+    );
+    expect(panelHtml).toContain('data-testid="simulated-badge"');
+  });
+
+  it("does not render simulated badge when isSimulated is explicitly false", () => {
+    const showcase: ExpressivityRangeResult = {
+      status: "within_usual_range",
+      kind: "usual_range",
+      position: "within_usual_range",
+      mean: 0.35,
+      lower: 0.25,
+      upper: 0.45,
+      sd: 0.05,
+      sampleCount: 6,
+    };
+
+    const html = renderToString(
+      React.createElement(ClinicFlagCard, {
+        ...BASE_PROPS,
+        participantExternalId: "real-patient-001",
+        participantLabel: "Real Patient",
+        isSimulated: false,
+        expressivityShowcase: showcase,
+      })
+    );
+
+    expect(html).not.toContain('data-testid="simulated-badge"');
   });
 });
