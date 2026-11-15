@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { signInAsPatient, signOutSession } from "./helpers";
+import { expect } from "@playwright/test";
+import { signInAsPatient, signOutSession, test } from "./helpers";
 
 test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gating", () => {
   test("1. completes a check-in by typing (taps and questionnaire items)", async ({

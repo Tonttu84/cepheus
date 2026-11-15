@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { signInAsPatient, signInAsStaff, signOutSession } from "./helpers";
+import { expect } from "@playwright/test";
+import { signInAsPatient, signInAsStaff, signOutSession, test } from "./helpers";
 
 test.describe("Verda EU Gemma Nurse Pre-Call Brief & Guardrails (Trail #31)", () => {
   test("1. /patient remains clean without unapproved AI step controls or streaks", async ({

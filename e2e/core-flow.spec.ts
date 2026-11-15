@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { getPrisma } from "../src/lib/db";
-import { signInAsPatient, signInAsStaff, signOutSession } from "./helpers";
+import { signInAsPatient, signInAsStaff, signOutSession, test } from "./helpers";
 
 test.describe("Core functional flow end to end", () => {
   test.beforeAll(async () => {

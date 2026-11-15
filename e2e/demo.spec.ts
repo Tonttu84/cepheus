@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { signInAsPatient, signInAsStaff } from "./helpers";
+import { expect } from "@playwright/test";
+import { signInAsPatient, signInAsStaff, test } from "./helpers";
 
 test.describe("Demo page: time advance, clinic warning, and reset", () => {
   test("advance two weeks, see the warning on /clinic, reset, see it gone", async ({

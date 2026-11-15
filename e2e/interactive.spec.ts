@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { signInAsPatient, signInAsStaff } from "./helpers";
+import { expect } from "@playwright/test";
+import { signInAsPatient, signInAsStaff, test } from "./helpers";
 
 test.describe("Interactive Redesign Fixes & Invariants", () => {
   test("1. /check-in handles scale tapping with accessible names, Not Today skip, and plain save explanation", async ({

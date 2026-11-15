@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { signInAsStaff } from "./helpers";
+import { expect } from "@playwright/test";
+import { signInAsStaff, test } from "./helpers";
 
 test.describe("Clinic follow-up screen: nurse call requests & crisis alerts", () => {
   test("nurse requests a call on a flag (persisted on reload) and acknowledges a crisis alert (gone on reload)", async ({

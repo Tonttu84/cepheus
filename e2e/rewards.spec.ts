@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { signInAsPatient, resetRewardsState } from "./helpers";
+import { expect } from "@playwright/test";
+import { signInAsPatient, resetRewardsState, test } from "./helpers";
 
 test.describe("Rewards flow", () => {
   test("patient can answer check-in, see balance update and mark task done", async ({ page }) => {

@@ -1,4 +1,4 @@
-import type { BrowserContext, Cookie, Page } from "@playwright/test";
+import { test as base, type BrowserContext, type Cookie, type Page } from "@playwright/test";
 import {
   SIMULATED_PATIENT_PRESETS,
   SIMULATED_STAFF_PRESETS,
@@ -16,6 +16,39 @@ import {
 import { getPrisma } from "@/lib/db";
 
 const BASE_ORIGIN = "http://127.0.0.1:3100";
+
+/**
+ * The browser these tests run in (Playwright's headless shell) has the static
+ * `SpeechRecognition.available()` but no on-device speech service behind it,
+ * and calling it ends the page ("Target crashed") before any test step runs.
+ * The check-in screen asks it on every visit. This takes the unbacked native
+ * method away, so the screen sees what is true of this browser: on-device
+ * recognition cannot be confirmed. A stand-in a test installs itself is not
+ * native and is left alone, whichever script runs first.
+ */
+function hideUnbackedSpeechProbe(): void {
+  const names = ["SpeechRecognition", "webkitSpeechRecognition"] as const;
+  const win = window as unknown as Record<string, { available?: unknown } | undefined>;
+  for (const name of names) {
+    const recognition = win[name];
+    const probe = recognition?.available;
+    if (!recognition || typeof probe !== "function") continue;
+    if (!Function.prototype.toString.call(probe).includes("[native code]")) continue;
+    Object.defineProperty(recognition, "available", {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
+  }
+}
+
+/** The test object of every spec: Playwright's own, in a browser that survives the check-in screen. */
+export const test = base.extend({
+  context: async ({ context }, provide) => {
+    await context.addInitScript(hideUnbackedSpeechProbe);
+    await provide(context);
+  },
+});
 
 const cachedPatientCookies = new Map<string, Cookie[]>();
 let cachedStaffCookies: Cookie[] | null = null;

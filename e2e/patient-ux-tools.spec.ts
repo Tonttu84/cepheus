@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { getPrisma } from "../src/lib/db";
-import { signInAsPatient } from "./helpers";
+import { signInAsPatient, test } from "./helpers";
 
 test.describe("Package O: Word-Labelled Tap Pills & Guided Activity Tools", () => {
   test.afterAll(async () => {

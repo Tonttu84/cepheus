@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { getPrisma } from "../src/lib/db";
-import { signInAsPatient } from "./helpers";
+import { signInAsPatient, test } from "./helpers";
 
 test.describe("Package I: On-device text and spoken answers on /check-in", () => {
   test.afterAll(async () => {

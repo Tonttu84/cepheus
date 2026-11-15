@@ -1,7 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { addDays, getOpenRound, listRounds, type Schedule } from "../src/domain/rounds";
 import { getPrisma } from "../src/lib/db";
-import { signInAsPatient, signInAsStaff } from "./helpers";
+import { signInAsPatient, signInAsStaff, test } from "./helpers";
 
 const WEEKDAYS = [1, 4] as const;
 const TIME_OF_DAY = "18:00";

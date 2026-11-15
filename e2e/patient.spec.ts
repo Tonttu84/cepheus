@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { signInAsPatient } from "./helpers";
+import { expect } from "@playwright/test";
+import { signInAsPatient, test } from "./helpers";
 
 test.describe("Patient page with storage", () => {
   test("sign in as a sample patient, choose I'll try this today, reload, choice is shown; switch a method off, reload, it is off", async ({

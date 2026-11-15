@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { resetPatientConsentForTest, signInAsPatient } from "./helpers";
+import { expect } from "@playwright/test";
+import { resetPatientConsentForTest, signInAsPatient, test } from "./helpers";
 
 test.describe("Patient consent screen on first sign-in and layered consent", () => {
   test("sign in, see the screen, agree to take part only, reach /check-in; then tick layer 3 on monitoring page and see it on", async ({

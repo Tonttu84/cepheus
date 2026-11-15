@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./helpers";
 
 test.describe("Privacy & Data Protection Page (/privacy)", () => {
   test("loads signed out, shows the demonstration notice, and has no horizontal scroll at 375px mobile width", async ({
