@@ -15,7 +15,7 @@ After acute depression treatment with TMS, sustained response is only 46.3% at 1
 ## 4. What it does
 
 - Check-in flow (`src/app/check-in/page.tsx`, `src/components/check-in-interactive.tsx`): twice-weekly check-in with tactile word-labelled pills ('Very low' to 'Very good', 'Not at all' to 'Very much'), optional fortnightly PHQ-9 (`src/domain/instruments/index.ts`), and a guilt-free skip option ("Not today").
-- On-device speech and typed input (`src/components/check-in-voice-input.tsx`, `src/domain/arduino/voice.ts`): speech recognised locally in the browser via Web Speech API and typed input, mapped deterministically to choices; crisis words immediately trigger emergency guidance; audio and transcripts are dropped from memory without storage.
+- On-device speech and typed input (`src/components/check-in-voice-input.tsx`, `src/domain/arduino/voice.ts`): typed and spoken answers, mapped deterministically to choices (the check that speech is recognised on the device is listed under "Merging on 15 Nov"; until it is merged the browser's own speech service is used); crisis words immediately trigger emergency guidance; audio and transcripts are dropped from memory without storage.
 - Bedside voice kiosk (`hardware/uno-q/voice_kiosk.py`, `src/app/api/arduino/check-in/route.ts`): dedicated Arduino UNO Q device with Bluetooth audio answering check-in rounds through shared transactional use cases.
 - Transactional persistence and data minimisation (`src/usecases/submit-taps.ts`, `src/server/db/rounds.ts`, `prisma/schema.prisma`): questionnaire answers are validated and processed in memory; only aggregate status, scores, and derived states are stored in PostgreSQL.
 - Immediate crisis escalation (`src/components/crisis-help-bar.tsx`, `src/domain/crisis/index.ts`): any non-zero response to PHQ-9 item 9 or bedside crisis button immediately displays direct human emergency help and alerts the clinic.
@@ -51,7 +51,7 @@ After acute depression treatment with TMS, sustained response is only 46.3% at 1
 - No automated clinical alerts or triage decisions: software identifies broad pattern shifts and routine drift, but the decision to contact a patient or alter care rests entirely with a qualified clinician.
 - No streaks, scores, or gamified pressure: check-ins carry zero scores or streaks; missed rounds are recorded neutrally as missed events, never penalized.
 - Zero audio or video frames stored or transmitted: camera kinematics and voice recognition execute entirely on-device; only derived numeric features are stored, with zero bytes of raw audio or video leaving the device.
-- Simulated data only: all data in the repository and demo interface is synthetic or derived from open research datasets, and is visibly labeled as simulated wherever displayed.
+- Simulated data only: all patient data in the repository and the demo is simulated, and is labelled as simulated where it is shown.
 - Direct human crisis path: questions touching mood or self-harm provide direct routes to human emergency services and professional hotlines, with no automated bot conversation in between.
 
 ## 6. How it was built
