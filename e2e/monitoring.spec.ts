@@ -26,6 +26,16 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     });
     await expect(page.getByTestId("consent-card-camera_expressivity")).toBeVisible();
     await expect(page.getByTestId("consent-card-home_routine")).toBeVisible();
+
+    await expect(page.getByTestId("device-status-ring_rhythm")).toContainText(
+      "No device connected"
+    );
+    await expect(page.getByTestId("device-status-camera_expressivity")).toContainText(
+      "No device connected"
+    );
+    await expect(page.getByTestId("device-status-home_routine")).toContainText(
+      "No device connected"
+    );
   });
 
   test("2. Simulated Fitbit sync and Arduino UNO Q push compute rhythm metrics and store derived numbers", async ({
@@ -162,16 +172,40 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
       "Phone verified"
     );
 
-    // While P-SIM-001 is paired & verified, switching to P-SIM-ANX-01 shows isolated unpaired state
+    // While P-SIM-001 is paired & verified, switching to P-SIM-ANX-01 shows isolated unpaired & paused state
     const switchToB = await page.request.post("/api/auth/sign-in", {
       headers: { origin: "http://127.0.0.1:3100" },
       data: { mode: "patient_eid", participantCode: "P-SIM-ANX-01" },
     });
     expect(switchToB.status()).toBe(200);
     await page.goto("/monitoring");
+    await expect(page.getByTestId("consent-status-ring_rhythm")).toContainText(
+      "Paused"
+    );
+    await expect(page.getByTestId("device-status-ring_rhythm")).toContainText(
+      "No device connected"
+    );
+    await expect(page.getByTestId("hc-pair-button")).toBeDisabled();
     await expect(page.getByTestId("hc-status-badge")).toContainText(
       "Not paired yet"
     );
+
+    // Enabling ring_rhythm consent unlocks pairing while device still shows unpaired
+    await page.getByTestId("toggle-consent-ring_rhythm").click();
+    await expect(page.getByTestId("consent-status-ring_rhythm")).toContainText(
+      "Allowed"
+    );
+    await expect(page.getByTestId("device-status-ring_rhythm")).toContainText(
+      "No device connected"
+    );
+    await expect(page.getByTestId("hc-pair-button")).toBeEnabled();
+
+    // Re-pause before switching back so repeated E2E runs against persistent DB stay idempotent
+    await page.getByTestId("toggle-consent-ring_rhythm").click();
+    await expect(page.getByTestId("consent-status-ring_rhythm")).toContainText(
+      "Paused"
+    );
+    await expect(page.getByTestId("hc-pair-button")).toBeDisabled();
 
     // Switch back to P-SIM-001 -> still Phone verified -> disconnect -> 401
     await signInAsPatient(page);
