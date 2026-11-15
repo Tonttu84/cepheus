@@ -8,7 +8,26 @@ import type { ClinicFlagFacts } from "@/server/api/clinic-flags";
 export interface RequestedCallInfo {
   readonly requestedBy: string;
   readonly requestedAt: string;
+  readonly status?: string;
+  readonly outcomeTier?: string | null;
+  readonly actionTaken?: string | null;
 }
+
+const OUTCOME_TIER_LABELS: Record<string, string> = {
+  rough_patch: "Rough patch",
+  sustained_decline: "Sustained decline",
+  full_relapse: "Full relapse",
+  crisis: "Crisis",
+  false_alarm: "False alarm",
+};
+
+const ACTION_TAKEN_LABELS: Record<string, string> = {
+  advice_and_medication_check: "Advice & medication check",
+  booster_tms_cluster: "Booster TMS cluster",
+  new_tms_course_referral: "New TMS course referral",
+  urgent_care: "Urgent care",
+  none: "None",
+};
 
 export interface ClinicFlagCardProps {
   participantLabel: string;
@@ -216,12 +235,56 @@ export function ClinicFlagCard({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [outcomeTier, setOutcomeTier] = useState<string>("");
+  const [actionTaken, setActionTaken] = useState<string>("");
 
   useEffect(() => {
     if (initialRequestedCall) {
       setCallInfo(initialRequestedCall);
     }
   }, [initialRequestedCall]);
+
+  async function handleRecordOutcome(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorText(null);
+    try {
+      const res = await fetch("/api/clinic/nurse-calls", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          accept: "application/json",
+        },
+        body: JSON.stringify({
+          patientId: participantExternalId,
+          status: "completed",
+          outcomeTier: outcomeTier || null,
+          actionTaken: actionTaken || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setErrorText(data?.error ?? "Could not record outcome.");
+        return;
+      }
+
+      const data = await res.json();
+      const info: RequestedCallInfo = {
+        requestedBy: data.requestedBy ?? callInfo?.requestedBy ?? "Staff",
+        requestedAt: data.requestedAt ?? callInfo?.requestedAt ?? new Date().toISOString(),
+        status: "completed",
+        outcomeTier: outcomeTier || null,
+        actionTaken: actionTaken || null,
+      };
+      setCallInfo(info);
+      onCallRequested?.(info);
+    } catch {
+      setErrorText("Network error recording outcome.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   async function handleRequestCall() {
     setIsSubmitting(true);
@@ -332,18 +395,70 @@ export function ClinicFlagCard({
       ) : null}
 
       {callInfo ? (
-        <div
-          role="status"
-          data-testid="nurse-call-status"
-          className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3.5 text-sm font-medium text-accent-sage-hover"
-        >
-          <span>
-            Nurse call requested by {callInfo.requestedBy} at{" "}
-            <span className="tabular-nums">{formatCallTime(callInfo.requestedAt)}</span>.
-          </span>
-          <span className="rounded-full bg-surface-card px-2.5 py-0.5 text-xs font-semibold text-accent-sage">
-            Call queued
-          </span>
+        <div className="mt-5 space-y-4">
+          <div
+            role="status"
+            data-testid="nurse-call-status"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3.5 text-sm font-medium text-accent-sage-hover"
+          >
+            <span>
+              Nurse call {callInfo.status === "completed" ? "completed" : "requested"} by {callInfo.requestedBy} at{" "}
+              <span className="tabular-nums">{formatCallTime(callInfo.requestedAt)}</span>.
+            </span>
+            <span className="rounded-full bg-surface-card px-2.5 py-0.5 text-xs font-semibold text-accent-sage">
+              {callInfo.status === "completed" ? "Call completed" : "Call queued"}
+            </span>
+          </div>
+
+          {callInfo.status !== "completed" ? (
+            <form onSubmit={handleRecordOutcome} className="rounded-xl border border-border-hairline bg-surface-subtle p-5">
+              <h3 className="text-sm font-semibold text-ink-primary mb-3">Record call outcome</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-medium text-ink-secondary mb-1">Clinical tier</label>
+                  <select
+                    value={outcomeTier}
+                    onChange={(e) => setOutcomeTier(e.target.value)}
+                    required
+                    className="w-full rounded-lg border border-border-tactile bg-white px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-sage"
+                  >
+                    <option value="" disabled>Select tier...</option>
+                    {Object.entries(OUTCOME_TIER_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-ink-secondary mb-1">Action taken</label>
+                  <select
+                    value={actionTaken}
+                    onChange={(e) => setActionTaken(e.target.value)}
+                    required
+                    className="w-full rounded-lg border border-border-tactile bg-white px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-sage"
+                  >
+                    <option value="" disabled>Select action...</option>
+                    {Object.entries(ACTION_TAKEN_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="min-h-10 rounded-lg bg-accent-sage px-4 text-sm font-semibold text-white transition hover:bg-accent-sage-hover disabled:opacity-60 cursor-pointer"
+                >
+                  {isSubmitting ? "Saving..." : "Save outcome"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="rounded-xl border border-border-hairline bg-surface-subtle p-4 text-sm text-ink-primary">
+              <p><strong>Clinical tier:</strong> {OUTCOME_TIER_LABELS[callInfo.outcomeTier ?? ""] ?? "Unknown"}</p>
+              <p><strong>Action taken:</strong> {ACTION_TAKEN_LABELS[callInfo.actionTaken ?? ""] ?? "Unknown"}</p>
+            </div>
+          )}
         </div>
       ) : null}
     </section>
