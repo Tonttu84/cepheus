@@ -21,7 +21,7 @@ test.describe("Patient page with storage", () => {
     await acceptButton.click();
     const acceptedStatus = page.getByTestId("patient-suggestion-accepted-status");
     await expect(acceptedStatus).toBeVisible();
-    await expect(acceptedStatus).toContainText("You've chosen to try this today");
+    await expect(acceptedStatus).toContainText("You’ve chosen to try this today");
     await expect(page.getByTestId("patient-suggestion-accept")).not.toBeVisible();
     await expect(page.getByTestId("patient-suggestion-skip")).not.toBeVisible();
 
@@ -67,7 +67,7 @@ test.describe("Patient page with storage", () => {
     await skipButton.click();
     const skippedStatus = page.getByTestId("patient-suggestion-skipped-status");
     await expect(skippedStatus).toBeVisible();
-    await expect(skippedStatus).toContainText("Not today");
+    await expect(skippedStatus).toContainText("You've chosen not today");
     await expect(page.getByTestId("patient-suggestion-skip")).not.toBeVisible();
     await expect(page.getByTestId("patient-suggestion-accept")).not.toBeVisible();
 
