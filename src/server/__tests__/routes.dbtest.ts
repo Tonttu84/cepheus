@@ -148,7 +148,7 @@ describe("the routes on PostgreSQL (*.dbtest.ts)", () => {
     const flags = await (await getFlags(request("/api/clinic/flags", { method: "GET", cookie: nurseCookie }))).json();
     expect(flags.ok).toBe(true);
     expect(flags.flags.length).toBeGreaterThan(0);
-    const patientFlag = flags.flags.find((f: any) => f.patientId === patientId);
+    const patientFlag = flags.flags.find((f: { patientId: string }) => f.patientId === patientId);
     expect(patientFlag).toMatchObject({
       patientId,
       area: "check_in",

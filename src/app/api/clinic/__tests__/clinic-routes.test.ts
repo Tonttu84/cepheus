@@ -4,6 +4,7 @@ import { GET as getCrisisEvents } from "@/app/api/clinic/crisis-events/route";
 import { POST as acknowledgeCrisis } from "@/app/api/clinic/crisis-events/acknowledge/route";
 import { GET as getNurseCalls, POST as recordNurseCall } from "@/app/api/clinic/nurse-calls/route";
 import { setRouteDepsForTests } from "@/server/api";
+import { createFakeRewardsPorts } from "@/usecases/rewards/testing/fake-ports";
 import type { StoredWarning } from "@/usecases/ports";
 import {
   allKeys,
@@ -125,7 +126,7 @@ describe("GET /api/clinic/flags", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     setRouteDepsForTests(() => ({
       ports: fake.ports,
-      rewardsPorts: {} as any,
+      rewardsPorts: createFakeRewardsPorts(),
       clinicPatientIds: async () => {
         throw new Error("connection refused");
       },
@@ -323,7 +324,7 @@ describe("GET /api/clinic/crisis-events", () => {
           },
         },
       },
-      rewardsPorts: {} as any,
+      rewardsPorts: createFakeRewardsPorts(),
       clinicPatientIds: async () => [],
     }));
     const res = await getCrisisEvents(crisisEventsRequest(staffCookie()));
@@ -448,7 +449,7 @@ describe("POST /api/clinic/crisis-events/acknowledge", () => {
           },
         },
       },
-      rewardsPorts: {} as any,
+      rewardsPorts: createFakeRewardsPorts(),
       clinicPatientIds: async () => [],
     }));
     const res = await acknowledgeCrisis(
@@ -611,7 +612,7 @@ describe("POST /api/clinic/nurse-calls", () => {
           },
         },
       },
-      rewardsPorts: {} as any,
+      rewardsPorts: createFakeRewardsPorts(),
       clinicPatientIds: async () => [],
     }));
     const res = await recordNurseCall(
