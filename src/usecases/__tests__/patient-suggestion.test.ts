@@ -60,12 +60,14 @@ function createSuggestion(
 
 describe('Patient suggestion use cases', () => {
   let ports: Ports;
+  let clock: ReturnType<typeof createFakePorts>['clock'];
   const actorPatientA: PatientActor = { kind: 'patient', patientId: PATIENT_A, clinicId: CLINIC_ID };
   const actorStaff: StaffActor = { kind: 'staff', staffId: 'nurse-1', clinicId: CLINIC_ID, role: 'nurse' };
 
   beforeEach(async () => {
-    const fake = createFakePorts();
+    const fake = createFakePorts('2026-11-16T18:00:00.000Z');
     ports = fake.ports;
+    clock = fake.clock;
     await ports.patients.savePatient(createPatientRecord(PATIENT_A));
     await ports.patients.savePatient(createPatientRecord(PATIENT_B));
   });
@@ -87,6 +89,71 @@ describe('Patient suggestion use cases', () => {
       expect(res.ok).toBe(true);
       if (res.ok) {
         expect(res.value.suggestion).toEqual(sug);
+      }
+    });
+
+    it('shows an answered suggestion on the day it was answered', async () => {
+      const answeredSug = createSuggestion(PATIENT_A, {
+        status: 'accepted',
+        respondedAt: '2026-11-16T10:30:00.000Z',
+      });
+      await ports.suggestions.saveSuggestion(answeredSug);
+
+      // Same day (2026-11-16)
+      clock.setNow('2026-11-16T18:00:00.000Z');
+      const res = await getPatientSuggestion(actorPatientA, { patientId: PATIENT_A }, ports);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.value.suggestion).toEqual(answeredSug);
+      }
+    });
+
+    it('returns null (empty state) for an answered suggestion from the next day until a new suggestion exists', async () => {
+      const answeredSug = createSuggestion(PATIENT_A, {
+        status: 'accepted',
+        respondedAt: '2026-11-16T10:30:00.000Z',
+      });
+      await ports.suggestions.saveSuggestion(answeredSug);
+
+      // Advance clock to next day: 2026-11-17
+      clock.setNow('2026-11-17T09:00:00.000Z');
+      const resNextDay = await getPatientSuggestion(actorPatientA, { patientId: PATIENT_A }, ports);
+      expect(resNextDay.ok).toBe(true);
+      if (resNextDay.ok) {
+        expect(resNextDay.value.suggestion).toBeNull();
+      }
+
+      // When a new suggestion is created later, it is returned
+      const newSug = createSuggestion(PATIENT_A, {
+        id: 'sug-patient-a-2',
+        createdAt: '2026-11-18T10:00:00.000Z',
+        date: '2026-11-18',
+        status: 'shown',
+        respondedAt: null,
+      });
+      await ports.suggestions.saveSuggestion(newSug);
+
+      clock.setNow('2026-11-18T10:30:00.000Z');
+      const resWithNew = await getPatientSuggestion(actorPatientA, { patientId: PATIENT_A }, ports);
+      expect(resWithNew.ok).toBe(true);
+      if (resWithNew.ok) {
+        expect(resWithNew.value.suggestion).toEqual(newSug);
+      }
+    });
+
+    it('keeps an open (shown) suggestion visible across days until answered', async () => {
+      const openSug = createSuggestion(PATIENT_A, {
+        status: 'shown',
+        createdAt: '2026-11-15T10:00:00.000Z',
+        date: '2026-11-15',
+      });
+      await ports.suggestions.saveSuggestion(openSug);
+
+      clock.setNow('2026-11-17T12:00:00.000Z');
+      const res = await getPatientSuggestion(actorPatientA, { patientId: PATIENT_A }, ports);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.value.suggestion).toEqual(openSug);
       }
     });
 

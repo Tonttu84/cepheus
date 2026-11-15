@@ -107,6 +107,18 @@ export async function getPatientSuggestion(
       }
 
       suggestion = await ports.suggestions.getLatestSuggestion(input.patientId);
+
+      // An answered suggestion is shown as answered on the day it was answered
+      // (by the clock the use case is given), and from the next day the card
+      // shows the plain empty state until a new suggestion exists.
+      if (suggestion && suggestion.status !== 'shown') {
+        const answeredTimestamp = suggestion.respondedAt ?? suggestion.date ?? suggestion.createdAt;
+        const answeredDay = answeredTimestamp.slice(0, 10);
+        const currentDay = now.slice(0, 10);
+        if (answeredDay !== currentDay) {
+          suggestion = null;
+        }
+      }
     });
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Storage failed' };
