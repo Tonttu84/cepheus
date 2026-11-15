@@ -11,7 +11,9 @@ import {
   DuplicateLedgerEntryError,
   type RewardsPorts,
 } from "@/usecases/rewards/ports";
-import { creditAnsweredRound } from "@/usecases/rewards/credit-answered-round";
+import { creditAnsweredRound, creditCheckInRound } from "@/usecases/rewards/credit-answered-round";
+import { readAccount } from "@/usecases/rewards/read-account";
+import { readTodayTask } from "@/usecases/rewards/read-today-task";
 import { markTaskDone } from "@/usecases/rewards/mark-task-done";
 import { markTaskNotToday } from "@/usecases/rewards/mark-task-not-today";
 import { requestPayout } from "@/usecases/rewards/request-payout";
@@ -191,6 +193,92 @@ describe("Rewards and small tasks PostgreSQL storage (*.dbtest.ts)", () => {
       });
       expect(rows).toHaveLength(1);
       expect(rows[0]?.amountCents).toBe(100);
+    });
+
+    it("sequential retry or answering from another device refuses duplicate at storage level and leaves one entry", async () => {
+      const { patientId, actor, ports } = await enrol("retry-round");
+      const basePorts = createPrismaPorts(prisma);
+
+      await basePorts.rounds.saveRound({
+        patientId,
+        roundNumber: 2,
+        localDate: "2026-11-19",
+        status: "answered",
+        mood: 4,
+        interest: 3,
+        answeredAt: "2026-11-19T18:00:00.000Z",
+      });
+
+      // First device submits and credits
+      const res1 = await creditCheckInRound(actor, { patientId, roundNumber: 2 }, ports);
+      expect(res1.ok).toBe(true);
+      if (res1.ok) {
+        expect(res1.value.rewarded).toBe(true);
+        expect(res1.value.isDuplicate).toBe(false);
+        expect(res1.value.balanceCents).toBe(100);
+      }
+
+      // Second device (or user retry after delay) calls credit
+      const res2 = await creditCheckInRound(actor, { patientId, roundNumber: 2 }, ports);
+      expect(res2.ok).toBe(true);
+      if (res2.ok) {
+        expect(res2.value.rewarded).toBe(false);
+        expect(res2.value.isDuplicate).toBe(true);
+        expect(res2.value.balanceCents).toBe(100);
+      }
+
+      // Verify PostgreSQL has exactly 1 entry for this round
+      const entries = await ports.ledger.getEntries(patientId);
+      expect(entries).toHaveLength(1);
+      expect(entries[0]?.roundNumber).toBe(2);
+    });
+
+    it("reading today's task leaves NO taskRecord row in PostgreSQL storage (undone task has no effect)", async () => {
+      const { patientId, actor, ports, clock } = await enrol("undone-task-db");
+      clock.setTime(TUESDAY_ISO); // 2026-11-17 (Tuesday, non-check-in day)
+
+      const readRes = await readTodayTask(actor, { patientId }, ports);
+      expect(readRes.ok).toBe(true);
+      if (readRes.ok) {
+        expect(readRes.value.offered).toBe(true);
+        expect(readRes.value.task?.key).toBe("short_walk");
+      }
+
+      // Directly verify PostgreSQL taskRecord table has NO row for this date
+      const record = await prisma.taskRecord.findUnique({
+        where: {
+          participantId_localDate: {
+            participantId: patientId,
+            localDate: "2026-11-17",
+          },
+        },
+      });
+      expect(record).toBeNull();
+
+      const history = await ports.taskRecords.getHistory(patientId);
+      expect(history).toHaveLength(0);
+    });
+
+    it("readAccount reflects walks count separately from tasks done in PostgreSQL storage", async () => {
+      const { patientId, actor, ports, clock } = await enrol("walks-count-db");
+      clock.setTime(TUESDAY_ISO); // 2026-11-17
+
+      // Mark walk done on Tuesday 2026-11-17
+      const res1 = await markTaskDone(actor, { patientId }, ports);
+      expect(res1.ok).toBe(true);
+
+      // Wednesday 2026-11-18: set preference to breathing_space and mark done
+      clock.setTime("2026-11-18T10:00:00.000Z");
+      await ports.preferences.savePreferences(patientId, ["breathing_space"]);
+      const res2 = await markTaskDone(actor, { patientId }, ports);
+      expect(res2.ok).toBe(true);
+
+      const summary = await readAccount(actor, { patientId }, ports);
+      expect(summary.ok).toBe(true);
+      if (summary.ok) {
+        expect(summary.value.counts.tasksDone).toBe(2);
+        expect(summary.value.counts.walks).toBe(1); // Exactly 1 walk
+      }
     });
 
     it("the same task marked done twice at once gives one entry and one completed record", async () => {

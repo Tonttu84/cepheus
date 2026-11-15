@@ -44,7 +44,8 @@ export default async function RewardsPage() {
   const preferences = prefsRes.value;
 
   const showCounts = settings.countersEnabled;
-  const totalElements = account.counts.roundsAnswered + account.counts.tasksDone;
+  const walksCount = account.counts.walks ?? 0;
+  const totalElements = account.counts.roundsAnswered + walksCount;
 
   return (
     <div className="space-y-12 sm:space-y-16 max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -138,10 +139,10 @@ export default async function RewardsPage() {
                 <MeadowArtwork
                   count={totalElements}
                   roundsAnswered={account.counts.roundsAnswered}
-                  tasksDone={account.counts.tasksDone}
+                  walks={walksCount}
                 />
                 <div className="sr-only">
-                  Picture with {account.counts.roundsAnswered} rounds answered and {account.counts.tasksDone} tasks done.
+                  Picture with {account.counts.roundsAnswered} rounds answered and {walksCount} walks.
                 </div>
               </div>
               <div className="flex flex-col gap-4 w-full sm:w-1/2">
@@ -150,8 +151,8 @@ export default async function RewardsPage() {
                   <div className="text-sm text-ink-secondary">rounds answered</div>
                 </div>
                 <div className="bg-surface-subtle border border-border-hairline rounded-lg p-4">
-                  <div className="text-2xl font-semibold text-ink-primary">{account.counts.tasksDone}</div>
-                  <div className="text-sm text-ink-secondary">tasks done</div>
+                  <div className="text-2xl font-semibold text-ink-primary">{walksCount}</div>
+                  <div className="text-sm text-ink-secondary">walks</div>
                 </div>
               </div>
             </div>

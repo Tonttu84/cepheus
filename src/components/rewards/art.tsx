@@ -5,10 +5,12 @@ export function MeadowArtwork({
   count,
   roundsAnswered,
   tasksDone,
+  walks,
 }: {
   count: number;
   roundsAnswered?: number;
   tasksDone?: number;
+  walks?: number;
 }) {
   const elements: ReactNode[] = [];
   for (let i = 0; i < count; i++) {
@@ -25,9 +27,16 @@ export function MeadowArtwork({
     );
   }
 
+  const secondaryText =
+    walks !== undefined
+      ? `${walks} walks`
+      : tasksDone !== undefined
+      ? `${tasksDone} tasks done`
+      : undefined;
+
   const altText =
-    roundsAnswered !== undefined && tasksDone !== undefined
-      ? `Picture with ${roundsAnswered} rounds answered and ${tasksDone} tasks done.`
+    roundsAnswered !== undefined && secondaryText !== undefined
+      ? `Picture with ${roundsAnswered} rounds answered and ${secondaryText}.`
       : `Picture with ${count} elements.`;
 
   return (

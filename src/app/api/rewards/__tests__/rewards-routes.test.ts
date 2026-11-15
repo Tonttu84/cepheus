@@ -1,13 +1,27 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { setUpRoutes, tearDownRoutes, patientCookie, staffCookie } from "../../__tests__/route-test-kit";
-import { getRouteDeps } from "@/server/api";
+import { getRouteDeps, setRouteDepsForTests } from "@/server/api";
+import { createFakeRewardsPorts } from "@/usecases/rewards/testing/fake-ports";
 
 describe("Rewards routes", () => {
-  let deps: ReturnType<typeof getRouteDeps>;
-  
   beforeAll(() => {
-    const kit = setUpRoutes();
-    deps = getRouteDeps();
+    setUpRoutes();
+    const fakeRewards = createFakeRewardsPorts();
+    fakeRewards.patients.setPatient({
+      patientId: "P-SIM-001",
+      clinicId: "clinic-1",
+      schedule: {
+        weekdays: [2, 5],
+        timeOfDay: "09:00",
+        timeZone: "Europe/Helsinki",
+        enrolmentDate: "2026-11-01",
+      },
+    });
+    const current = getRouteDeps();
+    setRouteDepsForTests(() => ({
+      ...current,
+      rewardsPorts: fakeRewards,
+    }));
   });
   
   afterAll(() => {
@@ -24,8 +38,6 @@ describe("Rewards routes", () => {
   }
 
   it("returns 401 signed out", async () => {
-    // We cannot easily test 401 via pure Request since guardPatient handles session parsing,
-    // but the test kit mocks cookies. We pass no cookie.
     const req = await getAccount();
     const { GET } = await import("../account/route");
     const res = await GET(req);
@@ -39,14 +51,14 @@ describe("Rewards routes", () => {
     expect(res.status).toBe(403);
   });
 
-  it("returns 403 when trying to access another patient's account", async () => {
-    // A patient can only read their own account. The route reads `actor.patientId`.
-    // Since the API uses `actor.patientId` implicitly from the session, it's impossible to pass another patient's ID in the request payload.
-    // The route naturally prevents accessing another's account. 
-    // We will verify the patient request succeeds.
+  it("returns 200 for signed-in patient reading their account", async () => {
     const req = await getAccount(patientCookie("P-SIM-001"));
     const { GET } = await import("../account/route");
     const res = await GET(req);
     expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.isSimulated).toBe(true);
+    expect(json.counts.walks).toBeDefined();
+    expect(json.counts.roundsAnswered).toBeDefined();
   });
 });

@@ -20,6 +20,10 @@ export async function creditAnsweredRound(
   input: CreditAnsweredRoundInput,
   ports: RewardsPorts
 ): Promise<UseCaseResult<CreditAnsweredRoundResult>> {
+  if (!ports || !ports.unitOfWork || !ports.ledger || !ports.rounds) {
+    return { ok: false, error: "Rewards ports not available" };
+  }
+
   const config: RewardsConfig = {
     ...DEFAULT_REWARDS_CONFIG,
     ...ports.config,
@@ -123,4 +127,16 @@ export async function creditAnsweredRound(
   });
 
   return { ok: true, value: result };
+}
+
+/**
+ * Shared crediting function called across check-in routes (web and bedside unit).
+ * Credits exactly what D48 says: 1 euro for an answered round, at most once per round.
+ */
+export async function creditCheckInRound(
+  actor: Actor,
+  input: CreditAnsweredRoundInput,
+  ports: RewardsPorts
+): Promise<UseCaseResult<CreditAnsweredRoundResult>> {
+  return creditAnsweredRound(actor, input, ports);
 }

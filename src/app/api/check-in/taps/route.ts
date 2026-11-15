@@ -11,7 +11,7 @@ import {
 } from "@/server/api";
 import { CheckInTapsRequestSchema } from "@/server/route-schemas";
 import { submitTaps } from "@/usecases";
-import { creditAnsweredRound } from "@/usecases/rewards";
+import { creditCheckInRound } from "@/usecases/rewards";
 
 export const dynamic = "force-dynamic";
 
@@ -33,12 +33,8 @@ export async function POST(request: Request) {
     const result = await submitTaps(actor, { patientId: actor.patientId, ...input.data }, ports);
     if (!result.ok) return failureOf(context, result.error);
     
-    // Wire rewards
-    if (!result.value.ruleRunNeeded) {
-      // If it's a duplicate, we can try to credit it, but creditAnsweredRound handles duplicates anyway.
-      // But we know it's already answered, so it won't hurt.
-    }
-    await creditAnsweredRound(actor, { patientId: actor.patientId, roundNumber: result.value.roundNumber }, rewardsPorts);
+    // Wire rewards through shared function
+    await creditCheckInRound(actor, { patientId: actor.patientId, roundNumber: result.value.roundNumber }, rewardsPorts);
 
     await runRuleIfNeeded(actor.patientId, result.value.ruleRunNeeded, ports);
     return respond({ ok: true, saved: true });

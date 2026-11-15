@@ -30,6 +30,7 @@ import {
   submitTaps,
   type Ports,
 } from "@/usecases";
+import { creditCheckInRound } from "@/usecases/rewards";
 
 export const dynamic = "force-dynamic";
 
@@ -169,6 +170,8 @@ async function handleTaps(
     ports
   );
   if (!result.ok) return failureOf(context, result.error, false);
+  const { rewardsPorts } = getRouteDeps();
+  await creditCheckInRound(actor, { patientId: actor.patientId, roundNumber: result.value.roundNumber }, rewardsPorts);
   await runRuleIfNeeded(actor.patientId, result.value.ruleRunNeeded, ports);
   return respond({ ok: true, saved: true, kind: "taps" });
 }
