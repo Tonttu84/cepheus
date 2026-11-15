@@ -9,30 +9,30 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await signInAsPatient(page, context, "P-SIM-001");
     await page.goto("/check-in");
 
+    const textInput = page.getByTestId("check-in-text-input");
+    const submitBtn = page.getByTestId("check-in-text-submit");
+
     // Answer Mood tap by typing
-    const moodInput = page.getByTestId("type-input-moodScore");
-    await expect(moodInput).toBeVisible();
-    await moodInput.fill("good");
-    await page.getByTestId("type-submit-moodScore").click();
+    await expect(textInput).toBeVisible();
+    await textInput.fill("good");
+    await submitBtn.click();
 
     const moodChoice3 = page.getByRole("button", { name: "Mood: 3 of 4" });
     await expect(moodChoice3).toHaveAttribute("aria-pressed", "true");
 
     // Answer Interest tap by typing
-    const interestInput = page.getByTestId("type-input-interestScore");
-    await expect(interestInput).toBeVisible();
-    await interestInput.fill("2");
-    await page.getByTestId("type-submit-interestScore").click();
+    await expect(textInput).toBeVisible();
+    await textInput.fill("2");
+    await submitBtn.click();
 
     const interestChoice2 = page.getByRole("button", { name: "Interest: 2 of 4" });
     await expect(interestChoice2).toHaveAttribute("aria-pressed", "true");
 
     // Answer PHQ-9 items 1 through 8 by typing
     for (let item = 1; item <= 8; item++) {
-      const phqInput = page.getByTestId(`type-input-${item}`);
-      await expect(phqInput).toBeVisible();
-      await phqInput.fill("0");
-      await page.getByTestId(`type-submit-${item}`).click();
+      await expect(textInput).toBeVisible();
+      await textInput.fill("0");
+      await submitBtn.click();
 
       const option0 = page.getByRole("button", {
         name: `Question ${item}: 0 of 3`,
@@ -41,9 +41,8 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     }
 
     // Answer item 9 with 0
-    const phq9Input = page.getByTestId("type-input-9");
-    await phq9Input.fill("not at all");
-    await page.getByTestId("type-submit-9").click();
+    await textInput.fill("not at all");
+    await submitBtn.click();
 
     const option9_0 = page.getByRole("button", {
       name: "Question 9: 0 of 3",
@@ -61,20 +60,25 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await signInAsPatient(page, context, "P-SIM-001");
     await page.goto("/check-in");
 
-    // Answer taps
-    const moodInput = page.getByTestId("type-input-moodScore");
-    await moodInput.fill("2");
-    await page.getByTestId("type-submit-moodScore").click();
+    const textInput = page.getByTestId("check-in-text-input");
+    const submitBtn = page.getByTestId("check-in-text-submit");
 
-    const interestInput = page.getByTestId("type-input-interestScore");
-    await interestInput.fill("2");
-    await page.getByTestId("type-submit-interestScore").click();
+    // Answer taps
+    await textInput.fill("2");
+    await submitBtn.click();
+    await textInput.fill("2");
+    await submitBtn.click();
+
+    // Answer items 1 through 8
+    for (let item = 1; item <= 8; item++) {
+      await textInput.fill("0");
+      await submitBtn.click();
+    }
 
     // Answer PHQ-9 item 9 with score 1 by typing
-    const item9Input = page.getByTestId("type-input-9");
-    await expect(item9Input).toBeVisible();
-    await item9Input.fill("several days");
-    await page.getByTestId("type-submit-9").click();
+    await expect(textInput).toBeVisible();
+    await textInput.fill("several days");
+    await submitBtn.click();
 
     // The crisis path is shown at once on the screen without waiting for server
     const crisisPath = page.getByTestId("crisis-path");
@@ -92,12 +96,10 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
 
     // In default browser test environment without on-device Web Speech API confirmation,
     // the voice answer button is not rendered at all.
-    const voiceButtons = page.locator('[data-testid^="voice-answer-button"]');
-    await expect(voiceButtons).toHaveCount(0);
+    await expect(page.getByTestId("check-in-speak-button")).toHaveCount(0);
 
-    // Text typing inputs remain available for everyone
-    await expect(page.getByTestId("type-input-moodScore")).toBeVisible();
-    await expect(page.getByTestId("type-input-interestScore")).toBeVisible();
+    // Text typing input remains available for everyone
+    await expect(page.getByTestId("check-in-text-input")).toBeVisible();
   });
 
   test("4. check with both kinds of sample patient: anxiety patient gets GAD-7, depression patient never sees it", async ({
@@ -119,11 +121,23 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await expect(gad7Section).toBeVisible();
     await expect(gad7Section).toContainText("GAD-7 anxiety questions");
 
-    // Answer GAD-7 question 1 by typing
-    const gad7Input1 = page.getByTestId("type-input-1");
-    await expect(gad7Input1.first()).toBeVisible();
-    await gad7Input1.last().fill("not at all");
-    await page.locator('[data-testid="type-submit-1"]').last().click();
+    // Answer taps to advance to GAD-7
+    const textInput = page.getByTestId("check-in-text-input");
+    const submitBtn = page.getByTestId("check-in-text-submit");
+    await textInput.fill("2");
+    await submitBtn.click();
+    await textInput.fill("2");
+    await submitBtn.click();
+
+    // Answer PHQ-9 items 1..9 to reach GAD-7
+    for (let item = 1; item <= 9; item++) {
+      await textInput.fill("0");
+      await submitBtn.click();
+    }
+
+    // Now active prompt is GAD-7 Question 1
+    await textInput.fill("not at all");
+    await submitBtn.click();
 
     const gad7Choice0 = page.getByRole("button", {
       name: "GAD-7 Question 1: 0 of 3",
@@ -138,24 +152,22 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await signInAsPatient(page, context, "P-SIM-001");
     await page.goto("/check-in");
 
-    // Answer taps to trigger PHQ-9
-    const moodInput = page.getByTestId("type-input-moodScore");
-    await moodInput.fill("2");
-    await page.getByTestId("type-submit-moodScore").click();
+    const textInput = page.getByTestId("check-in-text-input");
+    const submitBtn = page.getByTestId("check-in-text-submit");
 
-    const interestInput = page.getByTestId("type-input-interestScore");
-    await interestInput.fill("2");
-    await page.getByTestId("type-submit-interestScore").click();
+    // Answer taps to trigger PHQ-9
+    await textInput.fill("2");
+    await submitBtn.click();
+    await textInput.fill("2");
+    await submitBtn.click();
 
     // Verify PHQ-9 section is visible
     const phq9Section = page.getByTestId("phq9-section");
     await expect(phq9Section).toBeVisible();
 
-    // Type "not today" in PHQ-9 item 1
-    const phq1Input = page.getByTestId("type-input-1");
-    await expect(phq1Input).toBeVisible();
-    await phq1Input.fill("not today");
-    await page.getByTestId("type-submit-1").click();
+    // Type "not today" in the text input during PHQ-9
+    await textInput.fill("not today");
+    await submitBtn.click();
 
     // Status message appears confirming skip and plain save explanation
     const statusMessage = page.getByRole("status");
@@ -175,24 +187,28 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await signInAsPatient(page, context, "P-SIM-ANX-01");
     await page.goto("/check-in");
 
-    // Answer taps
-    const moodInput = page.getByTestId("type-input-moodScore");
-    await moodInput.fill("2");
-    await page.getByTestId("type-submit-moodScore").click();
+    const textInput = page.getByTestId("check-in-text-input");
+    const submitBtn = page.getByTestId("check-in-text-submit");
 
-    const interestInput = page.getByTestId("type-input-interestScore");
-    await interestInput.fill("2");
-    await page.getByTestId("type-submit-interestScore").click();
+    // Answer taps
+    await textInput.fill("2");
+    await submitBtn.click();
+    await textInput.fill("2");
+    await submitBtn.click();
+
+    // Answer PHQ-9 items 1..9 to reach GAD-7
+    for (let item = 1; item <= 9; item++) {
+      await textInput.fill("0");
+      await submitBtn.click();
+    }
 
     // Verify GAD-7 section is visible
     const gad7Section = page.getByTestId("gad7-section");
     await expect(gad7Section).toBeVisible();
 
-    // Type "skip" into GAD-7 item 1 input
-    const gad7Input1 = page.locator('[data-testid="type-input-1"]').last();
-    await expect(gad7Input1).toBeVisible();
-    await gad7Input1.fill("skip");
-    await page.locator('[data-testid="type-submit-1"]').last().click();
+    // Type "skip" into input
+    await textInput.fill("skip");
+    await submitBtn.click();
 
     // Status message appears confirming skip and plain save explanation
     const statusMessage = page.getByRole("status");
@@ -246,15 +262,54 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await expect(page.getByTestId("crisis-path")).toHaveCount(0);
 
     // Type a fixed help phrase ("emergency") into the mood input
-    const moodInput = page.getByTestId("type-input-moodScore");
-    await expect(moodInput).toBeVisible();
-    await moodInput.fill("emergency");
-    await page.getByTestId("type-submit-moodScore").click();
+    const textInput = page.getByTestId("check-in-text-input");
+    const submitBtn = page.getByTestId("check-in-text-submit");
+    await textInput.fill("emergency");
+    await submitBtn.click();
 
     // The crisis path is displayed immediately on screen without waiting for the server
     const crisisPath = page.getByTestId("crisis-path");
     await expect(crisisPath).toBeVisible();
     await expect(crisisPath).toContainText("Direct connection to a person");
     await expect(crisisPath).toContainText("112");
+  });
+
+  test("9. voice button is absent when on-device recognition is unavailable and present when available", async ({
+    page,
+    context,
+  }) => {
+    // 1. Without on-device recognition confirmed: voice button is absent
+    await signInAsPatient(page, context, "P-SIM-001");
+    await page.goto("/check-in");
+    await expect(page.getByTestId("check-in-speak-button")).toHaveCount(0);
+    await expect(page.getByTestId("check-in-text-input")).toBeVisible();
+
+    // 2. With on-device recognition stubbed: voice button is present
+    await signOutSession(context);
+    await page.addInitScript(() => {
+      class MockOnDeviceSpeechRecognition {
+        static async available(opts?: { langs?: string[]; processLocally?: boolean }) {
+          return opts?.processLocally ? true : false;
+        }
+        lang = "en-US";
+        processLocally = true;
+        continuous = false;
+        interimResults = false;
+        maxAlternatives = 1;
+        onresult: ((ev: unknown) => void) | null = null;
+        onerror: ((ev: unknown) => void) | null = null;
+        onend: (() => void) | null = null;
+        start() {}
+        stop() {}
+        abort() {}
+      }
+      (window as unknown as { SpeechRecognition: unknown }).SpeechRecognition =
+        MockOnDeviceSpeechRecognition;
+    });
+
+    await signInAsPatient(page, context, "P-SIM-001");
+    await page.goto("/check-in");
+    await expect(page.getByTestId("check-in-speak-button")).toBeVisible();
+    await expect(page.getByTestId("check-in-speak-button")).toContainText("Speak answer");
   });
 });

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { processQuestionAnswer } from "../question-input";
+import { processVoiceOrTextInput } from "@/components/check-in-voice-input";
 import * as client from "@/lib/check-in-client";
 
 describe("crisis_help alert handling on check-in screen", () => {
@@ -24,16 +24,16 @@ describe("crisis_help alert handling on check-in screen", () => {
     };
 
     const onSelectScore = vi.fn();
-    const onUnclearHint = vi.fn();
 
-    processQuestionAnswer({
-      rawAnswer: "emergency",
+    processVoiceOrTextInput({
+      raw: "emergency",
+      source: "typed",
       mode: "tap",
-      callbacks: {
-        onSelectScore,
-        onCrisisHelp,
-        onUnclearHint,
-      },
+      activeItemLabel: "Mood",
+      activeItemId: "moodScore",
+      onSelectScore,
+      onNotToday: vi.fn(),
+      onCrisisHelp,
     });
 
     // 1. Immediately visible BEFORE network has answered
@@ -67,15 +67,15 @@ describe("crisis_help alert handling on check-in screen", () => {
       void client.submitCheckInCrisisAlert();
     };
 
-    processQuestionAnswer({
-      rawAnswer: "help",
+    processVoiceOrTextInput({
+      raw: "help",
+      source: "typed",
       mode: "phq9",
-      itemId: "2",
-      callbacks: {
-        onSelectScore: vi.fn(),
-        onCrisisHelp,
-        onUnclearHint: vi.fn(),
-      },
+      activeItemLabel: "Question 2",
+      activeItemId: "2",
+      onSelectScore: vi.fn(),
+      onNotToday: vi.fn(),
+      onCrisisHelp,
     });
 
     expect(showCrisisPath).toBe(true);

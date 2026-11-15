@@ -114,6 +114,80 @@ function SpeakButton({
   );
 }
 
+export interface ProcessVoiceOrTextInputOptions {
+  raw: string;
+  source: "spoken" | "typed";
+  mode: VoiceChoiceMode;
+  activeItemLabel: string | null;
+  activeItemId?: string;
+  onSelectScore: (score: number) => void;
+  onNotToday: () => void;
+  onCrisisHelp: () => void;
+}
+
+export interface ProcessVoiceOrTextInputResult {
+  kind: "score" | "not_today" | "crisis_help" | "unclear";
+  feedback: string;
+  crisisVisible?: boolean;
+}
+
+export function processVoiceOrTextInput({
+  raw,
+  source,
+  mode,
+  activeItemLabel,
+  activeItemId,
+  onSelectScore,
+  onNotToday,
+  onCrisisHelp,
+}: ProcessVoiceOrTextInputOptions): ProcessVoiceOrTextInputResult {
+  const parsed = parseSpokenChoice(raw, mode);
+  if (parsed.kind === "crisis_help") {
+    onCrisisHelp();
+    return {
+      kind: "crisis_help",
+      feedback: "Showing direct emergency and nurse support links.",
+      crisisVisible: true,
+    };
+  }
+  if (parsed.kind === "not_today") {
+    onNotToday();
+    return {
+      kind: "not_today",
+      feedback: "Applied: Not today.",
+    };
+  }
+  if (parsed.kind === "score") {
+    if (!activeItemLabel) {
+      return {
+        kind: "unclear",
+        feedback:
+          "All prompts are already answered — tap any word pill below to change one.",
+      };
+    }
+    const isItem9Crisis = activeItemId === "9" && parsed.value > 0;
+    if (isItem9Crisis) {
+      onCrisisHelp();
+    }
+    const maxScore = mode === "tap" ? 4 : 3;
+    onSelectScore(parsed.value);
+    return {
+      kind: "score",
+      feedback: `Applied ${parsed.value} of ${maxScore} to ${activeItemLabel} (${source}).`,
+      crisisVisible: isItem9Crisis,
+    };
+  }
+  const maxScore = mode === "tap" ? 4 : 3;
+  const example =
+    mode === "tap"
+      ? "Low, Okay, Good, Very good"
+      : "Not at all, Several days, Nearly every day";
+  return {
+    kind: "unclear",
+    feedback: `Could not match that to 0–${maxScore} or Not today. Try saying or typing 0–${maxScore}, ${example}, or Not today.`,
+  };
+}
+
 export interface CheckInVoiceInputProps {
   activeItemLabel: string | null;
   activeItemId?: string;
@@ -165,42 +239,20 @@ export function CheckInVoiceInput({
   }, []);
 
   function applyTranscript(raw: string, source: "spoken" | "typed") {
-    const parsed = parseSpokenChoice(raw, mode);
-    if (parsed.kind === "crisis_help") {
+    const result = processVoiceOrTextInput({
+      raw,
+      source,
+      mode,
+      activeItemLabel,
+      activeItemId,
+      onSelectScore,
+      onNotToday,
+      onCrisisHelp,
+    });
+    setFeedback(result.feedback);
+    if (result.crisisVisible) {
       setCrisisVisible(true);
-      setFeedback("Showing direct emergency and nurse support links.");
-      onCrisisHelp();
-      return;
     }
-    if (parsed.kind === "not_today") {
-      setFeedback("Applied: Not today.");
-      onNotToday();
-      return;
-    }
-    if (parsed.kind === "score") {
-      if (!activeItemLabel) {
-        setFeedback(
-          "All prompts are already answered — tap any word pill below to change one."
-        );
-        return;
-      }
-      if (activeItemId === "9" && parsed.value > 0) {
-        setCrisisVisible(true);
-        onCrisisHelp();
-      }
-      const maxScore = mode === "tap" ? 4 : 3;
-      setFeedback(`Applied ${parsed.value} of ${maxScore} to ${activeItemLabel} (${source}).`);
-      onSelectScore(parsed.value);
-      return;
-    }
-    const maxScore = mode === "tap" ? 4 : 3;
-    const example =
-      mode === "tap"
-        ? "Low, Okay, Good, Very good"
-        : "Not at all, Several days, Nearly every day";
-    setFeedback(
-      `Could not match that to 0–${maxScore} or Not today. Try saying or typing 0–${maxScore}, ${example}, or Not today.`
-    );
   }
 
   function handleTextSubmit(event: FormEvent<HTMLFormElement>) {
