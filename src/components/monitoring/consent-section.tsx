@@ -91,7 +91,7 @@ export function ConsentSection({
                   </span>
                 </div>
 
-                <p className="mt-2.5 text-xs leading-relaxed text-ink-secondary">
+                <p className="mt-2.5 text-sm leading-relaxed text-ink-secondary">
                   {c.recordedDescription}
                 </p>
               </div>

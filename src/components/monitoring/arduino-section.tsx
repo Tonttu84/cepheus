@@ -82,7 +82,7 @@ export function ArduinoSection({
               {recentCameraReadings.slice(0, 3).map((r, idx) => (
                 <li
                   key={`${r.date}-${idx}`}
-                  className="flex items-center justify-between rounded-xl border border-border-hairline bg-surface-card px-3 py-2 text-ink-primary"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-hairline bg-surface-card px-3 py-2 text-ink-primary"
                 >
                   <span className="tabular-nums">
                     <strong>{r.date}</strong> · exp{" "}
@@ -96,7 +96,7 @@ export function ArduinoSection({
               ))}
             </ul>
           ) : (
-            <p className="mt-2.5 text-xs text-ink-muted">
+            <p className="mt-2.5 text-sm text-ink-muted">
               No Arduino camera summaries ingested yet.
             </p>
           )}
@@ -111,7 +111,7 @@ export function ArduinoSection({
               {recentRoutineReadings.slice(0, 4).map((r, idx) => (
                 <li
                   key={`${r.channel}-${idx}`}
-                  className="flex items-center justify-between rounded-xl border border-border-hairline bg-surface-card px-3 py-2 text-ink-primary"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-hairline bg-surface-card px-3 py-2 text-ink-primary"
                 >
                   <span className="tabular-nums">
                     <strong>{r.channel}</strong>: {r.derivedValue} {r.unit}
@@ -123,7 +123,7 @@ export function ArduinoSection({
               ))}
             </ul>
           ) : (
-            <p className="mt-2.5 text-xs text-ink-muted">
+            <p className="mt-2.5 text-sm text-ink-muted">
               No home immobility or daylight summaries ingested yet.
             </p>
           )}

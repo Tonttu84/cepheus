@@ -134,7 +134,7 @@ function RhythmWindowPanel({
 }) {
   if (!latestRhythmWindow) {
     return (
-      <p className="rounded-xl border border-dashed border-border-tactile bg-surface-subtle p-4 text-xs text-ink-secondary">
+      <p className="rounded-xl border border-dashed border-border-tactile bg-surface-subtle p-4 text-sm text-ink-secondary">
         No wearable rhythm window synced yet. Connect Fitbit or click{" "}
         <strong>Simulate 7-day Fitbit sync</strong> to calculate RA, IS, IV, and
         Sleep Regularity Index.

@@ -69,7 +69,7 @@ export function HealthConnectPanel({
           <h3 className="font-display text-base font-semibold text-ink-primary">
             Android Health Connect &amp; Apple Health Webhook
           </h3>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-ink-secondary">
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-secondary">
             Supports <strong>Health Connect to Webhook</strong> (Google Play)
             and <strong>Life Dashboard Companion</strong> (Android &amp; iOS,
             HMAC-SHA256 <code>X-Signature</code>) so Fitbit, Oura, Garmin, or
@@ -134,7 +134,7 @@ export function HealthConnectPanel({
       </div>
 
       {consentPaused ? (
-        <p className="text-xs text-amber-900">
+        <p className="text-sm text-amber-900">
           Wearable rhythm consent is currently paused. Enable{" "}
           <strong>ring_rhythm</strong> above to pair a phone.
         </p>
@@ -157,7 +157,7 @@ function ActivePairingDetails({
       data-testid="hc-pairing-card"
       className="space-y-5 rounded-xl border border-border-hairline bg-surface-card p-5"
     >
-      <p className="rounded-lg border border-accent-sage-border bg-accent-sage-soft/60 px-3 py-2 text-xs text-accent-sage-hover">
+      <p className="rounded-lg border border-accent-sage-border bg-accent-sage-soft/60 px-3 py-2 text-sm text-accent-sage-hover">
         One-time pairing credentials generated. For privacy, the signing secret
         is shown only right now.
       </p>
@@ -179,7 +179,7 @@ function ActivePairingDetails({
             <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-primary">
               Option A — Life Dashboard Companion (1-scan QR or 1-tap on Android &amp; iOS)
             </h4>
-            <ol className="list-inside list-decimal space-y-1 text-xs text-ink-secondary">
+            <ol className="list-inside list-decimal space-y-1 text-sm text-ink-secondary">
               <li>Grant Health Connect read permissions on your phone.</li>
               <li>
                 Scan the QR code or tap{" "}
@@ -212,7 +212,7 @@ function ActivePairingDetails({
               value={activePairing.apiKeyHeader}
               testId="hc-webhook-apikey-header"
             />
-            <p className="text-xs text-ink-secondary">
+            <p className="text-sm text-ink-secondary">
               Tip: Enable <strong>Count overlapping apps once</strong> in app
               settings. See <code>docs/health-connect-setup.md</code> for full
               steps.
@@ -291,7 +291,7 @@ function CopyField({
         <button
           type="button"
           onClick={() => void handleCopy()}
-          className="min-h-9 shrink-0 cursor-pointer rounded-lg border border-border-tactile bg-surface-card px-3 py-1 text-xs font-semibold text-ink-primary transition hover:bg-surface-subtle"
+          className="min-h-11 shrink-0 cursor-pointer rounded-lg border border-border-tactile bg-surface-card px-3 py-1 text-xs font-semibold text-ink-primary transition hover:bg-surface-subtle"
         >
           {copied ? "Copied" : "Copy"}
         </button>
