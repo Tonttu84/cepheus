@@ -1,0 +1,17 @@
+services:
+  cepheus-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - cepheus-db
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@cepheus-db:5432/defaultdb
+      - NODE_ENV=production
+      - DEMO_SESSION_ENABLED=true
+      - TRUST_PROXY_HEADERS=true
+
+  cepheus-db:
+    image: postgres:15
