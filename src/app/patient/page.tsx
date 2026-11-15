@@ -71,7 +71,13 @@ export default async function PatientPage() {
 
       {account ? (
         <p className="text-sm text-ink-secondary text-center">
-          Simulated balance: {(account.balanceCents / 100).toFixed(2)} € · <Link href="/rewards" className="text-accent-sage hover:underline">See rewards</Link>
+          Simulated balance: {(account.balanceCents / 100).toFixed(2)} € ·{" "}
+          <Link
+            href="/rewards"
+            className="inline-flex min-h-11 items-center px-1 text-accent-sage hover:underline"
+          >
+            See rewards
+          </Link>
         </p>
       ) : null}
 
@@ -79,7 +85,7 @@ export default async function PatientPage() {
 
       <PatientConsentSection initialConsent={consent} />
 
-      <p className="border-t border-border-hairline pt-6 text-xs leading-relaxed text-ink-secondary">
+      <p className="border-t border-border-hairline pt-6 text-sm leading-relaxed text-ink-secondary">
         Skipping a suggestion or a check-in is always fine, and nothing is
         counted against you. If you want to talk with someone directly, the TMS
         clinic nurse line and 24/7 crisis support are at the top of this screen.
