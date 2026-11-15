@@ -48,6 +48,7 @@ export function setUpRoutes(now = ROUND_1_OPEN, extraItems: ExtraItemsConfig = D
   const clinicPatients: Record<string, string[]> = {};
   setRouteDepsForTests(() => ({
     ports: fake.ports,
+    rewardsPorts: {} as any,
     clinicPatientIds: async (clinicId) => clinicPatients[clinicId] ?? [],
     resolveDevicePatient: async () => ({ patientId: PATIENT_ID, clinicId: CLINIC_ID }),
   }));

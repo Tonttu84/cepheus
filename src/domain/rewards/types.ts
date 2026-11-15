@@ -24,6 +24,7 @@ export interface RewardsConfig {
 export interface ActivityCounts {
   readonly tasksDone: number;
   readonly roundsAnswered: number;
+  readonly walks?: number;
 }
 
 export interface AccountSummary {

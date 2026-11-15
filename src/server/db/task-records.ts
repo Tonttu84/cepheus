@@ -101,5 +101,12 @@ export function createTaskRecordRepository(ctx: DbContext): TaskRecordRepository
         where: { participantId: patientId, status: "completed" },
       });
     },
+
+    async getCompletedWalksCount(patientId) {
+      await lockParticipant(ctx, patientId);
+      return await ctx.client().taskRecord.count({
+        where: { participantId: patientId, status: "completed", taskKey: "short_walk" },
+      });
+    },
   };
 }

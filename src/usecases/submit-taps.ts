@@ -74,6 +74,7 @@ export async function submitTaps(
 
   let isDuplicate = false;
   let accessError: string | null = null;
+  let roundNumber: number = 0;
 
   try {
     // Point A: Store facts only in ONE unit of work, do not run rule or wait for it
@@ -137,6 +138,8 @@ export async function submitTaps(
       const openRound = getOpenRound(patient.schedule, now);
       if (!openRound) throw new Error('No round is currently open');
 
+      roundNumber = openRound.number;
+
       const existing = await ports.rounds.getRound(patient.patientId, openRound.number);
       const appResult = applySubmission(getExistingSubmission(existing), {
         kind: 'answer',
@@ -168,5 +171,5 @@ export async function submitTaps(
     return { ok: false, error: accessError };
   }
 
-  return { ok: true, value: { ruleRunNeeded: !isDuplicate } };
+  return { ok: true, value: { ruleRunNeeded: !isDuplicate, roundNumber } };
 }

@@ -44,6 +44,14 @@ export async function readAccount(
       tasksDone = history.filter((r) => r.status === "completed").length;
     }
 
+    let walks = 0;
+    if (ports.taskRecords.getCompletedWalksCount) {
+      walks = await ports.taskRecords.getCompletedWalksCount(input.patientId);
+    } else {
+      const history = await ports.taskRecords.getHistory(input.patientId);
+      walks = history.filter((r) => r.status === "completed" && r.taskKey === "short_walk").length;
+    }
+
     let roundsAnswered = 0;
     if (ports.rounds.getAnsweredRoundsCount) {
       roundsAnswered = await ports.rounds.getAnsweredRoundsCount(input.patientId);
@@ -51,7 +59,7 @@ export async function readAccount(
 
     return buildAccountSummary({
       entries,
-      counts: { tasksDone, roundsAnswered },
+      counts: { tasksDone, roundsAnswered, walks },
       config,
     });
   });

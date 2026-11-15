@@ -125,6 +125,7 @@ describe("GET /api/clinic/flags", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     setRouteDepsForTests(() => ({
       ports: fake.ports,
+      rewardsPorts: {} as any,
       clinicPatientIds: async () => {
         throw new Error("connection refused");
       },
@@ -322,6 +323,7 @@ describe("GET /api/clinic/crisis-events", () => {
           },
         },
       },
+      rewardsPorts: {} as any,
       clinicPatientIds: async () => [],
     }));
     const res = await getCrisisEvents(crisisEventsRequest(staffCookie()));
@@ -446,6 +448,7 @@ describe("POST /api/clinic/crisis-events/acknowledge", () => {
           },
         },
       },
+      rewardsPorts: {} as any,
       clinicPatientIds: async () => [],
     }));
     const res = await acknowledgeCrisis(
@@ -608,6 +611,7 @@ describe("POST /api/clinic/nurse-calls", () => {
           },
         },
       },
+      rewardsPorts: {} as any,
       clinicPatientIds: async () => [],
     }));
     const res = await recordNurseCall(

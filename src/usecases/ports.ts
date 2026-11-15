@@ -331,6 +331,7 @@ export interface CheckInState {
 
 export interface SubmitTapsResult {
   readonly ruleRunNeeded: boolean;
+  readonly roundNumber: number;
 }
 
 export interface SubmitExtraAnswerResult {

@@ -51,6 +51,7 @@ export interface TaskRecordRepository {
   getHistory(patientId: string): Promise<readonly TaskRecord[]>;
   saveTaskRecord(record: TaskRecord): Promise<void>;
   getCompletedTasksCount?(patientId: string): Promise<number>;
+  getCompletedWalksCount?(patientId: string): Promise<number>;
 }
 
 export interface PatientScheduleInfo {
