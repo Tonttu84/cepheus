@@ -1,15 +1,18 @@
 "use client";
 
+import React from "react";
 import type { CameraSessionOutput } from "@/domain/camera";
 
 interface CameraCompletedViewProps {
   sessionResult: CameraSessionOutput & { hasNumbers: true };
   onReset: () => void;
+  canSave?: boolean;
 }
 
 export function CameraCompletedView({
   sessionResult,
   onReset,
+  canSave = true,
 }: CameraCompletedViewProps) {
   return (
     <section
@@ -29,6 +32,15 @@ export function CameraCompletedView({
           Camera access has been closed and all tracks were stopped. The video
           frames were analysed in memory and discarded.
         </p>
+        {!canSave ? (
+          <p
+            role="status"
+            className="mt-2 text-xs font-medium text-ink-muted"
+          >
+            Saving is off. Camera wellbeing check is paused or not consented;
+            measurements are not saved.
+          </p>
+        ) : null}
       </div>
 
       <details

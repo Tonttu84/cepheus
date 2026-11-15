@@ -1,3 +1,4 @@
+import React from "react";
 import { CameraCheckSession } from "@/components/camera-check-session";
 import {
   ForestCanopyArtwork,
@@ -5,11 +6,28 @@ import {
 } from "@/components/forest-divider";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { requirePatientPageSession } from "@/server/auth";
-import { createPrismaPorts } from "@/server/db";
+import { getRouteDeps } from "@/server/api";
+import { getPatientConsent } from "@/usecases";
+import { isPurposeAllowed } from "@/domain/consent";
 
 export default async function CameraPage() {
   const session = await requirePatientPageSession();
-  const ports = createPrismaPorts();
+  const { ports } = getRouteDeps();
+
+  const consentRes = await getPatientConsent(
+    session.actor,
+    { patientId: session.actor.patientId },
+    ports
+  );
+  const consent = consentRes.ok
+    ? consentRes.value.consent
+    : {
+        taking_part: false,
+        methods: { ring: false, camera: false },
+        rule_check: false,
+      };
+  const isCameraConsented = isPurposeAllowed(consent, "method:camera");
+
   const readings = ports.camera 
     ? await ports.camera.getCameraReadings(session.actor.patientId)
     : [];
@@ -40,7 +58,20 @@ export default async function CameraPage() {
         <ForestCanopyArtwork className="w-full pt-2 text-accent-sage" />
       </header>
 
-      <CameraCheckSession />
+      {!isCameraConsented ? (
+        <div
+          role="status"
+          data-testid="camera-consent-notice"
+          className="rounded-xl border border-border-hairline bg-surface-subtle p-4 text-sm font-medium text-ink-secondary"
+        >
+          Saving is off. Camera wellbeing check is paused or not consented.
+        </div>
+      ) : null}
+
+      <CameraCheckSession
+        canSave={isCameraConsented}
+        patientId={session.actor.patientId}
+      />
 
       <ForestDivider variant="grove" />
 
