@@ -1,10 +1,20 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import type { PatientActor } from "@/domain/access";
 import { containsRawMediaFields } from "@/domain/arduino";
+import {
+  defaultResolveDevicePatient,
+  failureOf,
+  getRouteDeps,
+  isCrisisAnswer,
+  orStorageFailure,
+  refuse,
+  respond,
+  runRuleIfNeeded,
+} from "@/server/api";
 import { getEnv } from "@/server/env";
-import { CRISIS_RESOURCES } from "@/lib/constants";
-import { isCrisisBedsideInput, saveArduinoBedsideCheckIn } from "@/server/monitoring";
+import { isCrisisBedsideInput, type BedsideCheckInInput } from "@/server/monitoring/bedside";
 import {
   checkAndRecordDeviceReplay,
   checkRateLimit,
@@ -13,10 +23,18 @@ import {
   verifyArduinoDeviceCredential,
   verifySameOrigin,
 } from "@/server/security";
+import {
+  submitCrisisButton,
+  submitNotToday,
+  submitPhq9Answer,
+  submitTaps,
+  type Ports,
+} from "@/usecases";
 
 export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 8_192;
+const ROUTE = "arduino:check-in";
 
 const baseFields = {
   deviceId: z.string().min(2).max(64),
@@ -49,6 +67,8 @@ const bedsideCheckInSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+export type BedsidePayload = z.infer<typeof bedsideCheckInSchema>;
+
 function authenticateDevice(
   request: Request,
   deviceId: string,
@@ -59,9 +79,7 @@ function authenticateDevice(
   const env = getEnv();
   const sameOriginUiSim =
     env.NODE_ENV !== "production" && verifySameOrigin(request) && isSimulated;
-  if (sameOriginUiSim) {
-    return { ok: true };
-  }
+  if (sameOriginUiSim) return { ok: true };
 
   const hasCreds =
     env.ARDUINO_DEVICE_KEYS_JSON.length > 0 || env.ARDUINO_INGEST_TOKEN.length > 0;
@@ -77,128 +95,183 @@ function authenticateDevice(
   return { ok: true };
 }
 
-async function parseAndValidateBedsideBody(
+async function readBedsideBody(
   request: Request
 ): Promise<
-  | { ok: true; data: z.infer<typeof bedsideCheckInSchema> }
+  | { ok: true; raw: unknown; body: BedsidePayload }
   | { ok: false; response: NextResponse }
 > {
   let rawText: string;
   try {
     rawText = await request.text();
   } catch {
-    return {
-      ok: false,
-      response: NextResponse.json({ ok: false, error: "Unable to read body." }, { status: 400 }),
-    };
+    return { ok: false, response: refuse(400, "Unable to read body.") };
   }
   if (Buffer.byteLength(rawText, "utf8") > MAX_BYTES) {
-    return {
-      ok: false,
-      response: NextResponse.json({ ok: false, error: "Payload exceeds 8 KB limit." }, { status: 413 }),
-    };
+    return { ok: false, response: refuse(413, "Payload exceeds 8 KB limit.") };
   }
 
-  let body: unknown;
+  let raw: unknown;
   try {
-    body = JSON.parse(rawText);
+    raw = JSON.parse(rawText);
   } catch {
-    return {
-      ok: false,
-      response: NextResponse.json({ ok: false, error: "Invalid JSON." }, { status: 400 }),
-    };
+    return { ok: false, response: refuse(400, "Invalid JSON.") };
   }
 
-  const rawMediaKey = containsRawMediaFields(body);
+  const crisis = isCrisisAnswer(raw) || (typeof raw === "object" && raw !== null && (raw as Record<string, unknown>).kind === "crisis_button");
+  const rawMediaKey = containsRawMediaFields(raw);
   if (rawMediaKey) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { ok: false, error: `Refused raw media field "${rawMediaKey}".` },
-        { status: 400 }
-      ),
-    };
+    return { ok: false, response: refuse(400, `Refused raw media field "${rawMediaKey}".`, crisis) };
   }
 
-  const parsed = bedsideCheckInSchema.safeParse(body);
+  const parsed = bedsideCheckInSchema.safeParse(raw);
   if (!parsed.success) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { ok: false, error: "Invalid bedside check-in payload." },
-        { status: 400 }
-      ),
-    };
+    return { ok: false, response: refuse(400, "Invalid bedside check-in payload.", crisis) };
   }
 
-  return { ok: true, data: parsed.data };
+  return { ok: true, raw, body: parsed.data };
 }
 
-/**
- * Storage threw: nothing was saved. A crisis input still gets the crisis path,
- * because showing help must never depend on the database. The log names the
- * kind and device but never the answer values.
- */
-function storageFailureResponse(
-  input: z.infer<typeof bedsideCheckInSchema>,
-  err: unknown
-): NextResponse {
-  console.error("[arduino/check-in] Storing the bedside check-in failed:", {
-    kind: input.kind,
-    deviceHash: crypto.createHash("sha256").update(input.deviceId).digest("hex").slice(0, 12),
-    date: input.date,
-    isSimulated: input.isSimulated,
-    error: err instanceof Error ? err.message : String(err),
-  });
-  const error = "The check-in could not be saved.";
-  const body = isCrisisBedsideInput(input)
-    ? { ok: false, saved: false, error, showCrisisPath: true, crisisResources: CRISIS_RESOURCES }
-    : { ok: false, saved: false, error };
-  return NextResponse.json(body, { status: 503 });
+async function handleCrisisButton(
+  actor: PatientActor,
+  ports: Ports,
+  context: { route: string; actorKind: string }
+): Promise<NextResponse> {
+  const result = await submitCrisisButton(
+    actor,
+    { patientId: actor.patientId, time: ports.clock.now() },
+    ports
+  );
+  if (!result.ok) {
+    return failureOf(context, result.error, true);
+  }
+  return respond(
+    {
+      ok: true,
+      saved: result.value.saved,
+      kind: "crisis_button",
+      roundNumber: result.value.roundNumber,
+    },
+    200,
+    true
+  );
+}
+
+async function handleTaps(
+  actor: PatientActor,
+  data: Extract<BedsidePayload, { kind: "taps" }>,
+  ports: Ports,
+  context: { route: string; actorKind: string }
+): Promise<NextResponse> {
+  const result = await submitTaps(
+    actor,
+    { patientId: actor.patientId, mood: data.mood, interest: data.interest },
+    ports
+  );
+  if (!result.ok) return failureOf(context, result.error, false);
+  await runRuleIfNeeded(actor.patientId, result.value.ruleRunNeeded, ports);
+  return respond({ ok: true, saved: true, kind: "taps" });
+}
+
+async function handleNotToday(
+  actor: PatientActor,
+  ports: Ports,
+  context: { route: string; actorKind: string }
+): Promise<NextResponse> {
+  const result = await submitNotToday(actor, { patientId: actor.patientId }, ports);
+  if (!result.ok) return failureOf(context, result.error, false);
+  await runRuleIfNeeded(actor.patientId, result.value.ruleRunNeeded, ports);
+  return respond({ ok: true, saved: true, kind: "not_today" });
+}
+
+async function handlePhq9Item(
+  actor: PatientActor,
+  data: Extract<BedsidePayload, { kind: "phq9_item" }>,
+  ports: Ports,
+  crisis: boolean,
+  context: { route: string; actorKind: string; itemId: string }
+): Promise<NextResponse> {
+  const result = await submitPhq9Answer(
+    actor,
+    { patientId: actor.patientId, itemId: data.itemId, value: data.value },
+    ports
+  );
+  if (!result.ok) {
+    return failureOf(context, result.error, crisis || result.showCrisisPath === true);
+  }
+  await runRuleIfNeeded(actor.patientId, result.value.ruleRunNeeded, ports);
+  const showCrisis = crisis || result.value.showCrisisPath;
+  return respond(
+    { ok: true, saved: true, kind: "phq9_item", progress: result.value.progress, showCrisisPath: showCrisis },
+    200,
+    showCrisis
+  );
+}
+
+async function dispatchBedsideAction(
+  actor: PatientActor,
+  data: BedsidePayload,
+  ports: Ports,
+  crisis: boolean
+): Promise<NextResponse> {
+  const context = {
+    route: ROUTE,
+    actorKind: actor.kind,
+    itemId: data.kind === "phq9_item" ? data.itemId : undefined,
+  };
+  if (data.kind === "crisis_button") {
+    return handleCrisisButton(actor, ports, context);
+  }
+  if (data.kind === "taps") {
+    return handleTaps(actor, data, ports, context);
+  }
+  if (data.kind === "not_today") {
+    return handleNotToday(actor, ports, context);
+  }
+  return handlePhq9Item(actor, data, ports, crisis, context as { route: string; actorKind: string; itemId: string });
 }
 
 export async function POST(request: Request) {
-  const parsed = await parseAndValidateBedsideBody(request);
-  if (!parsed.ok) {
-    return parsed.response;
-  }
+  const read = await readBedsideBody(request);
+  if (!read.ok) return read.response;
+  const { raw, body } = read;
+  const crisis = isCrisisAnswer(raw) || isCrisisBedsideInput(body as BedsideCheckInInput);
 
   const rate = checkRateLimit(getClientKey(request, "arduino-checkin"), 60, 60_000);
   if (!rate.allowed) {
-    return NextResponse.json(
-      { ok: false, error: "Rate limit exceeded." },
-      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } }
-    );
+    const res = refuse(429, "Rate limit exceeded.", crisis);
+    res.headers.set("Retry-After", String(rate.retryAfterSec));
+    return res;
   }
 
-  const auth = authenticateDevice(
-    request,
-    parsed.data.deviceId,
-    parsed.data.timestampMs,
-    parsed.data.nonce,
-    parsed.data.isSimulated
-  );
+  const auth = authenticateDevice(request, body.deviceId, body.timestampMs, body.nonce, body.isSimulated);
   if (!auth.ok) {
-    return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
+    return refuse(auth.status, auth.error, crisis);
   }
 
-  let outcome: Awaited<ReturnType<typeof saveArduinoBedsideCheckIn>>;
-  try {
-    outcome = await saveArduinoBedsideCheckIn(parsed.data);
-  } catch (err) {
-    return storageFailureResponse(parsed.data, err);
-  }
-  if (!outcome.ok) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: outcome.error,
-        showCrisisPath: outcome.showCrisisPath,
-        crisisResources: outcome.crisisResources,
-      },
-      { status: outcome.status }
-    );
-  }
+  const context = {
+    route: ROUTE,
+    actorKind: "patient",
+    itemId: body.kind === "phq9_item" ? body.itemId : undefined,
+    deviceHash: crypto.createHash("sha256").update(body.deviceId).digest("hex").slice(0, 12),
+  };
 
-  return NextResponse.json(outcome);
+  return orStorageFailure(
+    context,
+    async () => {
+      const { ports, resolveDevicePatient } = getRouteDeps();
+      // This lookup stands in for a device-to-patient table; the pairing design
+      // of the phone webhook (WebhookCredential) is the intended model.
+      const patient = resolveDevicePatient
+        ? await resolveDevicePatient(body.deviceId)
+        : await defaultResolveDevicePatient();
+      const actor: PatientActor = {
+        kind: "patient",
+        patientId: patient.patientId,
+        clinicId: patient.clinicId,
+      };
+      return dispatchBedsideAction(actor, body, ports, crisis);
+    },
+    crisis
+  );
 }

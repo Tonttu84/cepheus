@@ -16,8 +16,9 @@ test.describe("Verda EU Gemma Nurse Pre-Call Brief & Guardrails (Trail #31)", ()
 
   test("2. /clinic generates a faithfulness-checked nurse pre-call brief with source metrics & HITL confirmation", async ({
     page,
+    context,
   }) => {
-    await signInAsStaff(page);
+    await signInAsStaff(page, context, { ensureFlag: true });
     await page.goto("/clinic");
 
     await page.getByTestId("verda-nurse-brief-btn").click();

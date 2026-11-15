@@ -1,38 +1,17 @@
-import { type BroadAreaKey } from "@/lib/constants";
-import { toSafeClinicFlagView } from "@/lib/schemas";
-import { generateSimulatedPersonWeeks } from "@/lib/simulation";
 import { requireStaffPageSession } from "@/server/auth";
-import { ClinicNurseBriefPanel } from "@/components/clinic-nurse-brief-panel";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { SessionContextPill } from "@/components/session-context-banner";
-import { ClinicFlagCard } from "@/components/clinic-flag-card";
 import { ForestDivider } from "@/components/forest-divider";
+import { ClinicFlagsView } from "@/components/clinic-flags-view";
 
 export default async function ClinicPage() {
   await requireStaffPageSession();
-  const dataset = generateSimulatedPersonWeeks({ throughDay: 56 });
-  const rawFlag = dataset.clinicFlags[dataset.clinicFlags.length - 1];
-
-  const safeFlag = rawFlag
-    ? toSafeClinicFlagView({
-        id: `sim-flag-${rawFlag.dayIndex}`,
-        participantId: dataset.participant.externalId,
-        sinceDate: rawFlag.sinceDate,
-        triggerKind: rawFlag.triggerKind,
-        primaryArea: rawFlag.primaryArea,
-        broadAreasJson: rawFlag.broadAreasJson,
-        status: rawFlag.status,
-        ringActiveDuringSilence: rawFlag.ringActiveDuringSilence,
-        patientSharedDetails: rawFlag.patientSharedDetails,
-        isSimulated: true,
-      })
-    : null;
 
   return (
     <div className="space-y-12 sm:space-y-16">
       <header className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <SimulatedBadge subtitle="Day 56 · Week 8 clinic follow-up view" />
+          <SimulatedBadge subtitle="Clinic follow-up view" />
           <div className="flex flex-wrap items-center gap-2">
             <SessionContextPill expectedRole="staff" />
             <span className="rounded-full border border-border-hairline bg-surface-subtle px-3 py-1 text-xs font-medium text-ink-secondary">
@@ -54,26 +33,7 @@ export default async function ClinicPage() {
         </div>
       </header>
 
-      {/* Active Broad-Area Flag Card */}
-      {safeFlag ? (
-        <ClinicFlagCard
-          participantLabel={dataset.participant.label}
-          participantExternalId={dataset.participant.externalId}
-          tmsCompletedDate={dataset.participant.tmsCompletedDate}
-          sinceDate={safeFlag.sinceDate}
-          broadAreas={safeFlag.broadAreas as BroadAreaKey[]}
-          ringActiveDuringSilence={Boolean(safeFlag.ringActiveDuringSilence)}
-        />
-      ) : null}
-
-      {safeFlag ? (
-        <ClinicNurseBriefPanel
-          participantCode={dataset.participant.externalId}
-          sinceDate={safeFlag.sinceDate}
-          broadAreas={safeFlag.broadAreas}
-          ringActiveDuringSilence={safeFlag.ringActiveDuringSilence}
-        />
-      ) : null}
+      <ClinicFlagsView />
 
       <ForestDivider variant="clearing" />
 

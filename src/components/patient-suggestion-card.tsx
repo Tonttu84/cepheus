@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { GuidedActivityWidget } from "./guided-activity-widget";
 
 interface PatientSuggestionCardProps {
+  actionKey?: string;
   actionTitle: string;
   actionDetail: string;
 }
 
 export function PatientSuggestionCard({
+  actionKey,
   actionTitle,
   actionDetail,
 }: PatientSuggestionCardProps) {
@@ -63,22 +66,25 @@ export function PatientSuggestionCard({
       </div>
 
       {choice === "accepted" ? (
-        <div
-          role="status"
-          className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3.5 text-sm font-medium text-accent-sage-hover"
-        >
-          <span>
-            This is a preview of a simulated round and nothing is sent yet. Take
-            it at your own pace. Even stepping outside for a couple of minutes
-            is enough.
-          </span>
-          <button
-            type="button"
-            onClick={() => setChoice(null)}
-            className="inline-flex min-h-11 items-center px-3 text-xs font-semibold underline underline-offset-2 hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
+        <div className="mt-6 space-y-4">
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3.5 text-sm font-medium text-accent-sage-hover"
           >
-            Change response
-          </button>
+            <span>
+              This is a preview of a simulated round and nothing is sent yet. Take
+              it at your own pace. Even stepping outside for a couple of minutes
+              is enough.
+            </span>
+            <button
+              type="button"
+              onClick={() => setChoice(null)}
+              className="inline-flex min-h-11 items-center px-3 text-xs font-semibold underline underline-offset-2 hover:text-ink-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
+            >
+              Change response
+            </button>
+          </div>
+          <GuidedActivityWidget actionKey={actionKey} />
         </div>
       ) : null}
 

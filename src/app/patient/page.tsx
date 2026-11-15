@@ -44,6 +44,7 @@ export default async function PatientPage() {
       </header>
 
       <PatientSuggestionCard
+        actionKey={activeSuggestion.actionKey}
         actionTitle={activeSuggestion.actionTitle}
         actionDetail={activeSuggestion.actionDetail}
       />

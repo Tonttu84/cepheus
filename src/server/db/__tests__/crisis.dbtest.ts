@@ -24,6 +24,14 @@ describe("Crisis repository (*.dbtest.ts)", () => {
   beforeAll(async () => {
     prisma = getPrisma();
     clinicId = (await prisma.clinic.create({ data: { code: "crisis-dbtest-clinic", name: "Crisis" } })).id;
+    await prisma.staffUser.create({
+      data: {
+        id: "staff-user-test-1",
+        clinicId,
+        email: "crisis-staff-1@test.local",
+        name: "Crisis Staff 1",
+      },
+    });
     const data = { clinicId, source: "live" };
     patientId = (await prisma.participant.create({ data: { ...data, label: "crisis-dbtest-main" } })).id;
     otherId = (await prisma.participant.create({ data: { ...data, label: "crisis-dbtest-other" } })).id;
@@ -118,6 +126,31 @@ describe("Crisis repository (*.dbtest.ts)", () => {
     await repo().saveCrisisEvent({ ...first, acknowledgedAt: "2026-11-17T09:00:00.000Z" });
     await repo().saveCrisisEvent({ ...first, acknowledgedAt: null });
     expect(await repo().getCrisisEvents(patientId)).toEqual([first]);
+    await prisma.crisisEvent.deleteMany({ where: { participantId: patientId } });
+  });
+
+  it("lists unacknowledged crisis events for a clinic and records acknowledging staff member", async () => {
+    const staffId = "staff-user-test-1";
+    await repo().saveCrisisEvent(event(1, "2026-11-16T16:20:00.000Z"));
+    await repo().saveCrisisEvent(event(2, "2026-11-17T16:20:00.000Z"));
+
+    const unackBefore = await repo().getUnacknowledgedCrisisEvents(clinicId);
+    expect(unackBefore.map((e) => e.roundNumber)).toEqual([1, 2]);
+
+    await repo().saveCrisisEvent({
+      ...event(1, "2026-11-16T16:20:00.000Z"),
+      acknowledgedAt: "2026-11-16T18:00:00.000Z",
+      acknowledgedByStaffId: staffId,
+    });
+
+    const unackAfter = await repo().getUnacknowledgedCrisisEvents(clinicId);
+    expect(unackAfter.map((e) => e.roundNumber)).toEqual([2]);
+
+    const events = await repo().getCrisisEvents(patientId);
+    const ack1 = events.find((e) => e.roundNumber === 1);
+    expect(ack1?.acknowledgedAt).toBe("2026-11-16T18:00:00.000Z");
+    expect(ack1?.acknowledgedByStaffId).toBe(staffId);
+
     await prisma.crisisEvent.deleteMany({ where: { participantId: patientId } });
   });
 });

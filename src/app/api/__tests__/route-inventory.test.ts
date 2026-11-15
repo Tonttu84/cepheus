@@ -26,6 +26,11 @@ const EXPLICIT_ALLOW_LIST = [
   "/api/arduino/check-in",
   // External mobile health connect companion webhook authenticating with HMAC signature
   "/api/webhooks/health-connect",
+  // OpenAPI 3.1 specification document
+  "/api/openapi.json",
+  // System-only routes authenticating with dedicated system key
+  "/api/patients/[patientId]/evaluate",
+  "/api/rounds/close",
 ] as const;
 
 function findRouteFiles(dir: string, baseDir: string): string[] {
@@ -83,6 +88,15 @@ describe("Route Inventory & Protection Audit", () => {
         } else if (routePath.startsWith("/api/auth/")) {
           // Public auth endpoint
           expect(content).toMatch(/NextResponse/);
+        } else if (
+          routePath === "/api/rounds/close" ||
+          routePath.startsWith("/api/patients/")
+        ) {
+          // System-only route authenticating with SYSTEM_API_KEY
+          expect(content).toMatch(/guardSystem|isSystemCaller|SYSTEM_API_KEY/i);
+        } else if (routePath === "/api/openapi.json") {
+          // Public OpenAPI specification document
+          expect(content).toMatch(/getOpenApiDocument|NextResponse/);
         }
         return;
       }

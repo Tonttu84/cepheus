@@ -97,12 +97,16 @@ function VoiceCrisisAlert() {
 
 interface VoiceAnswerFormProps {
   textValue: string;
+  placeholder: string;
+  disabled: boolean;
   onChangeText: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
 function VoiceAnswerForm({
   textValue,
+  placeholder,
+  disabled,
   onChangeText,
   onSubmit,
 }: VoiceAnswerFormProps) {
@@ -119,15 +123,19 @@ function VoiceAnswerForm({
         data-testid="check-in-text-input"
         type="text"
         maxLength={80}
+        disabled={disabled}
         value={textValue}
         onChange={(e) => onChangeText(e.target.value)}
-        placeholder="Type: Very low, Low, Okay, Good, Very good, 0–4, or Not today"
-        className="min-h-11 flex-1 rounded-xl border border-border-tactile bg-surface-card px-3.5 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:border-accent-sage focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
+        placeholder={placeholder}
+        className="min-h-11 flex-1 rounded-xl border border-border-tactile bg-surface-card px-3.5 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:border-accent-sage focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage disabled:cursor-not-allowed disabled:opacity-50"
       />
       <button
         type="submit"
         data-testid="check-in-text-submit"
-        className="min-h-11 shrink-0 rounded-xl bg-accent-sage px-4 py-2 text-xs font-semibold text-white transition hover:bg-accent-sage-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer"
+        disabled={disabled}
+        className={`min-h-11 shrink-0 rounded-xl bg-accent-sage px-4 py-2 text-xs font-semibold text-white transition hover:bg-accent-sage-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
+          disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+        }`}
       >
         Apply answer
       </button>
@@ -135,8 +143,39 @@ function VoiceAnswerForm({
   );
 }
 
+function SpeakButton({
+  listening,
+  disabled,
+  onClick,
+}: {
+  listening: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid="check-in-speak-button"
+      disabled={disabled}
+      aria-pressed={listening}
+      onClick={onClick}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage ${
+        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+      } ${
+        listening
+          ? "border-accent-sage bg-accent-sage text-white"
+          : "border-border-tactile bg-surface-card text-ink-primary hover:border-accent-sage hover:bg-accent-sage-soft/60"
+      }`}
+    >
+      {listening ? "Stop listening" : "Speak answer"}
+    </button>
+  );
+}
+
 export interface CheckInVoiceInputProps {
   activeItemLabel: string | null;
+  activeItemChoices?: readonly [string, string, string, string, string];
+  disabled?: boolean;
   mode?: VoiceChoiceMode;
   onSelectScore: (score: number) => void;
   onNotToday: () => void;
@@ -145,6 +184,8 @@ export interface CheckInVoiceInputProps {
 
 export function CheckInVoiceInput({
   activeItemLabel,
+  activeItemChoices,
+  disabled = false,
   mode = "tap",
   onSelectScore,
   onNotToday,
@@ -177,8 +218,13 @@ export function CheckInVoiceInput({
       return;
     }
     if (parsed.kind === "score") {
-      const target = activeItemLabel ?? "prompt";
-      setFeedback(`Applied ${parsed.value} of 4 to ${target} (${source}).`);
+      if (!activeItemLabel) {
+        setFeedback(
+          "All prompts are already answered — tap any word pill below to change one."
+        );
+        return;
+      }
+      setFeedback(`Applied ${parsed.value} of 4 to ${activeItemLabel} (${source}).`);
       onSelectScore(parsed.value);
       return;
     }
@@ -189,6 +235,7 @@ export function CheckInVoiceInput({
 
   function handleTextSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (disabled) return;
     const trimmed = textValue.trim();
     if (!trimmed) return;
     applyTranscript(trimmed, "typed");
@@ -196,6 +243,7 @@ export function CheckInVoiceInput({
   }
 
   function handleToggleSpeech() {
+    if (disabled) return;
     if (listening) {
       recognitionRef.current?.stop();
       setListening(false);
@@ -234,7 +282,10 @@ export function CheckInVoiceInput({
 
   const promptHint = activeItemLabel
     ? `Answering: ${activeItemLabel}`
-    : "All prompts answered (tap or enter to update)";
+    : "All prompts answered (tap any pill below to change)";
+  const placeholder = activeItemChoices
+    ? `Type: ${activeItemChoices.join(", ")}, 0–4, or Not today`
+    : "All prompts answered — type Not today or Help, or tap a pill below";
 
   return (
     <div
@@ -244,30 +295,24 @@ export function CheckInVoiceInput({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-ink-primary">
-            Speak or type an answer (stays on this device)
+            Speak or type an answer
           </p>
           <p className="text-xs text-ink-secondary">
-            {promptHint} · Audio is processed in your browser only and never
-            kept or uploaded.
+            {promptHint} · Uses your browser&apos;s speech tool when you tap
+            Speak; Cepheus never records, keeps, or uploads audio.
           </p>
         </div>
-        <button
-          type="button"
-          data-testid="check-in-speak-button"
-          aria-pressed={listening}
+        <SpeakButton
+          listening={listening}
+          disabled={disabled}
           onClick={handleToggleSpeech}
-          className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage cursor-pointer ${
-            listening
-              ? "border-accent-sage bg-accent-sage text-white"
-              : "border-border-tactile bg-surface-card text-ink-primary hover:border-accent-sage hover:bg-accent-sage-soft/60"
-          }`}
-        >
-          {listening ? "Stop listening" : "Speak answer"}
-        </button>
+        />
       </div>
 
       <VoiceAnswerForm
         textValue={textValue}
+        placeholder={placeholder}
+        disabled={disabled}
         onChangeText={setTextValue}
         onSubmit={handleTextSubmit}
       />

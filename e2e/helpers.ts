@@ -13,10 +13,11 @@ import {
   SESSION_COOKIE_NAME,
   simulatedFinnishEidProvider,
 } from "@/server/auth";
+import { getPrisma } from "@/lib/db";
 
 const BASE_ORIGIN = "http://127.0.0.1:3100";
 
-let cachedPatientCookies: Cookie[] | null = null;
+const cachedPatientCookies = new Map<string, Cookie[]>();
 let cachedStaffCookies: Cookie[] | null = null;
 
 async function fetchSessionCookies(
@@ -31,27 +32,120 @@ async function fetchSessionCookies(
     throw new Error(`Sign-in failed (${res.status()}): ${await res.text()}`);
   }
   const cookies = await page.context().cookies();
-  return cookies.filter((c) => c.name === "cepheus_session");
+  return cookies.filter((c) => c.name === SESSION_COOKIE_NAME);
+}
+
+export async function ensureClinicFlag() {
+  const prisma = getPrisma();
+  const existing = await prisma.clinicFlag.findFirst({
+    where: { clinicId: "sim-clinic-01", causeType: { not: null } },
+  });
+  if (existing) return existing;
+  const patient = await prisma.participant.findFirstOrThrow({
+    where: { participantCode: "P-SIM-001" },
+  });
+  return prisma.clinicFlag.create({
+    data: {
+      participantId: patient.id,
+      clinicId: "sim-clinic-01",
+      sinceDate: "2026-11-16",
+      triggerKind: "phq9",
+      ruleVersion: 1,
+      primaryArea: "check_in",
+      broadAreasJson: JSON.stringify(["check_in"]),
+      status: "open",
+      causeType: "phq9",
+      causeDate: "2026-11-16",
+      isSimulated: true,
+    },
+  });
 }
 
 export async function signInAsPatient(
   page: Page,
-  context: BrowserContext = page.context()
+  contextOrCode?: BrowserContext | SimulatedPatientPresetKey,
+  participantCode?: SimulatedPatientPresetKey
 ): Promise<void> {
-  if (!cachedPatientCookies) {
-    cachedPatientCookies = await fetchSessionCookies(page, {
-      mode: "patient_eid",
-      participantCode: "P-SIM-001",
-    });
+  let context: BrowserContext;
+  let code: SimulatedPatientPresetKey = "P-SIM-001";
+
+  if (typeof contextOrCode === "string") {
+    context = page.context();
+    code = contextOrCode;
+  } else if (contextOrCode) {
+    context = contextOrCode;
+    if (participantCode) {
+      code = participantCode;
+    }
   } else {
-    await context.addCookies(cachedPatientCookies);
+    context = page.context();
   }
+
+  let cookies = cachedPatientCookies.get(code);
+  if (!cookies) {
+    cookies = await fetchSessionCookies(page, {
+      mode: "patient_eid",
+      participantCode: code,
+    });
+    cachedPatientCookies.set(code, cookies);
+  }
+  await context.addCookies(cookies);
+}
+
+export interface SignInStaffOptions {
+  readonly otherClinic?: boolean;
+  readonly ensureFlag?: boolean;
 }
 
 export async function signInAsStaff(
   page: Page,
-  context: BrowserContext = page.context()
+  contextOrOptions?: BrowserContext | SignInStaffOptions,
+  options?: SignInStaffOptions
 ): Promise<void> {
+  let context: BrowserContext;
+  let opts: SignInStaffOptions | undefined;
+
+  if (contextOrOptions && "addCookies" in contextOrOptions) {
+    context = contextOrOptions;
+    opts = options;
+  } else {
+    context = page.context();
+    opts = contextOrOptions;
+  }
+
+  if (opts?.ensureFlag) {
+    await ensureClinicFlag();
+  }
+
+  if (opts?.otherClinic) {
+    const session: AuthSession = {
+      kind: "staff",
+      actor: {
+        kind: "staff",
+        staffId: "other-staff-nurse",
+        clinicId: "other-clinic-99",
+        role: "nurse",
+      },
+      displayName: "Other Clinic Nurse",
+      email: "nurse@other-clinic.local",
+      clinicName: "Other Clinic",
+      avatarInitials: "ON",
+      isSimulated: true,
+      signedInAt: new Date().toISOString(),
+    };
+    const token = sealSession(session);
+    await context.addCookies([
+      {
+        name: SESSION_COOKIE_NAME,
+        value: token,
+        url: BASE_ORIGIN,
+        httpOnly: true,
+        sameSite: "Lax",
+      },
+    ]);
+    return;
+  }
+
   if (!cachedStaffCookies) {
     cachedStaffCookies = await fetchSessionCookies(page, {
       mode: "staff",
@@ -59,9 +153,8 @@ export async function signInAsStaff(
       password: "cepheus-local-only",
       totpCode: "123456",
     });
-  } else {
-    await context.addCookies(cachedStaffCookies);
   }
+  await context.addCookies(cachedStaffCookies);
 }
 
 export async function signOutSession(context: BrowserContext): Promise<void> {

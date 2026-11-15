@@ -26,6 +26,8 @@ export interface AppEnv {
   VERDA_API_KEY: string;
   VERDA_GEMMA_MODEL: string;
   STORE_ITEM_ANSWERS: boolean;
+  /** Bearer key for the system-only routes; empty means those routes refuse every caller. */
+  SYSTEM_API_KEY: string;
 }
 
 const optionalTrimmedString = z
@@ -201,6 +203,7 @@ const rawEnvSchema = z
     VERDA_API_KEY: optionalTrimmedString,
     VERDA_GEMMA_MODEL: optionalTrimmedString,
     STORE_ITEM_ANSWERS: optionalTrimmedString,
+    SYSTEM_API_KEY: optionalTrimmedString,
   })
   .superRefine((val, ctx) => {
     const isProduction = val.NODE_ENV === "production";
@@ -218,6 +221,9 @@ const rawEnvSchema = z
         "STAFF_TOTP_SECRET",
         "Invalid environment variable: STAFF_TOTP_SECRET (must be valid base32 decoding to at least 16 bytes)"
       );
+    }
+    if (val.SYSTEM_API_KEY.length > 0 && val.SYSTEM_API_KEY.length < 32) {
+      addCustomIssue(ctx, "SYSTEM_API_KEY", "must be at least 32 characters when set");
     }
     if (isProduction && !isBuildPhase) {
       validateProductionSecrets(val, ctx);
@@ -274,6 +280,7 @@ export function parseEnv(rawEnv: Record<string, string | undefined>): AppEnv {
     VERDA_API_KEY: result.data.VERDA_API_KEY,
     VERDA_GEMMA_MODEL: result.data.VERDA_GEMMA_MODEL || "google/gemma-3-27b-it",
     STORE_ITEM_ANSWERS: result.data.STORE_ITEM_ANSWERS.toLowerCase() === "true",
+    SYSTEM_API_KEY: result.data.SYSTEM_API_KEY,
   };
 }
 

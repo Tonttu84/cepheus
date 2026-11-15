@@ -15,6 +15,14 @@ describe("Call repository (*.dbtest.ts)", () => {
     clinicId = (
       await prisma.clinic.create({ data: { code: "calls-dbtest-clinic", name: "Calls" } })
     ).id;
+    await prisma.staffUser.create({
+      data: {
+        id: "staff-1",
+        clinicId,
+        email: "calls-staff-1@test.local",
+        name: "Calls Staff 1",
+      },
+    });
   });
 
   afterAll(async () => {
@@ -81,5 +89,34 @@ describe("Call repository (*.dbtest.ts)", () => {
     await expect(
       createCallRepository(ctx).saveCall({ patientId: "calls-dbtest-unknown", date: "2026-11-02" })
     ).rejects.toThrow("Patient not found");
+  });
+
+  it("saves a full nurse call record with outcome and reads it back", async () => {
+    const patientId = await newPatient("full-call");
+    const repo = createCallRepository(ctx);
+    const saved = await repo.saveNurseCallRecord({
+      patientId,
+      status: "completed",
+      outcomeTier: "rough_patch",
+      actionTaken: "advice_and_medication_check",
+      medicationChecked: true,
+      watchNextRounds: 2,
+      date: "2026-11-16",
+      position: "after",
+      staffUserId: "staff-1",
+    });
+    expect(saved.id).toBeDefined();
+    expect(saved.outcomeTier).toBe("rough_patch");
+    expect(saved.actionTaken).toBe("advice_and_medication_check");
+    expect(saved.medicationChecked).toBe(true);
+    expect(saved.watchNextRounds).toBe(2);
+
+    const records = await repo.getNurseCallRecords(patientId);
+    expect(records).toHaveLength(1);
+    expect(records[0].outcomeTier).toBe("rough_patch");
+
+    // Also verify getCalls returned it because it had date & completed status
+    const calls = await repo.getCalls(patientId);
+    expect(calls).toEqual([{ patientId, date: "2026-11-16", position: "after" }]);
   });
 });

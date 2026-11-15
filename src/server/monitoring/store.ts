@@ -235,17 +235,41 @@ export async function ensureHomeDemoParticipant(prisma: PrismaClient = getPrisma
     },
   });
 
-  const participant = await prisma.participant.upsert({
+  let participant = await prisma.participant.upsert({
     where: { externalId: HOME_DEMO_EXTERNAL_ID },
-    update: {},
+    update: { clinicId: clinic.id },
     create: {
       clinicId: clinic.id,
       externalId: HOME_DEMO_EXTERNAL_ID,
       label: "Home Demo Node (Arduino UNO Q & Wearable)",
       source: "live",
       isSimulated: false,
+      scheduleDaysJson: JSON.stringify([1, 4]),
+      scheduleTime: "18:00",
+      timeZone: "Europe/Helsinki",
+      enrolmentDate: "2026-11-16",
+      takingPart: true,
+      ruleCheckConsent: true,
     },
   });
+
+  if (
+    !participant.scheduleDaysJson ||
+    !participant.scheduleTime ||
+    !participant.enrolmentDate ||
+    !participant.clinicId
+  ) {
+    participant = await prisma.participant.update({
+      where: { id: participant.id },
+      data: {
+        clinicId: clinic.id,
+        scheduleDaysJson: JSON.stringify([1, 4]),
+        scheduleTime: "18:00",
+        timeZone: "Europe/Helsinki",
+        enrolmentDate: "2026-11-16",
+      },
+    });
+  }
 
   for (const methodKey of ALL_CONSENT_METHODS) {
     const meta = MEASUREMENT_METHODS.find((m) => m.method === methodKey);
@@ -335,6 +359,13 @@ export async function updateMethodConsent(
         enabled,
         noticeVersion: "v1",
       },
+    });
+  }
+
+  if (method === "check_in") {
+    await prisma.participant.update({
+      where: { id: participant.id },
+      data: { takingPart: enabled },
     });
   }
 

@@ -237,4 +237,23 @@ describe("Effect repositories (*.dbtest.ts)", () => {
       await prisma.smallDip.deleteMany({ where: { participantId: patientA } });
     }
   });
+
+  it("updates the status of a clinic flag", async () => {
+    const patient = (
+      await prisma.participant.create({
+        data: { label: "effects-dbtest-status", source: "synthetic", clinicId },
+      })
+    ).id;
+    const repo = createWarningRepository(ctx);
+    await repo.saveWarning(warning(patient));
+    const flag = await prisma.clinicFlag.findFirstOrThrow({ where: { participantId: patient } });
+    expect(flag.status).toBe("open");
+
+    await repo.updateFlagStatus(flag.id, "resolved");
+    const updated = await prisma.clinicFlag.findUniqueOrThrow({ where: { id: flag.id } });
+    expect(updated.status).toBe("resolved");
+
+    await prisma.clinicFlag.deleteMany({ where: { participantId: patient } });
+    await prisma.participant.deleteMany({ where: { id: patient } });
+  });
 });
