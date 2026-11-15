@@ -200,6 +200,13 @@ test.describe("Home Sensors Monitoring & Security Boundaries (/monitoring)", () 
     );
     await expect(page.getByTestId("hc-pair-button")).toBeEnabled();
 
+    // Re-pause before switching back so repeated E2E runs against persistent DB stay idempotent
+    await page.getByTestId("toggle-consent-ring_rhythm").click();
+    await expect(page.getByTestId("consent-status-ring_rhythm")).toContainText(
+      "Paused"
+    );
+    await expect(page.getByTestId("hc-pair-button")).toBeDisabled();
+
     // Switch back to P-SIM-001 -> still Phone verified -> disconnect -> 401
     await signInAsPatient(page);
     await page.goto("/monitoring");

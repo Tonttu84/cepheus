@@ -126,12 +126,6 @@ export function MonitoringDashboard() {
     setFeedback,
   });
 
-  const deviceConnections = resolveDeviceConnections(
-    summary,
-    fitbitStatus,
-    hcPairingStatus
-  );
-
   return (
     <div className="space-y-8">
       {feedback ? (
@@ -151,7 +145,11 @@ export function MonitoringDashboard() {
       <ForestDivider variant="clearing" />
       <ConsentSection
         consents={summary?.consents ?? []}
-        deviceConnections={deviceConnections}
+        deviceConnections={resolveDeviceConnections(
+          summary,
+          fitbitStatus,
+          hcPairingStatus
+        )}
         busyAction={busyAction}
         onToggleConsent={(method, nextEnabled) =>
           void runAction(`consent-${method}`, async () => {
