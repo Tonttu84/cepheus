@@ -2,7 +2,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { getPrisma } from "@/lib/db";
 import type { StoredSuggestion } from "@/usecases/ports";
+import { evaluatePatient } from "@/usecases/evaluate-patient";
 import { createDbContext } from "../context";
+import { createPrismaPorts } from "../index";
 import { createSuggestionRepository } from "../suggestions";
 
 describe("Suggestion repository (*.dbtest.ts)", () => {
@@ -140,5 +142,83 @@ describe("Suggestion repository (*.dbtest.ts)", () => {
     ).rejects.toThrow("injected rollback failure");
 
     expect(await repo().getSuggestion("sug-rollback")).toBeNull();
+  });
+
+  it("tracks unanswered suggestions correctly", async () => {
+    // Clear any suggestions for patientId
+    await prisma.patientSuggestion.deleteMany({
+      where: { participantId: patientId },
+    });
+
+    expect(await repo().hasUnansweredSuggestion(patientId)).toBe(false);
+
+    const sug = suggestion("sug-unanswered");
+    await repo().saveSuggestion(sug);
+    expect(await repo().hasUnansweredSuggestion(patientId)).toBe(true);
+
+    await repo().updateSuggestionChoice("sug-unanswered", "skipped", "2026-11-16T12:00:00.000Z");
+    expect(await repo().hasUnansweredSuggestion(patientId)).toBe(false);
+  });
+
+  it("evaluation stores suggestion on PostgreSQL for the patient who dipped and not for another", async () => {
+    const ports = createPrismaPorts(prisma);
+
+    // Ensure participants have schedules and consent so evaluatePatient can run
+    await prisma.participant.update({
+      where: { id: patientId },
+      data: {
+        enrolmentDate: "2026-11-16",
+        scheduleDaysJson: "[1,4]",
+        scheduleTime: "18:00",
+        takingPart: true,
+        ruleCheckConsent: true,
+        isSimulated: true,
+      },
+    });
+
+    await prisma.participant.update({
+      where: { id: otherPatientId },
+      data: {
+        enrolmentDate: "2026-11-16",
+        scheduleDaysJson: "[1,4]",
+        scheduleTime: "18:00",
+        takingPart: true,
+        ruleCheckConsent: true,
+        isSimulated: false,
+      },
+    });
+
+    // Clear any suggestions from previous tests
+    await prisma.patientSuggestion.deleteMany({
+      where: { participantId: { in: [patientId, otherPatientId] } },
+    });
+
+    // Patient 1 has an answered round with low score (mood 0, interest 0) -> small dip
+    await ports.rounds.saveRound({
+      patientId,
+      roundNumber: 1,
+      localDate: "2026-11-16",
+      status: "answered",
+      mood: 0,
+      interest: 0,
+    });
+
+    // Evaluate Patient 1
+    const evalRes = await evaluatePatient({ kind: "system" }, { patientId }, ports);
+    expect(evalRes.ok).toBe(true);
+
+    // Suggestion exists in DB for Patient 1
+    const p1Sug = await ports.suggestions.getLatestSuggestion(patientId);
+    expect(p1Sug).not.toBeNull();
+    expect(p1Sug?.patientId).toBe(patientId);
+    expect(p1Sug?.reason).toBe("small_dip");
+    expect(p1Sug?.actionKey).toBe("short_walk");
+    expect(p1Sug?.actionTitle).toBe("Take a 10-minute walk outside");
+    expect(p1Sug?.status).toBe("shown");
+    expect(p1Sug?.isSimulated).toBe(true);
+
+    // Patient 2 (who did not dip) has NO suggestion in DB
+    const p2Sug = await ports.suggestions.getLatestSuggestion(otherPatientId);
+    expect(p2Sug).toBeNull();
   });
 });

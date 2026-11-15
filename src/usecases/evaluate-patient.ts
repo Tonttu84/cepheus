@@ -8,6 +8,7 @@ import {
   type HistoryRound,
   type PatientHistory,
 } from '../domain/history';
+import { PATIENT_SUGGESTIONS } from '../lib/constants';
 
 const USE_CASE_PURPOSE: Purpose = 'care';
 import type {
@@ -107,6 +108,33 @@ async function persistNewEffect(
       notifiedAt: now,
     });
   }
+}
+
+async function persistDipSuggestion(
+  patient: PatientRecord,
+  date: string,
+  roundNumber: number | null,
+  now: string,
+  ports: Ports
+): Promise<void> {
+  const template = PATIENT_SUGGESTIONS[0];
+  await ports.suggestions.saveSuggestion({
+    id: crypto.randomUUID(),
+    patientId: patient.patientId,
+    clinicId: patient.clinicId,
+    createdAt: now,
+    date,
+    dayIndex: roundNumber,
+    reason: 'small_dip',
+    actionKey: template.actionKey,
+    actionTitle: template.actionTitle,
+    actionDetail: template.actionDetail,
+    effortTier: template.effortTier,
+    status: 'shown',
+    respondedAt: null,
+    armType: 'intervention',
+    isSimulated: patient.isSimulated,
+  });
 }
 
 /**
@@ -268,10 +296,18 @@ export async function evaluatePatient(
       }
 
       const newEffects: EvaluatedEffect[] = [];
+      let hasUnanswered = await ports.suggestions.hasUnansweredSuggestion(patient.patientId);
+
       for (const effect of evalResult.value.effects) {
         if (!isEffectStored(effect, warnings, smallDips, notices)) {
           await persistNewEffect(effect, patient.patientId, now, ports);
           newEffects.push(effect);
+
+          if (effect.type === 'small_dip' && !hasUnanswered) {
+            const roundNumber = effect.causedBy.type === 'round' ? effect.causedBy.roundNumber : null;
+            await persistDipSuggestion(patient, effect.causedBy.date, roundNumber, now, ports);
+            hasUnanswered = true;
+          }
         }
       }
 

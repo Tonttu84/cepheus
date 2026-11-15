@@ -44,4 +44,32 @@ test.describe("Patient page with storage", () => {
     await expect(reloadedRingToggle).toHaveText("Enable this method");
     await expect(page.getByTestId("consent-status-ring")).toHaveText("Paused");
   });
+
+  test("sign in as a sample patient, decline suggestion with Not today, reload, choice is preserved", async ({
+    page,
+    context,
+  }) => {
+    // 1. Sign in as a sample patient and navigate to /patient
+    await signInAsPatient(page, context, "P-SIM-DEP-01");
+    await page.goto("/patient");
+
+    // 2. The suggestion card shows a suggestion
+    const card = page.getByTestId("patient-suggestion-card");
+    await expect(card).toBeVisible();
+
+    const skipButton = page.getByTestId("patient-suggestion-skip");
+    await expect(skipButton).toBeVisible();
+
+    // 3. Choose "Not today"
+    await skipButton.click();
+    const skippedStatus = page.getByTestId("patient-suggestion-skipped-status");
+    await expect(skippedStatus).toBeVisible();
+    await expect(skippedStatus).toContainText("Not today");
+
+    // 4. Reload: the choice is persisted and shown
+    await page.reload();
+    await expect(page.getByTestId("patient-suggestion-skipped-status")).toBeVisible();
+    await expect(page.getByTestId("patient-suggestion-skip")).toBeDisabled();
+    await expect(page.getByTestId("patient-suggestion-accept")).toBeDisabled();
+  });
 });

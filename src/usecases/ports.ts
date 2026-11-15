@@ -28,6 +28,7 @@ export interface PatientRecord {
   readonly schedule: Schedule;
   readonly consent: ConsentState;
   readonly questionnaires?: readonly QuestionnaireType[];
+  readonly isSimulated?: boolean;
 }
 
 export interface PatientAccessSwitches {
@@ -254,6 +255,7 @@ export interface StoredSuggestion {
 export interface SuggestionRepository {
   getLatestSuggestion(patientId: string): Promise<StoredSuggestion | null>;
   getSuggestion(suggestionId: string): Promise<StoredSuggestion | null>;
+  hasUnansweredSuggestion(patientId: string): Promise<boolean>;
   saveSuggestion(suggestion: StoredSuggestion): Promise<void>;
   updateSuggestionChoice(
     suggestionId: string,

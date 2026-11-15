@@ -41,6 +41,14 @@ export function createSuggestionRepository(ctx: DbContext): SuggestionRepository
       return row ? toStoredSuggestion(row) : null;
     },
 
+    async hasUnansweredSuggestion(patientId: string): Promise<boolean> {
+      const row = await ctx.client().patientSuggestion.findFirst({
+        where: { participantId: patientId, status: "shown" },
+        select: { id: true },
+      });
+      return row !== null;
+    },
+
     async saveSuggestion(suggestion: StoredSuggestion): Promise<void> {
       const { clinicId, isSimulated } = await loadParticipantScope(ctx.client(), suggestion.patientId);
       const data = {

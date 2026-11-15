@@ -247,4 +247,210 @@ describe('evaluatePatient Use Case', () => {
     expect(getPatientSpy).not.toHaveBeenCalled();
     expect(getSwitchesSpy).not.toHaveBeenCalled();
   });
+
+  describe('patient suggestions on small dip', () => {
+    it('a small dip creates one suggestion for the patient with simulated mark and matching text', async () => {
+      const { ports } = createFakePorts('2026-11-25T16:00:00.000Z');
+      await ports.patients.savePatient({ ...sampleRecord, isSimulated: true });
+
+      await ports.rounds.saveRound({
+        patientId,
+        roundNumber: 1,
+        localDate: '2026-11-16',
+        status: 'answered',
+        mood: 0,
+        interest: 0,
+      });
+
+      const res = await evaluatePatient(systemActor, { patientId }, ports);
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+
+      expect(res.value.storedEffectsCount).toBe(1);
+      const smallDips = await ports.smallDips.getSmallDips(patientId);
+      expect(smallDips).toHaveLength(1);
+
+      const suggestion = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(suggestion).not.toBeNull();
+      expect(suggestion?.patientId).toBe(patientId);
+      expect(suggestion?.reason).toBe('small_dip');
+      expect(suggestion?.actionKey).toBe('short_walk');
+      expect(suggestion?.actionTitle).toBe('Take a 10-minute walk outside');
+      expect(suggestion?.effortTier).toBe('low');
+      expect(suggestion?.status).toBe('shown');
+      expect(suggestion?.isSimulated).toBe(true);
+    });
+
+    it('a second evaluation of the same dip creates no second suggestion', async () => {
+      const { ports } = createFakePorts('2026-11-25T16:00:00.000Z');
+      await ports.patients.savePatient(sampleRecord);
+
+      await ports.rounds.saveRound({
+        patientId,
+        roundNumber: 1,
+        localDate: '2026-11-16',
+        status: 'answered',
+        mood: 0,
+        interest: 0,
+      });
+
+      const first = await evaluatePatient(systemActor, { patientId }, ports);
+      expect(first.ok).toBe(true);
+      const firstSug = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(firstSug).not.toBeNull();
+
+      const second = await evaluatePatient(systemActor, { patientId }, ports);
+      expect(second.ok).toBe(true);
+      if (!second.ok) return;
+      expect(second.value.storedEffectsCount).toBe(0);
+
+      const secondSug = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(secondSug?.id).toBe(firstSug?.id);
+    });
+
+    it('no dip creates no suggestion', async () => {
+      const { ports } = createFakePorts('2026-11-25T16:00:00.000Z');
+      await ports.patients.savePatient(sampleRecord);
+
+      await ports.rounds.saveRound({
+        patientId,
+        roundNumber: 1,
+        localDate: '2026-11-16',
+        status: 'answered',
+        mood: 3,
+        interest: 3,
+      });
+
+      const res = await evaluatePatient(systemActor, { patientId }, ports);
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+
+      expect(res.value.storedEffectsCount).toBe(0);
+      const smallDips = await ports.smallDips.getSmallDips(patientId);
+      expect(smallDips).toHaveLength(0);
+
+      const suggestion = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(suggestion).toBeNull();
+    });
+
+    it('a sustained drop still raises the warning exactly as before and creates no extra suggestion', async () => {
+      const { ports } = createFakePorts('2026-11-25T16:00:00.000Z');
+      await ports.patients.savePatient(sampleRecord);
+
+      // Round 1: low answers -> small dip
+      await ports.rounds.saveRound({
+        patientId,
+        roundNumber: 1,
+        localDate: '2026-11-16',
+        status: 'answered',
+        mood: 0,
+        interest: 0,
+      });
+
+      const res1 = await evaluatePatient(systemActor, { patientId }, ports);
+      expect(res1.ok).toBe(true);
+      const sugAfterRound1 = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(sugAfterRound1).not.toBeNull();
+      const warningsAfterRound1 = await ports.warnings.getWarnings(patientId);
+      expect(warningsAfterRound1).toHaveLength(0);
+
+      // Round 2: low answers -> sustained drop raises warning
+      await ports.rounds.saveRound({
+        patientId,
+        roundNumber: 2,
+        localDate: '2026-11-19',
+        status: 'answered',
+        mood: 0,
+        interest: 0,
+      });
+
+      const res2 = await evaluatePatient(systemActor, { patientId }, ports);
+      expect(res2.ok).toBe(true);
+      if (!res2.ok) return;
+
+      expect(res2.value.storedEffectsCount).toBe(1);
+      const warningsAfterRound2 = await ports.warnings.getWarnings(patientId);
+      expect(warningsAfterRound2).toHaveLength(1);
+      expect(warningsAfterRound2[0].kind).toBe('low_answers');
+
+      // The suggestion remains the single one from round 1
+      const sugAfterRound2 = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(sugAfterRound2?.id).toBe(sugAfterRound1?.id);
+    });
+
+    it('a patient who chose "Not today" gets no new suggestion for the same dip', async () => {
+      const { ports } = createFakePorts('2026-11-25T16:00:00.000Z');
+      await ports.patients.savePatient(sampleRecord);
+
+      await ports.rounds.saveRound({
+        patientId,
+        roundNumber: 1,
+        localDate: '2026-11-16',
+        status: 'answered',
+        mood: 0,
+        interest: 0,
+      });
+
+      const first = await evaluatePatient(systemActor, { patientId }, ports);
+      expect(first.ok).toBe(true);
+      const sug = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(sug).not.toBeNull();
+      if (!sug) return;
+
+      // Patient chose "Not today" (skipped)
+      await ports.suggestions.updateSuggestionChoice(sug.id, 'skipped', '2026-11-16T19:00:00.000Z');
+      const skippedSug = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(skippedSug?.status).toBe('skipped');
+
+      // Re-evaluate the same dip
+      const second = await evaluatePatient(systemActor, { patientId }, ports);
+      expect(second.ok).toBe(true);
+
+      // Still the same skipped suggestion, no new suggestion created
+      const currentSug = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(currentSug?.id).toBe(sug.id);
+      expect(currentSug?.status).toBe('skipped');
+    });
+
+    it('never more than one unanswered suggestion per patient when another dip occurs', async () => {
+      const { ports } = createFakePorts('2026-11-25T16:00:00.000Z');
+      await ports.patients.savePatient(sampleRecord);
+
+      // Pre-seed an unanswered suggestion
+      await ports.suggestions.saveSuggestion({
+        id: 'sug-existing-unanswered',
+        patientId,
+        clinicId,
+        createdAt: '2026-11-10T10:00:00.000Z',
+        date: '2026-11-10',
+        reason: 'practice',
+        actionKey: 'short_walk',
+        actionTitle: 'Take a 10-minute walk outside',
+        actionDetail: 'Walk outside',
+        effortTier: 'low',
+        status: 'shown',
+      });
+
+      // Now a small dip occurs
+      await ports.rounds.saveRound({
+        patientId,
+        roundNumber: 1,
+        localDate: '2026-11-16',
+        status: 'answered',
+        mood: 0,
+        interest: 0,
+      });
+
+      const res = await evaluatePatient(systemActor, { patientId }, ports);
+      expect(res.ok).toBe(true);
+
+      // Small dip is recorded
+      const smallDips = await ports.smallDips.getSmallDips(patientId);
+      expect(smallDips).toHaveLength(1);
+
+      // But no new suggestion was created because one was already unanswered
+      const latest = await ports.suggestions.getLatestSuggestion(patientId);
+      expect(latest?.id).toBe('sug-existing-unanswered');
+    });
+  });
 });

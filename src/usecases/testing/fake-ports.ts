@@ -411,16 +411,29 @@ export class FakeSuggestionRepository implements SuggestionRepository {
     return null;
   }
 
+  async hasUnansweredSuggestion(patientId: string): Promise<boolean> {
+    const list = this.ctx.state.suggestions[patientId] ?? [];
+    return list.some((s) => s.status === 'shown');
+  }
+
   async saveSuggestion(suggestion: StoredSuggestion): Promise<void> {
     if (!this.ctx.state.suggestions[suggestion.patientId]) {
       this.ctx.state.suggestions[suggestion.patientId] = [];
     }
     const list = this.ctx.state.suggestions[suggestion.patientId];
+    const isSimulated =
+      suggestion.isSimulated ??
+      this.ctx.state.patients[suggestion.patientId]?.isSimulated ??
+      false;
+    const toSave: StoredSuggestion = {
+      ...suggestion,
+      isSimulated,
+    };
     const idx = list.findIndex((s) => s.id === suggestion.id);
     if (idx >= 0) {
-      list[idx] = structuredClone(suggestion);
+      list[idx] = structuredClone(toSave);
     } else {
-      list.push(structuredClone(suggestion));
+      list.push(structuredClone(toSave));
     }
   }
 
