@@ -13,6 +13,7 @@ import type { CallPosition, EvaluatedEffect, QuestionnaireType } from '../domain
 export type { CallPosition };
 import type { ExtraItem, ExtraItemsConfig } from '../domain/extra-items';
 import type { CrisisResource } from '../lib/constants';
+import type { CrisisEventItemId } from '../domain/crisis';
 
 export type UseCaseResult<T, E = unknown> =
   | { readonly ok: true; readonly value: T }
@@ -177,7 +178,7 @@ export interface SmallDipRepository {
 export interface StoredCrisisEvent {
   readonly patientId: string;
   readonly roundNumber: number;
-  readonly itemId: string;
+  readonly itemId: CrisisEventItemId;
   readonly value: number;
   readonly occurredAt: string;
   readonly acknowledgedAt?: string | null;
@@ -264,6 +265,42 @@ export interface SuggestionRepository {
   ): Promise<void>;
 }
 
+export interface StoredCameraReading {
+  readonly participantId: string;
+  readonly date: string;
+  readonly dayIndex?: number | null;
+  readonly taskId?: string;
+  readonly durationSec: number;
+  readonly sampleRateHz?: number;
+  readonly effectiveFps: number;
+  readonly faceDetectedRatio: number;
+  readonly expressivityScore: number;
+  readonly smileFraction: number;
+  readonly mouthSmileMean?: number | null;
+  readonly mouthSmileSd?: number | null;
+  readonly browInnerUpSd?: number | null;
+  readonly browDownSd?: number | null;
+  readonly browOuterUpSd?: number | null;
+  readonly eyeSquintSd?: number | null;
+  readonly cheekSquintSd?: number | null;
+  readonly jawOpenSd?: number | null;
+  readonly blendshapeStatsJson?: string | null;
+  readonly yawSdDeg: number;
+  readonly pitchSdDeg: number;
+  readonly rollSdDeg?: number | null;
+  readonly angularPathDegPerMin: number;
+  readonly translationSd?: number | null;
+  readonly expressivityZScore?: number | null;
+  readonly headMovementZScore?: number | null;
+  readonly isSimulated?: boolean;
+  readonly source?: string;
+}
+
+export interface CameraRepository {
+  getCameraReadings(patientId: string): Promise<readonly StoredCameraReading[]>;
+  saveCameraReading(reading: StoredCameraReading): Promise<void>;
+}
+
 /**
  * The real implementation must give a use case a consistent view for one patient 
  * (for example by locking that patient's row), so two requests for one patient cannot interleave.
@@ -305,6 +342,7 @@ export interface Ports {
   readonly baselineNotWell: BaselineNotWellRepository;
   readonly accessLog: AccessLogRepository;
   readonly extraAnswers: ExtraAnswerRepository;
+  readonly camera?: CameraRepository;
   readonly extraItemsConfig?: ExtraItemsConfig;
   readonly homeMonitoring?: HomeMonitoringRepository;
   readonly unitOfWork: UnitOfWork;

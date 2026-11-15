@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { getPrisma } from "@/lib/db";
+import { CRISIS_EVENT_ITEM_ID } from "@/domain/crisis";
 import type { PatientRecord, Ports } from "@/usecases/ports";
 import { InMemoryAnswerStore } from "../answer-store";
 import { createPrismaPorts } from "../index";
@@ -56,7 +57,7 @@ describe("The simulated mark on rows written through the ports (*.dbtest.ts)", (
     await ports.crisis.saveCrisisEvent({
       patientId,
       roundNumber: 1,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 1,
       occurredAt: "2026-11-16T17:00:00.000Z",
     });

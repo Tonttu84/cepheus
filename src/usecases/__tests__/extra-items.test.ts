@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PatientActor, StaffActor } from '../../domain/access';
+import { CRISIS_EVENT_ITEM_ID } from '../../domain/crisis';
 import { EXTRA_ITEMS } from '../../domain/extra-items';
 import { isScheduledPhq9Round } from '../../domain/rounds';
 import { closeElapsedRounds } from '../close-elapsed-rounds';
@@ -588,7 +589,7 @@ describe('Use Cases: Rotating Extra Items and submitExtraAnswer', () => {
 
       // 1b: Assert disabled run has exactly one crisis event
       expect(disabledRun.crisisEvents).toHaveLength(1);
-      expect(disabledRun.crisisEvents[0].itemId).toBe('9');
+      expect(disabledRun.crisisEvents[0].itemId).toBe(CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9);
       expect(disabledRun.crisisEvents[0].value).toBe(1);
 
       // 1d: Assert enabled run stored extra answer in every round offering one, disabled stored none

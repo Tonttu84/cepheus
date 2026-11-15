@@ -26,6 +26,8 @@ import type {
   StoredSuggestion,
   SuggestionStatus,
   SuggestionRepository,
+  StoredCameraReading,
+  CameraRepository,
   UnitOfWork,
   Ports,
   HomeMonitoringFacts,
@@ -62,6 +64,7 @@ interface FakeStorageState {
   accessLogs: StoredAccessLogEntry[];
   extraAnswers: Record<string, StoredExtraAnswer[]>;
   suggestions: Record<string, StoredSuggestion[]>;
+  camera: Record<string, StoredCameraReading[]>;
 }
 
 function createEmptyState(): FakeStorageState {
@@ -80,6 +83,7 @@ function createEmptyState(): FakeStorageState {
     accessLogs: [],
     extraAnswers: {},
     suggestions: {},
+    camera: {},
   };
 }
 
@@ -458,6 +462,22 @@ export class FakeSuggestionRepository implements SuggestionRepository {
   }
 }
 
+export class FakeCameraRepository implements CameraRepository {
+  constructor(private ctx: FakeStorageContext) {}
+
+  async getCameraReadings(patientId: string): Promise<readonly StoredCameraReading[]> {
+    const list = this.ctx.state.camera[patientId] ?? [];
+    return structuredClone(list);
+  }
+
+  async saveCameraReading(reading: StoredCameraReading): Promise<void> {
+    if (!this.ctx.state.camera[reading.participantId]) {
+      this.ctx.state.camera[reading.participantId] = [];
+    }
+    this.ctx.state.camera[reading.participantId].push(structuredClone(reading));
+  }
+}
+
 export class FakeUnitOfWork implements UnitOfWork {
   public failNext = false;
   private activePromise: Promise<void> | null = null;
@@ -594,6 +614,7 @@ export function createFakePorts(
     baselineNotWell: new FakeBaselineNotWellRepository(ctx),
     accessLog: new FakeAccessLogRepository(ctx),
     extraAnswers: new FakeExtraAnswerRepository(ctx),
+    camera: new FakeCameraRepository(ctx),
     extraItemsConfig,
     homeMonitoring: new FakeHomeMonitoringRepository(),
     unitOfWork,
@@ -602,3 +623,4 @@ export function createFakePorts(
 
   return { ports, clock, ctx, unitOfWork };
 }
+

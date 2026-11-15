@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CRISIS_EVENT_ITEM_ID } from "@/domain/crisis";
 import { POST as arduinoCheckIn } from "@/app/api/arduino/check-in/route";
 import {
   PATIENT_ID,
@@ -172,7 +173,7 @@ describe("Arduino Bedside Check-in Route (POST /api/arduino/check-in)", () => {
 
     const crisisEvents = await fake.ports.crisis.getCrisisEvents(PATIENT_ID);
     expect(crisisEvents).toHaveLength(1);
-    expect(crisisEvents[0].itemId).toBe("9");
+    expect(crisisEvents[0].itemId).toBe(CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9);
     expect(crisisEvents[0].value).toBe(1);
   });
 
@@ -194,7 +195,7 @@ describe("Arduino Bedside Check-in Route (POST /api/arduino/check-in)", () => {
 
     const crisisEvents = await fake.ports.crisis.getCrisisEvents(PATIENT_ID);
     expect(crisisEvents).toHaveLength(1);
-    expect(crisisEvents[0].itemId).toBe("crisis_button");
+    expect(crisisEvents[0].itemId).toBe(CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP);
   });
 
   it("records crisis event and returns crisis path when physical crisis button is pressed with consent paused", async () => {
@@ -219,7 +220,7 @@ describe("Arduino Bedside Check-in Route (POST /api/arduino/check-in)", () => {
 
     const crisisEvents = await fake.ports.crisis.getCrisisEvents(PATIENT_ID);
     expect(crisisEvents).toHaveLength(1);
-    expect(crisisEvents[0].itemId).toBe("crisis_button");
+    expect(crisisEvents[0].itemId).toBe(CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP);
   });
 
   it("refuses taps when consent is paused, but still shows crisis path on item 9 > 0", async () => {

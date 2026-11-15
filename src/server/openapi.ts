@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { createDocument, type ZodOpenApiOperationObject, type ZodOpenApiPathsObject } from "zod-openapi";
+import { CameraReadingInputSchema } from "@/lib/schemas";
 import {
   AcknowledgeCrisisEventRequestSchema,
   CheckInCrisisRequestSchema,
@@ -104,6 +105,13 @@ export const API_ROUTES: readonly RouteEntry[] = [
   { path: "/api/rewards/task/done", method: "post", caller: "patient", summary: "Mark today's small task done" },
   { path: "/api/rewards/task/not-today", method: "post", caller: "patient", summary: 'Mark today\'s small task "not today"' },
   { path: "/api/rewards/today-task", method: "get", caller: "patient", summary: "Read today's offered small task" },
+  {
+    path: "/api/camera/readings",
+    method: "post",
+    caller: "patient",
+    summary: "Store a camera check reading of summary numbers",
+    body: CameraReadingInputSchema,
+  },
   { path: "/api/openapi.json", method: "get", caller: "anyone", summary: "This document" },
 ];
 

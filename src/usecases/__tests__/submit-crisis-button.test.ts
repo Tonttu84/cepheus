@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import type { PatientActor, StaffActor } from "@/domain/access";
+import { describe, expect, it } from 'vitest';
+import type { PatientActor, StaffActor } from '../../domain/access';
+import { CRISIS_EVENT_ITEM_ID } from '../../domain/crisis';
 import { CRISIS_RESOURCES } from "@/lib/constants";
 import { listUnacknowledgedCrisisEvents } from "../list-unacknowledged-crisis-events";
 import type { PatientRecord } from "../ports";
@@ -71,7 +72,7 @@ describe("Submit Crisis Button Use Case", () => {
     expect(events[0]).toMatchObject({
       patientId,
       roundNumber: 1,
-      itemId: "crisis_button",
+      itemId: CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP,
       value: 1,
       occurredAt: pressTime,
     });
@@ -103,7 +104,7 @@ describe("Submit Crisis Button Use Case", () => {
 
     const events = await ports.crisis.getCrisisEvents(patientId);
     expect(events).toHaveLength(1);
-    expect(events[0].itemId).toBe("crisis_button");
+    expect(events[0].itemId).toBe(CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP);
   });
 
   it("shows crisis path and crisis resources when access is refused, storing nothing", async () => {
@@ -188,7 +189,7 @@ describe("Submit Crisis Button Use Case", () => {
     const events = await ports.crisis.getCrisisEvents(patientId);
     expect(events).toHaveLength(1);
     expect(events[0].occurredAt).toBe(firstPress);
-    expect(events[0].itemId).toBe("crisis_button");
+    expect(events[0].itemId).toBe(CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP);
   });
 
   it("handles two presses at once without duplicate events", async () => {
@@ -211,7 +212,7 @@ describe("Submit Crisis Button Use Case", () => {
 
     const events = await ports.crisis.getCrisisEvents(patientId);
     expect(events).toHaveLength(1);
-    expect(events[0].itemId).toBe("crisis_button");
+    expect(events[0].itemId).toBe(CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP);
     expect(events[0].value).toBe(1);
   });
 

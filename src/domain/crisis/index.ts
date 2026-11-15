@@ -1,5 +1,12 @@
 import { PHQ9_ITEMS } from '../instruments';
 
+export const CRISIS_EVENT_ITEM_ID = {
+  PHQ9_ITEM_9: 'phq9_item_9',
+  ASKED_FOR_HELP: 'asked_for_help',
+} as const;
+
+export type CrisisEventItemId = typeof CRISIS_EVENT_ITEM_ID[keyof typeof CRISIS_EVENT_ITEM_ID];
+
 export type CrisisResult = { ok: true; value: boolean } | { ok: false; error: string };
 
 export function isCrisis(answer: { id: string; value: number }): CrisisResult {
@@ -21,3 +28,4 @@ export function isCrisis(answer: { id: string; value: number }): CrisisResult {
   }
   return { ok: true, value: item.isSelfHarm && answer.value !== 0 };
 }
+

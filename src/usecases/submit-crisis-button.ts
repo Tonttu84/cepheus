@@ -2,6 +2,7 @@ import { decideAccess, type Actor, type Purpose, type TargetData } from '../doma
 import { getOpenRound } from '../domain/rounds';
 import { CRISIS_RESOURCES, type CrisisResource } from '../lib/constants';
 import type { Ports, SubmitCrisisButtonResult } from './ports';
+import { CRISIS_EVENT_ITEM_ID } from '../domain/crisis';
 
 export interface SubmitCrisisButtonInput {
   readonly patientId: string;
@@ -114,7 +115,7 @@ async function persistCrisisEvent(
     await ports.crisis.saveCrisisEvent({
       patientId: patient.patientId,
       roundNumber,
-      itemId: 'crisis_button',
+      itemId: CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP,
       value: 1,
       occurredAt: now,
       acknowledgedAt: null,
@@ -130,7 +131,7 @@ async function persistCrisisEvent(
  * Rules:
  * - ALWAYS returns showCrisisPath: true and the crisis resources, whatever else
  *   happens (refused access, paused consent, storage failure).
- * - Records one crisis event for the patient's current round with itemId "crisis_button",
+ * - Records one crisis event for the patient's current round with itemId "asked_for_help",
  *   never more than one per round, never changing an existing one.
  * - Runs in one unit of work; a storage failure is reported as not saved (saved: false).
  */

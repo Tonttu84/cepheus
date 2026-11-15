@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PatientActor, StaffActor } from '../../domain/access';
+import { CRISIS_EVENT_ITEM_ID } from '../../domain/crisis';
 import { createFakePorts } from '../testing';
 import { acknowledgeCrisisEvent } from '../acknowledge-crisis-event';
 
@@ -38,7 +39,7 @@ describe('acknowledgeCrisisEvent', () => {
     await ports.crisis.saveCrisisEvent({
       patientId: 'patient-1',
       roundNumber: 1,
-      itemId: '9',
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 2,
       occurredAt: '2026-11-16T16:15:00.000Z',
       acknowledgedAt: null,
@@ -61,7 +62,7 @@ describe('acknowledgeCrisisEvent', () => {
       {
         patientId: 'patient-1',
         roundNumber: 1,
-        itemId: '9',
+        itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
         value: 2,
         occurredAt: '2026-11-16T16:15:00.000Z',
         acknowledgedAt: '2026-11-16T18:00:00.000Z',
@@ -89,7 +90,7 @@ describe('acknowledgeCrisisEvent', () => {
     await ports.crisis.saveCrisisEvent({
       patientId: 'patient-1',
       roundNumber: 1,
-      itemId: '9',
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 2,
       occurredAt: '2026-11-16T16:15:00.000Z',
       acknowledgedAt: '2026-11-16T17:00:00.000Z',
@@ -119,7 +120,7 @@ describe('acknowledgeCrisisEvent', () => {
     await ports.crisis.saveCrisisEvent({
       patientId: 'patient-1',
       roundNumber: 1,
-      itemId: '9',
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 1,
       occurredAt: '2026-11-16T16:15:00.000Z',
       acknowledgedAt: null,

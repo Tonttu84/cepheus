@@ -4,14 +4,16 @@ import {
   ForestDivider,
 } from "@/components/forest-divider";
 import { SimulatedBadge } from "@/components/simulated-badge";
-import { generateSimulatedPersonWeeks } from "@/lib/simulation";
 import { requirePatientPageSession } from "@/server/auth";
+import { createPrismaPorts } from "@/server/db";
 
 export default async function CameraPage() {
-  await requirePatientPageSession();
-  const dataset = generateSimulatedPersonWeeks({ throughDay: 29 });
-  const latestCamera =
-    dataset.cameraReadings[dataset.cameraReadings.length - 1] ?? null;
+  const session = await requirePatientPageSession();
+  const ports = createPrismaPorts();
+  const readings = ports.camera 
+    ? await ports.camera.getCameraReadings(session.actor.patientId)
+    : [];
+  const latestCamera = readings[readings.length - 1] ?? null;
 
   return (
     <div className="space-y-12 sm:space-y-16">
@@ -101,7 +103,7 @@ export default async function CameraPage() {
                     Example saved record (summary numbers only)
                   </h2>
                   <p className="mt-0.5 text-ink-secondary">
-                    Simulated reading from{" "}
+                    {latestCamera.isSimulated ? "Simulated reading from" : "Reading from"}{" "}
                     <span className="tabular-nums font-medium text-ink-primary">
                       {latestCamera.date}
                     </span>{" "}
@@ -112,9 +114,11 @@ export default async function CameraPage() {
                     ). No image or video bytes are stored in the database.
                   </p>
                 </div>
-                <SimulatedBadge
-                  subtitle={`Day ${latestCamera.dayIndex} derived record`}
-                />
+                {latestCamera.isSimulated && (
+                  <SimulatedBadge
+                    subtitle={`Day ${latestCamera.dayIndex} derived record`}
+                  />
+                )}
               </div>
 
               <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">

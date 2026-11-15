@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CRISIS_EVENT_ITEM_ID } from "@/domain/crisis";
 import { GET as getFlags } from "@/app/api/clinic/flags/route";
 import { GET as getCrisisEvents } from "@/app/api/clinic/crisis-events/route";
 import { POST as acknowledgeCrisis } from "@/app/api/clinic/crisis-events/acknowledge/route";
@@ -248,7 +249,7 @@ describe("GET /api/clinic/crisis-events", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-1",
       roundNumber: 1,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 2,
       occurredAt: "2026-11-16T16:00:00.000Z",
       acknowledgedAt: null,
@@ -256,7 +257,7 @@ describe("GET /api/clinic/crisis-events", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-2",
       roundNumber: 1,
-      itemId: "crisis_button",
+      itemId: CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP,
       value: 1,
       occurredAt: "2026-11-16T17:00:00.000Z",
       acknowledgedAt: null,
@@ -265,7 +266,7 @@ describe("GET /api/clinic/crisis-events", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-1",
       roundNumber: 2,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 1,
       occurredAt: "2026-11-16T18:00:00.000Z",
       acknowledgedAt: "2026-11-16T18:30:00.000Z",
@@ -274,7 +275,7 @@ describe("GET /api/clinic/crisis-events", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "other-1",
       roundNumber: 1,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 3,
       occurredAt: "2026-11-16T16:30:00.000Z",
       acknowledgedAt: null,
@@ -289,8 +290,10 @@ describe("GET /api/clinic/crisis-events", () => {
   it("lists unacknowledged crisis events of caller clinic only and never contains item values", async () => {
     const res = await getCrisisEvents(crisisEventsRequest(staffCookie()));
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; crisisEvents: { patientId: string; roundNumber: number; occurredAt: string }[] };
+    const body = (await res.json()) as { ok: boolean; crisisEvents: { patientId: string; roundNumber: number; occurredAt: string; description: string }[] };
     expect(body.crisisEvents.map((e) => e.patientId)).toEqual(["own-1", "own-2"]);
+    expect(body.crisisEvents.find((e) => e.patientId === "own-1")?.description).toBe("PHQ-9 item 9 answered above zero");
+    expect(body.crisisEvents.find((e) => e.patientId === "own-2")?.description).toBe("a person asked for help");
 
     const keys = allKeys(body);
     for (const forbidden of ["answers", "value", "score", "total", "mood", "interest"]) {
@@ -343,7 +346,7 @@ describe("POST /api/clinic/crisis-events/acknowledge", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-1",
       roundNumber: 1,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 2,
       occurredAt: "2026-11-16T16:00:00.000Z",
       acknowledgedAt: null,
@@ -351,7 +354,7 @@ describe("POST /api/clinic/crisis-events/acknowledge", () => {
     await fake.ports.crisis.saveCrisisEvent({
       patientId: "own-1",
       roundNumber: 2,
-      itemId: "9",
+      itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
       value: 1,
       occurredAt: "2026-11-16T17:00:00.000Z",
       acknowledgedAt: "2026-11-16T17:30:00.000Z",

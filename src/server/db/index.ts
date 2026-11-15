@@ -18,6 +18,7 @@ import { createPatientRepository, getClinicPatientIds } from "./patients";
 import { createPhq9Repository } from "./phq9";
 import { createRoundRepository } from "./rounds";
 import { createSuggestionRepository } from "./suggestions";
+import { createCameraRepository } from "./camera";
 
 export { getClinicPatientIds };
 
@@ -47,6 +48,7 @@ export function createPrismaPorts(
     accessLog: createAccessLogRepository(ctx),
     extraAnswers: createExtraAnswerRepository(ctx),
     homeMonitoring: createHomeMonitoringRepository(ctx),
+    camera: createCameraRepository(ctx),
     unitOfWork: ctx.unitOfWork,
     suggestions: createSuggestionRepository(ctx),
   };

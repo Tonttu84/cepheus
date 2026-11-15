@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { getPrisma } from "@/lib/db";
+import { CRISIS_EVENT_ITEM_ID } from "@/domain/crisis";
 import type { StoredCrisisEvent } from "@/usecases/ports";
 import { createDbContext } from "../context";
 import { createCrisisRepository } from "../crisis";
@@ -15,7 +16,7 @@ describe("Crisis repository (*.dbtest.ts)", () => {
   const event = (roundNumber: number, occurredAt: string, value = 2): StoredCrisisEvent => ({
     patientId,
     roundNumber,
-    itemId: "9",
+    itemId: CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9,
     value,
     occurredAt,
     acknowledgedAt: null,
@@ -53,7 +54,7 @@ describe("Crisis repository (*.dbtest.ts)", () => {
   it("stores the PHQ-9 column name and the clinic", async () => {
     await repo().saveCrisisEvent(event(1, "2026-11-16T16:20:00.000Z"));
     const row = await prisma.crisisEvent.findFirstOrThrow({ where: { participantId: patientId } });
-    expect(row.itemId).toBe("item9SelfHarm");
+    expect(row.itemId).toBe(CRISIS_EVENT_ITEM_ID.PHQ9_ITEM_9);
     expect(row.clinicId).toBe(clinicId);
     await prisma.crisisEvent.deleteMany({ where: { participantId: patientId } });
   });
@@ -80,7 +81,7 @@ describe("Crisis repository (*.dbtest.ts)", () => {
         participantId: patientId,
         clinicId,
         roundNumber: 1,
-        itemId: "crisis_button",
+        itemId: CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP,
         value: 1,
         occurredAt: new Date("2026-11-16T16:20:00.000Z"),
       },
@@ -90,7 +91,7 @@ describe("Crisis repository (*.dbtest.ts)", () => {
       {
         patientId,
         roundNumber: 1,
-        itemId: "crisis_button",
+        itemId: CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP,
         value: 1,
         occurredAt: "2026-11-16T16:20:00.000Z",
         acknowledgedAt: null,
@@ -111,7 +112,7 @@ describe("Crisis repository (*.dbtest.ts)", () => {
     await repo().saveCrisisEvent(event(1, "2026-11-16T16:20:00.000Z", 1));
     await repo().saveCrisisEvent({
       ...event(1, "2026-11-16T17:00:00.000Z", 3),
-      itemId: "crisis_button",
+      itemId: CRISIS_EVENT_ITEM_ID.ASKED_FOR_HELP,
       acknowledgedAt: "2026-11-16T18:00:00.000Z",
     });
     expect(await repo().getCrisisEvents(patientId)).toEqual([
