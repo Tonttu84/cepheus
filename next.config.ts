@@ -5,20 +5,27 @@ import type { NextConfig } from "next";
 // Face Landmarker WebAssembly execution on /camera.
 // MediaPipe task models and wasm runtimes are self-hosted under /mediapipe.
 // Fonts are self-hosted in /fonts. No external connections are allowed.
-const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self'",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "worker-src 'self' blob:",
-  "media-src 'self' blob:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self' https://www.fitbit.com",
-  "frame-ancestors 'none'",
-].join("; ");
+// In development, Next.js requires 'unsafe-eval' for Fast Refresh / error overlays
+// and 'ws:' in connect-src for the hot module replacement (HMR) WebSocket.
+export function buildContentSecurityPolicy(
+  mode: string = process.env.NODE_ENV ?? "development"
+): string {
+  const isProduction = mode === "production";
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isProduction ? "" : " 'unsafe-eval'"}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self'",
+    "font-src 'self'",
+    `connect-src 'self'${isProduction ? "" : " ws:"}`,
+    "worker-src 'self' blob:",
+    "media-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self' https://www.fitbit.com",
+    "frame-ancestors 'none'",
+  ].join("; ");
+}
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -26,7 +33,10 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
-          { key: "Content-Security-Policy", value: CONTENT_SECURITY_POLICY },
+          {
+            key: "Content-Security-Policy",
+            value: buildContentSecurityPolicy(process.env.NODE_ENV),
+          },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "no-referrer" },
