@@ -50,10 +50,7 @@ describe("getExpressivityShowcase use case", () => {
     const readings = [0.2, 0.25, 0.3, 0.35, 0.4, 0.32];
     for (let i = 0; i < readings.length; i++) {
       await ports.camera?.saveCameraReading({
-        id: `reading-${i}`,
         participantId: PATIENT_ID,
-        clinicId: CLINIC_ID,
-        recordedAt: new Date(`2026-11-0${i + 1}T10:00:00Z`),
         date: `2026-11-0${i + 1}`,
         dayIndex: i,
         taskId: "check_in_clip_60s",
@@ -204,10 +201,7 @@ describe("getExpressivityShowcase use case", () => {
     // Save only 3 readings (2 past + 1 latest)
     for (let i = 0; i < 3; i++) {
       await ports.camera?.saveCameraReading({
-        id: `few-${i}`,
         participantId: fewPatient,
-        clinicId: CLINIC_ID,
-        recordedAt: new Date(`2026-11-0${i + 1}T10:00:00Z`),
         date: `2026-11-0${i + 1}`,
         dayIndex: i,
         taskId: "check_in_clip_60s",

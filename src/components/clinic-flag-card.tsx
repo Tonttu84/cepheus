@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BROAD_AREA_LABELS, type BroadAreaKey } from "@/lib/constants";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import type { ClinicFlagFacts } from "@/server/api/clinic-flags";

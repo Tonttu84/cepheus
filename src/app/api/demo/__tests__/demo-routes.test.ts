@@ -9,6 +9,7 @@ import {
   advanceDemoTime,
   getDemoOffsetDays,
   isCountersEnabled,
+  isExpressivityShowcaseEnabled,
   resetDemoClock,
   resetSettings,
   setDemoEnabled,

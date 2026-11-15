@@ -4,7 +4,7 @@ import {
   type StaffActor,
   type TargetData,
 } from "@/domain/access";
-import { isPurposeAllowed } from "@/domain/consent";
+import { isPurposeAllowed, type ConsentState } from "@/domain/consent";
 import {
   evaluateExpressivityRange,
   type ExpressivityRangeResult,
@@ -19,36 +19,11 @@ export interface GetExpressivityShowcaseInput {
 
 const PURPOSE = "care";
 
-/**
- * Use case: retrieve facial expressivity against own usual range for a patient.
- *
- * Rules:
- * 1. Staff only: clinic staff can read the showcase.
- * 2. Access control: matches monitoring facts access check (target kind: flags, purpose: care).
- * 3. Computed and shown only when ALL hold:
- *    - module switch is on (expressivityShowcase)
- *    - patient's camera consent is on (method:camera)
- *    - patient's facial movement range permission is on (facial_movement_usual_range)
- * 4. Stored camera data: reads ONLY expressivityScore. Any placeholder or non-measured
- *    values in other fields (smileFraction, yaw, pitch, etc.) are strictly ignored.
- */
-export async function getExpressivityShowcase(
-  actor: Actor,
-  input: GetExpressivityShowcaseInput,
+async function checkShowcaseAccess(
+  staff: StaffActor,
+  switches: { readonly patientId: string; readonly clinicId: string; readonly consent: ConsentState },
   ports: Ports
-): Promise<UseCaseResult<ExpressivityRangeResult | null>> {
-  if (actor.kind !== "staff") {
-    return { ok: false, error: "Staff access required" };
-  }
-
-  const staff = actor as StaffActor;
-  const patientId = input.patientId;
-
-  const switches = await ports.patients.getPatientAccessSwitches(patientId);
-  if (!switches) {
-    return { ok: false, error: "Patient not found" };
-  }
-
+): Promise<{ allowed: boolean; error?: string }> {
   const target: TargetData = {
     kind: "flags",
     patientId: switches.patientId,
@@ -63,10 +38,7 @@ export async function getExpressivityShowcase(
     consent: switches.consent,
   });
 
-  if (!access.ok) {
-    return { ok: false, error: access.error };
-  }
-
+  if (!access.ok) return { allowed: false, error: access.error };
   const { allowed, reason, log } = access.value;
   if (log) {
     await ports.accessLog.appendLog({
@@ -79,68 +51,47 @@ export async function getExpressivityShowcase(
       timestamp: ports.clock.now(),
     });
   }
+  return { allowed, error: allowed ? undefined : reason };
+}
 
-  if (!allowed) {
-    return { ok: false, error: reason };
-  }
+function isShowcaseEligible(consent: ConsentState, isModuleEnabled?: boolean): boolean {
+  const moduleEnabled = isModuleEnabled !== undefined ? isModuleEnabled : isExpressivityShowcaseEnabled();
+  if (!moduleEnabled) return false;
+  if (!isPurposeAllowed(consent, "method:camera")) return false;
+  return isPurposeAllowed(consent, "facial_movement_usual_range");
+}
 
-  // Check the three gating conditions:
-  // 1. Module runtime switch
-  const moduleEnabled =
-    input.isModuleEnabled !== undefined
-      ? input.isModuleEnabled
-      : isExpressivityShowcaseEnabled();
-  if (!moduleEnabled) {
+/**
+ * Use case: retrieve facial expressivity against own usual range for a patient.
+ */
+export async function getExpressivityShowcase(
+  actor: Actor,
+  input: GetExpressivityShowcaseInput,
+  ports: Ports
+): Promise<UseCaseResult<ExpressivityRangeResult | null>> {
+  if (actor.kind !== "staff") return { ok: false, error: "Staff access required" };
+
+  const switches = await ports.patients.getPatientAccessSwitches(input.patientId);
+  if (!switches) return { ok: false, error: "Patient not found" };
+
+  const access = await checkShowcaseAccess(actor as StaffActor, switches, ports);
+  if (!access.allowed) return { ok: false, error: access.error ?? "Access denied" };
+
+  if (!isShowcaseEligible(switches.consent, input.isModuleEnabled)) {
     return { ok: true, value: null };
   }
 
-  // 2. Patient camera consent
-  const cameraConsented = isPurposeAllowed(switches.consent, "method:camera");
-  if (!cameraConsented) {
-    return { ok: true, value: null };
-  }
-
-  // 3. Patient specific facial movement range permission
-  const permissionConsented = isPurposeAllowed(
-    switches.consent,
-    "facial_movement_usual_range"
-  );
-  if (!permissionConsented) {
-    return { ok: true, value: null };
-  }
-
-  // All 3 conditions hold. Read stored camera readings through ports.
   if (!ports.camera) {
-    return {
-      ok: true,
-      value: {
-        status: "insufficient_history",
-        kind: "insufficient_history",
-        count: 0,
-        minimum: 5,
-      },
-    };
+    return { ok: true, value: { status: "insufficient_history", kind: "insufficient_history", count: 0, minimum: 5 } };
   }
 
-  const readings = await ports.camera.getCameraReadings(patientId);
-  // Strictly use expressivityScore ONLY.
+  const readings = await ports.camera.getCameraReadings(input.patientId);
   const scores = readings.map((r) => r.expressivityScore);
-
   if (scores.length === 0) {
-    return {
-      ok: true,
-      value: {
-        status: "insufficient_history",
-        kind: "insufficient_history",
-        count: 0,
-        minimum: 5,
-      },
-    };
+    return { ok: true, value: { status: "insufficient_history", kind: "insufficient_history", count: 0, minimum: 5 } };
   }
 
   const history = scores.slice(0, scores.length - 1);
   const latest = scores[scores.length - 1];
-
-  const evaluation = evaluateExpressivityRange(history, latest);
-  return { ok: true, value: evaluation };
+  return { ok: true, value: evaluateExpressivityRange(history, latest) };
 }

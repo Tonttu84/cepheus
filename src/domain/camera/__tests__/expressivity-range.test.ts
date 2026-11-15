@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  evaluateExpressivityRange,
-  type ExpressivityRangeResult,
-} from "../expressivity-range";
+import { evaluateExpressivityRange } from "../expressivity-range";
 
 describe("evaluateExpressivityRange", () => {
   describe("insufficient history", () => {

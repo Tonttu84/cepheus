@@ -179,6 +179,7 @@ export async function loadConsentContext(
   const camera = flagOf("camera_expressivity");
   const routine = flagOf("home_routine");
   const detailedAnswers = flagOf("detailed_answers");
+  const facialMovementRange = flagOf("facial_movement_usual_range");
 
   return {
     methodFlags: {
@@ -188,6 +189,7 @@ export async function loadConsentContext(
       camera_expressivity: camera,
       home_routine: routine,
       detailed_answers: detailedAnswers,
+      facial_movement_usual_range: facialMovementRange,
     },
     consentState: {
       taking_part: checkIn || phq9,
@@ -197,6 +199,7 @@ export async function loadConsentContext(
       },
       rule_check: false,
       detailed_answers: detailedAnswers,
+      facial_movement_usual_range: facialMovementRange,
     },
   };
 }

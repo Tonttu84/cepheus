@@ -57,6 +57,16 @@ function validateScore(value: unknown, name: string): number {
   return value;
 }
 
+function classifyPosition(latest: number, lower: number, upper: number, mean: number, sd: number): ExpressivityPosition {
+  if (sd === 0) {
+    if (Math.abs(latest - mean) < 1e-9) return "within_usual_range";
+    return latest < mean ? "below_usual_range" : "above_usual_range";
+  }
+  if (latest < lower) return "below_usual_range";
+  if (latest > upper) return "above_usual_range";
+  return "within_usual_range";
+}
+
 /**
  * Evaluates a person's latest expressivity reading against their past readings.
  * Reuses computePersonalBaseline from domain signals.
@@ -73,9 +83,7 @@ export function evaluateExpressivityRange(
     throw new TypeError("pastScores must be an array");
   }
 
-  const validatedPast = pastScores.map((score, i) =>
-    validateScore(score, `pastScores[${i}]`)
-  );
+  const validatedPast = pastScores.map((score, i) => validateScore(score, `pastScores[${i}]`));
   const validatedLatest = validateScore(latestScore, "latestScore");
 
   if (validatedPast.length < MIN_EXPRESSIVITY_HISTORY) {
@@ -87,52 +95,18 @@ export function evaluateExpressivityRange(
     };
   }
 
-  // Reuse existing personal baseline calculation
   const baseline = computePersonalBaseline(validatedPast, {
     minBaselineSamples: MIN_EXPRESSIVITY_HISTORY,
   });
-
   if (!baseline.ok) {
     throw new Error(`Personal baseline calculation failed: ${baseline.error}`);
   }
 
   const { mean, sd, sampleCount } = baseline.value;
-
-  // Awkward case: zero spread (all historical readings equal)
-  if (sd === 0) {
-    let position: ExpressivityPosition;
-    if (Math.abs(validatedLatest - mean) < 1e-9) {
-      position = "within_usual_range";
-    } else if (validatedLatest < mean) {
-      position = "below_usual_range";
-    } else {
-      position = "above_usual_range";
-    }
-
-    return {
-      status: position,
-      kind: "usual_range",
-      position,
-      mean,
-      lower: mean,
-      upper: mean,
-      sd: 0,
-      sampleCount,
-    };
-  }
-
   const spread = USUAL_RANGE_SD_MULTIPLIER * sd;
-  const lower = mean - spread;
-  const upper = mean + spread;
-
-  let position: ExpressivityPosition;
-  if (validatedLatest < lower) {
-    position = "below_usual_range";
-  } else if (validatedLatest > upper) {
-    position = "above_usual_range";
-  } else {
-    position = "within_usual_range";
-  }
+  const lower = sd === 0 ? mean : mean - spread;
+  const upper = sd === 0 ? mean : mean + spread;
+  const position = classifyPosition(validatedLatest, lower, upper, mean, sd);
 
   return {
     status: position,
