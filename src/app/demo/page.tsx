@@ -1,19 +1,50 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { DemoControls } from "@/components/demo/demo-controls";
+import { PhoneDemoQrCard } from "@/components/phone-demo-qr-card";
 import { SimulatedBadge } from "@/components/simulated-badge";
 import { ForestDivider } from "@/components/forest-divider";
 import { readServerSession } from "@/server/auth";
+import { buildPhoneDemoOriginOptions } from "@/server/demo/lan-origin";
+import { getEnv } from "@/server/env";
 
 export const metadata = {
   title: "Demo Controls · Cepheus",
   description: "Fast-forward time, reset sample patients, and toggle runtime switches for demonstration.",
 };
 
+function extractPortFromHost(host: string | null): number | undefined {
+  if (!host) return undefined;
+  const match = /:(\d+)$/.exec(host.trim());
+  return match ? Number(match[1]) : undefined;
+}
+
 export default async function DemoPage() {
   const session = await readServerSession();
   if (!session) {
     redirect("/sign-in");
   }
+
+  const headerList = await headers();
+  const trustProxy = getEnv().TRUST_PROXY_HEADERS;
+  const requestHost =
+    (trustProxy ? headerList.get("x-forwarded-host") : null) ??
+    headerList.get("host");
+  const forwardedProto = trustProxy
+    ? headerList
+        .get("x-forwarded-proto")
+        ?.split(",")[0]
+        ?.trim()
+        .toLowerCase()
+    : undefined;
+  const protocol = forwardedProto === "https" ? "https" : "http";
+  const port = extractPortFromHost(requestHost);
+
+  const originOptions = buildPhoneDemoOriginOptions({
+    requestHost,
+    protocol,
+    port,
+  });
 
   return (
     <div className="space-y-12 sm:space-y-16">
@@ -36,6 +67,8 @@ export default async function DemoPage() {
           </p>
         </div>
       </header>
+
+      <PhoneDemoQrCard originOptions={originOptions} />
 
       <DemoControls />
 

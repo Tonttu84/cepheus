@@ -566,4 +566,5 @@ export async function createStaffSessionCookie(
   return createSessionCookie(session);
 }
 
+export { expect } from "@playwright/test";
 export { sealSession, SESSION_COOKIE_NAME };
