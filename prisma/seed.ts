@@ -76,9 +76,15 @@ export function liveScheduleAt(now: Date, openRoundNumber: number): LiveSchedule
 }
 
 export async function upsertSimClinic(tx: Prisma.TransactionClient): Promise<string> {
-  const clinic = await tx.clinic.upsert({
+  const existing = await tx.clinic.findUnique({
     where: { code: SIM_CLINIC_CODE },
-    update: { name: SIM_CLINIC_NAME },
+  });
+  if (existing && existing.id !== SIM_CLINIC_ID) {
+    await tx.clinic.delete({ where: { id: existing.id } });
+  }
+  const clinic = await tx.clinic.upsert({
+    where: { id: SIM_CLINIC_ID },
+    update: { name: SIM_CLINIC_NAME, code: SIM_CLINIC_CODE },
     create: { id: SIM_CLINIC_ID, code: SIM_CLINIC_CODE, name: SIM_CLINIC_NAME },
   });
   return clinic.id;

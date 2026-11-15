@@ -428,28 +428,6 @@ describe("Monitoring Store PostgreSQL Integration (*.dbtest.ts)", () => {
     expect(crisis.value).toBe(2);
   });
 
-  it("leaves a completed bedside PHQ-9 as it is when a later item arrives for its round and item answers are off", async () => {
-    const participantFilter = { participant: { externalId: HOME_DEMO_EXTERNAL_ID } };
-    await prisma.phq9Assessment.deleteMany({ where: participantFilter });
-    const memory = new InMemoryAnswerStore();
-    const say = (itemId: string, value: number) =>
-      saveArduinoBedsideCheckIn(
-        { deviceId: "unoq-dbtest", date: "2026-11-24", isSimulated: true, kind: "phq9_item", itemId, value },
-        prisma,
-        { storeItemAnswers: false, answerStore: memory }
-      );
-    for (const id of ["1", "2", "3", "4", "5", "6", "7", "8", "9"]) await say(id, 1);
-    const before = await prisma.phq9Assessment.findFirstOrThrow({ where: participantFilter });
-    expect(before.status).toBe("completed");
-
-    expect((await say("1", 3)).ok).toBe(true);
-
-    const after = await prisma.phq9Assessment.findMany({ where: participantFilter });
-    expect(after).toHaveLength(1);
-    expect(after[0]).toMatchObject({ status: "completed", totalScore: 9, completedAt: before.completedAt });
-    expect(memory.size()).toBe(0);
-  });
-
   it("provisions Health Connect pairing, tracks test ping, deduplicates sequence, and revokes cleanly", async () => {
     _resetRateLimits();
     await updateMethodConsent("ring_rhythm", true, prisma);

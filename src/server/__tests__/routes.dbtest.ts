@@ -52,6 +52,7 @@ describe("the routes on PostgreSQL (*.dbtest.ts)", () => {
 
     prisma = getPrisma();
     await prisma.participant.deleteMany({ where: { participantCode: PARTICIPANT_CODE } });
+    await prisma.staffUser.deleteMany({ where: { id: "routes-dbtest-nurse" } });
     await prisma.clinic.deleteMany({ where: { code: CLINIC_CODE } });
     const clinic = await prisma.clinic.create({ data: { code: CLINIC_CODE, name: "Routes test clinic" } });
     clinicId = clinic.id;
@@ -59,7 +60,7 @@ describe("the routes on PostgreSQL (*.dbtest.ts)", () => {
       data: {
         id: "routes-dbtest-nurse",
         clinicId,
-        email: "nurse@sim-clinic.local",
+        email: "routes-nurse@routes-clinic.local",
         name: "Simulated nurse",
         role: "nurse",
       },
@@ -89,7 +90,7 @@ describe("the routes on PostgreSQL (*.dbtest.ts)", () => {
       kind: "staff",
       actor: { kind: "staff", staffId: "routes-dbtest-nurse", clinicId, role: "nurse" },
       displayName: "Simulated nurse",
-      email: "nurse@sim-clinic.local",
+      email: "routes-nurse@routes-clinic.local",
       clinicName: "Routes test clinic",
       avatarInitials: "SN",
       isSimulated: true,
@@ -98,6 +99,7 @@ describe("the routes on PostgreSQL (*.dbtest.ts)", () => {
   });
 
   afterAll(async () => {
+    await prisma.staffUser.deleteMany({ where: { id: "routes-dbtest-nurse" } });
     await prisma.participant.deleteMany({ where: { clinicId } });
     await prisma.accessLog.deleteMany({ where: { OR: [{ clinicId }, { targetPatientId: patientId }] } });
     await prisma.clinic.deleteMany({ where: { code: CLINIC_CODE } });
