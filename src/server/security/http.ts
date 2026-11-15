@@ -6,12 +6,26 @@ import { getEnv } from "@/server/env";
  * and proxy-safe rate-limit bucket keying).
  */
 
+const FORBIDDEN_HOST_CHARS = /[@/\\?#\s\u0000-\u001f\u007f]/;
+
+function normalizeHostForComparison(hostValue: string, protocol: string): string {
+  try {
+    return new URL(`${protocol}//${hostValue}`).host.toLowerCase();
+  } catch {
+    return hostValue.toLowerCase();
+  }
+}
+
 export function verifySameOrigin(request: Request): boolean {
   const hostHeader =
     request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   if (!hostHeader) return false;
 
-  const expectedHost = hostHeader.split(",")[0].trim().toLowerCase();
+  const rawHost = hostHeader.split(",")[0];
+  if (!rawHost || FORBIDDEN_HOST_CHARS.test(rawHost)) {
+    return false;
+  }
+
   const originHeader = request.headers.get("origin");
   const refererHeader = request.headers.get("referer");
 
@@ -22,6 +36,7 @@ export function verifySameOrigin(request: Request): boolean {
 
   try {
     const parsed = new URL(candidate);
+    const expectedHost = normalizeHostForComparison(rawHost, parsed.protocol);
     return parsed.host.toLowerCase() === expectedHost;
   } catch {
     return false;

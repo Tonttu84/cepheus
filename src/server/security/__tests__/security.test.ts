@@ -240,4 +240,87 @@ describe("Server Security Utilities (src/server/security)", () => {
       expect(secondUse.reason).toMatch(/replayed hardware nonce/i);
     }
   });
+
+  describe("verifySameOrigin host validation and normalization (Fix A)", () => {
+    it("allows example.test:80 with origin http://example.test", () => {
+      const req = new Request("http://example.test/api/auth/sign-in", {
+        method: "POST",
+        headers: {
+          host: "example.test:80",
+          origin: "http://example.test",
+        },
+      });
+      expect(verifySameOrigin(req)).toBe(true);
+    });
+
+    it("allows same-origin LAN IPv4 requests with explicit ports", () => {
+      const req = new Request("http://192.168.1.42:3000/api/auth/sign-in", {
+        method: "POST",
+        headers: {
+          host: "192.168.1.42:3000",
+          origin: "http://192.168.1.42:3000",
+        },
+      });
+      expect(verifySameOrigin(req)).toBe(true);
+    });
+
+    it("rejects host with userinfo (192.168.1.5@evil.example) even if origin matches evil.example", () => {
+      const req = new Request("http://evil.example/api/auth/sign-in", {
+        method: "POST",
+        headers: {
+          host: "192.168.1.5@evil.example",
+          origin: "http://evil.example",
+        },
+      });
+      expect(verifySameOrigin(req)).toBe(false);
+    });
+
+    it("rejects host with path or backslash before normalising", () => {
+      const forwardSlashReq = new Request("http://evil.example/api/auth/sign-in", {
+        method: "POST",
+        headers: {
+          host: "evil.example/path",
+          origin: "http://evil.example",
+        },
+      });
+      expect(verifySameOrigin(forwardSlashReq)).toBe(false);
+
+      const backslashReq = new Request("http://evil.example/api/auth/sign-in", {
+        method: "POST",
+        headers: {
+          host: "evil.example\\path",
+          origin: "http://evil.example",
+        },
+      });
+      expect(verifySameOrigin(backslashReq)).toBe(false);
+    });
+
+    it("rejects host containing whitespace, query or fragment characters", () => {
+      for (const badHost of [
+        "evil.example?query",
+        "evil.example#fragment",
+        "evil bad.example",
+      ]) {
+        const req = new Request("http://evil.example/api/auth/sign-in", {
+          method: "POST",
+          headers: {
+            host: badHost,
+            origin: "http://evil.example",
+          },
+        });
+        expect(verifySameOrigin(req)).toBe(false);
+      }
+
+      const mockReq = {
+        headers: {
+          get: (header: string) => {
+            if (header.toLowerCase() === "host") return "evil\nexample";
+            if (header.toLowerCase() === "origin") return "http://evil.example";
+            return null;
+          },
+        },
+      } as unknown as Request;
+      expect(verifySameOrigin(mockReq)).toBe(false);
+    });
+  });
 });
