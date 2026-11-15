@@ -14,9 +14,12 @@ import { createTaskRecordRepository } from "./task-records";
  * Uses the same unit of work (one transaction and patient row lock) as createPrismaPorts.
  */
 export function createPrismaRewardsPorts(
-  prisma: PrismaClient = getPrisma(),
+  prismaOrConfig?: PrismaClient | Partial<RewardsConfig>,
   config?: Partial<RewardsConfig>
 ): RewardsPorts {
+  const isPrisma = prismaOrConfig && "$transaction" in prismaOrConfig;
+  const prisma = isPrisma ? (prismaOrConfig as PrismaClient) : getPrisma();
+  const cfg = isPrisma ? config : (prismaOrConfig as Partial<RewardsConfig> | undefined);
   const ctx = createDbContext(prisma);
 
   return {
@@ -27,6 +30,6 @@ export function createPrismaRewardsPorts(
     patients: createRewardsScheduleReader(ctx),
     rounds: createRewardsRoundOutcomeReader(ctx),
     unitOfWork: ctx.unitOfWork,
-    config,
+    config: cfg,
   };
 }

@@ -1,7 +1,6 @@
 import { DEFAULT_EXTRA_ITEMS_CONFIG } from "@/domain/extra-items";
 import { getDemoClock } from "@/server/api/clock";
 import { isExtraQuestionEnabled } from "@/server/api/settings";
-import { getPrisma } from "@/lib/db";
 import { createPrismaPorts, createPrismaRewardsPorts, getClinicPatientIds } from "@/server/db";
 import { ensureHomeDemoParticipant } from "@/server/monitoring/store";
 import type { Ports } from "@/usecases/ports";
@@ -39,7 +38,7 @@ function createDefaultDeps(): RouteDeps {
         enabled: isExtraQuestionEnabled(),
       },
     },
-    rewardsPorts: createPrismaRewardsPorts(getPrisma(), { enabled: settings.rewardsEnabled }),
+    rewardsPorts: createPrismaRewardsPorts({ enabled: settings.rewardsEnabled }),
     clinicPatientIds: (clinicId: string) => getClinicPatientIds(clinicId),
     resolveDevicePatient: defaultResolveDevicePatient,
   };
