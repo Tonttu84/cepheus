@@ -130,7 +130,7 @@ Build order for the sensing (`research/6-sensing-feasibility.md`; hours are esti
 
 | Step | Route | Hours |
 |---|---|---|
-| 1. Daily check-in and fortnightly PHQ-9 (done) | Web form (twice-weekly in plan); the PHQ-9 question on thoughts of self-harm must show the crisis path | 3-4 |
+| 1. Daily check-in and fortnightly PHQ-9 (done) | Web form (twice-weekly in plan) with word-labelled pills and typed/spoken answers; the PHQ-9 question on thoughts of self-harm must show the crisis path | 3-4 |
 | 2. Rhythm and sleep-regularity numbers (done) | Own formulas, first on a simulated person, then on open activity data | 3-4 |
 | 3. Facial expressivity and head movement (done) | MediaPipe Face Landmarker in the browser; frames processed in memory, only numbers stored | 3-5 |
 | 4. Speech rate and pauses, if time (updated 15 Nov) | Bedside voice check-in with speech recognition and Bluetooth audio on Arduino UNO Q (`hardware/uno-q/`, D43) | 3-4 |

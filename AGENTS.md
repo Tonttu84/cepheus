@@ -181,7 +181,7 @@ These hold whatever is built.
 | `scripts/` | Tooling scripts: dev database (`dev-db.mjs`), package audit (`audit.mjs`), requests checker, face model setup |
 | `hardware/` | Arduino UNO Q edge monitor (`hardware/uno-q/`) and 3D-printable Desk Buddy enclosure (`hardware/enclosure/`) |
 | `promotional-video/` | Promotional video plan, character footage, and generated clips for the submission |
-| `e2e/` | Playwright browser end-to-end tests (foundation, camera, monitoring, auth, core flow) |
+| `e2e/` | Playwright browser end-to-end tests (foundation, camera, monitoring, auth, core flow, check-in voice, patient tools) |
 
 ## Quirks
 
