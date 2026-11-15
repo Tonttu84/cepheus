@@ -18,6 +18,10 @@ test.describe("Package O: Word-Labelled Tap Pills & Guided Activity Tools", () =
       await prisma.clinicFlag.deleteMany({
         where: { participantId: patient.id, causeType: { not: null } },
       });
+      await prisma.patientSuggestion.updateMany({
+        where: { participantId: patient.id, isSimulated: true, status: { in: ["accepted", "completed"] } },
+        data: { status: "shown", respondedAt: null },
+      });
     }
   });
 
