@@ -1,6 +1,6 @@
 # Work plan: what is done, what is taken, what is free
 
-Updated against `main` (`bde5f05`) on 15 Nov 2026, about 09:00. This is the one list
+Updated against `main` (`418c116`) on 15 Nov 2026, about 09:15. This is the one list
 of open work for people and agents. Before you start anything, read it, fetch, and
 check the open trails: two of us built the same sign-in protection in parallel on
 14 Nov because neither list showed the other's work.
@@ -55,6 +55,15 @@ How to use it:
 - Trail 87: the phone demo from trail 81 ported onto main with two security fixes (package Q, decision D59), and phone-width fixes with `e2e/mobile.spec.ts`.
 - Trail 86: `render.yaml`, a hosted demo on Render in Frankfurt (decision D60).
 - Trail 83: links in `docs/submission.md`.
+- Trail 88: on `/check-in` the on-device speech availability check runs only when the
+  person taps the voice control; the nurse's flag facts no longer fall back to made-up
+  counts when nothing is stored.
+- Trail 90: an optional module, off by default, that places the latest facial
+  expressivity number against the person's own usual range on the nurse's flag card
+  (decision D57): a run-time switch on the demo page, the patient's separate
+  permission, a staff-only route. Open from its review: the "0 of 5" count wording,
+  the reading order is not part of the storage contract, no test yet for another
+  clinic's staff or for the access log entry.
 
 What main does **not** do yet: the calm unified patient "Today" view (package N, trail 85) is being built, cleaning generated data out of the screens (package K) is open, and the full gate and rehearsal (package L) is saved for last. See the packages below before starting anything near them.
 
@@ -153,10 +162,6 @@ Choices made for these packages (say so on the trail if you disagree):
 - A local `.env` that sets `SIGN_IN_RATE_LIMIT_MAX` makes one unit test in
   `src/server/auth/__tests__/auth.test.ts` fail, because the test runner reads `.env`;
   set that variable only in the environment of the browser-test run.
-- Two branches are built but not on main: `feat/expressivity-showcase` (optional
-  module, decision row D57 on that branch, its browser test is being fixed) and
-  `fix/demo-safety` (the speech availability check only on a tap; no made-up counts on
-  the flag card).
 - Data from the bedside unit's ingest, and from a phone that uses the static secret
   without a pairing token, is still stored to one fixed demo participant. The
   pairing table (on main since trail 60) is the intended way to tie a device to a
