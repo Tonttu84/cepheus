@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { getPrisma } from "@/lib/db";
-import type { Ports } from "@/usecases/ports";
+import type { Clock, Ports } from "@/usecases/ports";
 import { createAccessLogRepository } from "./access-log";
 import { createCallRepository } from "./calls";
 import { getEnv } from "@/server/env";
@@ -26,12 +26,13 @@ export { getClinicPatientIds };
  */
 export function createPrismaPorts(
   prisma: PrismaClient = getPrisma(),
-  options: DbContextOptions = { storeItemAnswers: getEnv().STORE_ITEM_ANSWERS }
+  options: DbContextOptions = { storeItemAnswers: getEnv().STORE_ITEM_ANSWERS },
+  clock?: Clock
 ): Ports {
   const ctx = createDbContext(prisma, options);
 
   return {
-    clock: { now: () => new Date().toISOString() },
+    clock: clock ?? { now: () => new Date().toISOString() },
     patients: createPatientRepository(ctx),
     rounds: createRoundRepository(ctx),
     phq9: createPhq9Repository(ctx),
@@ -46,3 +47,10 @@ export function createPrismaPorts(
     unitOfWork: ctx.unitOfWork,
   };
 }
+
+export { resetSimulatedData, type ResetOptions } from "./reset";
+export {
+  getSimulatedPatientSummaries,
+  getSimulatedPatientIds,
+  type SimulatedPatientDemoSummary,
+} from "./demo-patients";

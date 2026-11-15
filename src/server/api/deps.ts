@@ -1,3 +1,6 @@
+import { DEFAULT_EXTRA_ITEMS_CONFIG } from "@/domain/extra-items";
+import { getDemoClock } from "@/server/api/clock";
+import { isExtraQuestionEnabled } from "@/server/api/settings";
 import { createPrismaPorts, getClinicPatientIds } from "@/server/db";
 import { ensureHomeDemoParticipant } from "@/server/monitoring/store";
 import type { Ports } from "@/usecases/ports";
@@ -22,8 +25,15 @@ export async function defaultResolveDevicePatient(): Promise<{ patientId: string
 }
 
 function createDefaultDeps(): RouteDeps {
+  const ports = createPrismaPorts(undefined, undefined, getDemoClock());
   return {
-    ports: createPrismaPorts(),
+    ports: {
+      ...ports,
+      extraItemsConfig: {
+        ...DEFAULT_EXTRA_ITEMS_CONFIG,
+        enabled: isExtraQuestionEnabled(),
+      },
+    },
     clinicPatientIds: (clinicId: string) => getClinicPatientIds(clinicId),
     resolveDevicePatient: defaultResolveDevicePatient,
   };

@@ -21,3 +21,24 @@ export {
   type FailureContext,
 } from "./respond";
 export { listClinicFlags, bringClinicUpToDate, type ClinicFlagView } from "./clinic-flags";
+export {
+  getDemoClock,
+  advanceDemoTime,
+  resetDemoClock,
+  getDemoOffsetMs,
+  getDemoOffsetDays,
+  type AdvanceDemoTimeResult,
+} from "./clock";
+export {
+  isDemoEnabled,
+  setDemoEnabled,
+  getSwitches,
+  isRewardsEnabled,
+  isCountersEnabled,
+  isExtraQuestionEnabled,
+  setSwitch,
+  resetSettings,
+  type DemoSwitchKey,
+  type DemoSwitches,
+} from "./settings";
+export { advanceDemoAndRunSystemWork } from "./demo";

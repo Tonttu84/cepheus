@@ -31,17 +31,29 @@ const STAFF_NAV_ITEMS: readonly NavItem[] = [
   { href: "/clinic", label: "Clinic view", testId: "nav-clinic" },
 ];
 
-function visibleNavItems(session: AuthSession | null): readonly NavItem[] {
-  if (!session) {
-    return [OVERVIEW_NAV];
-  }
-  return session.kind === "staff" ? STAFF_NAV_ITEMS : PATIENT_NAV_ITEMS;
+const DEMO_NAV: NavItem = {
+  href: "/demo",
+  label: "Demo",
+  testId: "nav-demo",
+};
+
+function visibleNavItems(
+  session: AuthSession | null,
+  demoMode: boolean
+): readonly NavItem[] {
+  const base = !session
+    ? [OVERVIEW_NAV]
+    : session.kind === "staff"
+      ? STAFF_NAV_ITEMS
+      : PATIENT_NAV_ITEMS;
+
+  return demoMode ? [...base, DEMO_NAV] : base;
 }
 
 export function SiteNav() {
   const pathname = usePathname();
-  const { session } = useAuth();
-  const navItems = visibleNavItems(session);
+  const { session, demoMode } = useAuth();
+  const navItems = visibleNavItems(session, demoMode);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border-hairline bg-surface-card/95 backdrop-blur-md">
