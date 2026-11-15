@@ -94,6 +94,9 @@ edge monitor (`hardware/uno-q/`).
 | Start production server | `npm run start` |
 | Full gate (before a branch is published) | `npm run check && npm run test:db && npm run build && npm run test:e2e` |
 
+- `npm run test:db` starts its own temporary PostgreSQL database on a free port, so several worktrees can run it at the same time without needing `npm run db:start`.
+- Agents must never start a database or a server (`npm run dev`, `npm run start`, `npm run db:start`, `npm run db:setup`) from their own shell: with some agent harnesses the command never returns and the run hangs without a message.
+
 ## Code
 
 Guidance, not hard limits. The linter reports the numbers below as warnings, so the gate
@@ -170,13 +173,15 @@ These hold whatever is built.
 | `src/domain/` | Pure domain logic: instruments, rounds, baselines, classify, warning rule, crisis, flags, consent, camera metrics, wearables |
 | `src/usecases/` | Application use cases enforcing access rules and storage ports for patient and clinic actions |
 | `src/server/` | Server storage, security (cookies, rate limits, HMAC), Fitbit sync, and monitoring endpoints. `src/server/db/` is the PostgreSQL implementation of the storage ports in `src/usecases/ports.ts`; `createPrismaPorts()` builds it |
-| `src/app/` | Next.js App Router pages (check-in, camera, patient, clinic, monitoring) and API routes |
+| `src/server/db/monitoring/` | Session-scoped participant consent defaults and Health Connect pairing store (`session-scope.ts`, `health-connect-pairing.ts`) |
+| `src/app/` | Next.js App Router pages (check-in, camera, patient, clinic, monitoring, sign-in) and API routes |
 | `src/components/` | Reusable React UI components (camera session, crisis bar, monitoring dashboard, site nav) |
 | `src/lib/` | Database client (`db.ts`), Zod schemas, constants, i18n translation dictionary, simulation |
 | `prisma/` | Prisma schema (`schema.prisma`, PostgreSQL) and seed script (`seed.ts`) |
 | `scripts/` | Tooling scripts: dev database (`dev-db.mjs`), package audit (`audit.mjs`), requests checker, face model setup |
 | `hardware/` | Arduino UNO Q edge monitor (`hardware/uno-q/`) and 3D-printable Desk Buddy enclosure (`hardware/enclosure/`) |
-| `e2e/` | Playwright browser end-to-end tests (foundation, camera, monitoring) |
+| `promotional-video/` | Promotional video plan, character footage, and generated clips for the submission |
+| `e2e/` | Playwright browser end-to-end tests (foundation, camera, monitoring, auth, core flow) |
 
 ## Quirks
 

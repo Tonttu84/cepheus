@@ -160,8 +160,8 @@ with the patient's own check-in and last a week or more
 | Step | What | Cost to the patient | In the demo |
 |---|---|---|---|
 | 1 | The ring in the background (phone signals later) | None | Built, on simulated history |
-| 2 | Short questions twice a week, and a camera check; a short game and a voice check if time | Seconds to minutes | Questions and camera built |
-| 3 | A nurse calls, when signals are unclear or the patient goes quiet | A conversation | A button on the clinic's screen |
+| 2 | Short questions twice a week, and a camera check; a short game and a voice check if time | Seconds to minutes | Questions and camera built; check-in screen saves answers to database via API and use cases (15 Nov) |
+| 3 | A nurse calls, when signals are unclear or the patient goes quiet | A conversation | A button on the clinic's screen; clinic screen reads live flags from the database and runs the warning rule (15 Nov) |
 | 4 | A visit, a clinician's assessment, tests the clinic chooses | A trip | Named only |
 
 ## Scope
@@ -213,16 +213,16 @@ Playwright for the two main screens.
 
 ## Workstreams
 
-Each is its own trail. Nobody is assigned yet: claim one in a comment.
+Each is its own trail. (Updated 15 Nov: workstreams are assigned and merged on main).
 
 | # | Workstream | Delivers | Needs |
 |---|---|---|---|
 | 1 | Foundation (done) | App skeleton, the whole data model (check-in answers, ring days, camera readings) so later streams do not edit it at once, a generator for one simulated person's weeks | Nothing; goes first |
-| 2 | Questions | The twice-weekly questions and the fortnightly PHQ-9 on the phone, with the crisis path always in view | 1 |
+| 2 | Questions (done, 15 Nov) | The twice-weekly questions and the fortnightly PHQ-9 on `/check-in` wired through API routes to database storage via use cases, with the crisis path always in view | 1 |
 | 3 | Signal maths (done) | Rhythm, sleep regularity and personal-baseline functions, with tests; the routing rule (what counts as a small dip, a dip that does not recover, and silence); loading the open activity data | 1 |
 | 4 | Camera check (done) | A page measuring facial expressivity and head movement | 1 |
-| 5 | The two screens | The clinic's screen and the patient's one-suggestion screen | 2-4 for real numbers; can start on simulated ones |
-| 6 | Pitch and demo | Demo script, the talk with the Aalto mentors, the submission text | The doctor's input |
+| 5 | The two screens (updated 15 Nov) | The check-in screen (`/check-in`) saves answers to PostgreSQL via use cases, and the clinic's screen (`/clinic`) reads live flags and runs the warning rule from storage via `/api/clinic/flags`. Patient suggestion card is built on simulated data (storage wiring in progress) | 2-4 for real numbers; can start on simulated ones |
+| 6 | Pitch and demo (updated 15 Nov) | Demo script, promotional video plan and clips in `promotional-video/`, demo timeline preview built and interactive demo page coming | The doctor's input |
 
 ## Checkpoints
 

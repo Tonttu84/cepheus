@@ -6,8 +6,9 @@ build, read `plan.md`: where the two differ, `plan.md` is newer. Sections 4 and 
 (candidate cores and open decisions) are superseded by it; they are kept as they were,
 apart from the rows on the stack and the repository flow.
 
-Status 13 Nov 2026, late evening. Planning notes: the challenge is likely but not locked,
-and no product core is chosen.
+Status 13 Nov 2026, late evening (updated 15 Nov 2026). Planning notes: the challenge is
+locked as "Beyond the Clinic", the product core is chosen (question flow with nurse calls;
+D7 in `decisions.md`), and the stack is settled (PostgreSQL through Prisma; D15, D19).
 Sources: `doctor-notes.md` (the doctor's words), the reports in `research/` (sources read
 mostly at abstract level; each report lists what it could not check), and the challenge
 brief on the Junction platform.
@@ -91,7 +92,11 @@ event; never score it as a zero or punish it.
   no treatment claim, gives no final judgement, and says nothing about relapse
   to the patient.
 
-## 4. Candidate cores (none chosen)
+## 4. Candidate cores (core chosen 15 Nov)
+
+(Updated 15 Nov 2026: Product core settled per Decision D7 as candidate C with B elements:
+core twice-weekly questions and fortnightly PHQ-9, warning rule and nurse calls, with passive
+sensing as support).
 
 - **A, the stuck moment:** notice a dip, sort the thought, then one small act or an
   attention shift. Weakness: it asks a stuck person to reason.
@@ -128,7 +133,7 @@ Build order for the sensing (`research/6-sensing-feasibility.md`; hours are esti
 | 1. Daily check-in and fortnightly PHQ-9 (done) | Web form (twice-weekly in plan); the PHQ-9 question on thoughts of self-harm must show the crisis path | 3-4 |
 | 2. Rhythm and sleep-regularity numbers (done) | Own formulas, first on a simulated person, then on open activity data | 3-4 |
 | 3. Facial expressivity and head movement (done) | MediaPipe Face Landmarker in the browser; frames processed in memory, only numbers stored | 3-5 |
-| 4. Speech rate and pauses, if time | Fixed passage with a known syllable count | 3-4 |
+| 4. Speech rate and pauses, if time (updated 15 Nov) | Bedside voice check-in with speech recognition and Bluetooth audio on Arduino UNO Q (`hardware/uno-q/`, D43) | 3-4 |
 | 5. Live Oura data, if time | Browser sign-in, sleep and activity endpoints | 2-4 more |
 | Skip | Gaze task (6-8 h, weak accuracy), phone mobility and steps (native app only) | |
 
@@ -169,14 +174,18 @@ and submitted well before Sunday 10:00.
 
 ## 8. Open decisions
 
+(Updated 15 Nov 2026: Decisions settled in `decisions.md`: challenge locked as
+"Beyond the Clinic", product core settled in D7, stack settled in D15/D19, repository flow
+in D5/D6, Verda Gemma nurse brief in D44, and bedside unit in D43).
+
 | Decision | Whose | By when |
 |---|---|---|
-| Lock the challenge | Team | Before Fri 23:55 (changeable) |
-| Product core (A, B, C or a mix) | Team | After talking to the mentors |
-| Primary user: person after TMS, person at risk, clinician | Team | With the core |
-| Which sensors go in the demo | Team | With the core |
-| Tech challenges to stack (Gemini API, Gemma, Modal, Verda) | Team | Sat morning |
-| Who builds what, and the doctor's role | Team | Fri night |
+| Lock the challenge | Settled (15 Nov) | "Beyond the Clinic" |
+| Product core (A, B, C or a mix) | Settled (15 Nov) | Core flow with nurse calls (D7) |
+| Primary user: person after TMS, person at risk, clinician | Settled (15 Nov) | Person after TMS and clinic care team |
+| Which sensors go in the demo | Settled (15 Nov) | Ring, camera, wearables (Fitbit / Health Connect) |
+| Tech challenges to stack (Gemini API, Gemma, Modal, Verda) | Settled (15 Nov) | Verda Gemma pre-call brief off by default (D44) |
+| Who builds what, and the doctor's role | Settled (15 Nov) | Work packages assigned across trails |
 | Stack | Settled | PostgreSQL through Prisma; see D15 and D19 in `decisions.md` |
 | Repository flow | Settled | See D5 and D6 in `decisions.md` |
 
