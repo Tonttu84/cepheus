@@ -36,8 +36,8 @@ test.describe("Demo page: time advance, clinic warning, and reset", () => {
 
     // 5. Navigate to /clinic: care team now sees the raised flag for missed rounds
     await page.goto("/clinic");
-    await expect(page.getByTestId("clinic-flag-card")).toHaveCount(1);
-    await expect(page.getByTestId("clinic-flag-card").first()).toContainText("Check-in silence");
+    await expect(page.getByTestId("clinic-flag-card")).toHaveCount(3);
+    await expect(page.getByTestId("clinic-flag-card").first()).toContainText("Missed check-ins");
 
     // 6. Return to /demo and click Reset
     await page.goto("/demo");

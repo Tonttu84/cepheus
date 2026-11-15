@@ -10,19 +10,19 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await page.goto("/check-in");
 
     // Answer Mood tap by typing
-    const moodInput = page.getByTestId("type-input-moodscore");
+    const moodInput = page.getByTestId("type-input-moodScore");
     await expect(moodInput).toBeVisible();
     await moodInput.fill("good");
-    await page.getByTestId("type-submit-moodscore").click();
+    await page.getByTestId("type-submit-moodScore").click();
 
     const moodChoice3 = page.getByRole("button", { name: "Mood: 3 of 4" });
     await expect(moodChoice3).toHaveAttribute("aria-pressed", "true");
 
     // Answer Interest tap by typing
-    const interestInput = page.getByTestId("type-input-interestscore");
+    const interestInput = page.getByTestId("type-input-interestScore");
     await expect(interestInput).toBeVisible();
     await interestInput.fill("2");
-    await page.getByTestId("type-submit-interestscore").click();
+    await page.getByTestId("type-submit-interestScore").click();
 
     const interestChoice2 = page.getByRole("button", { name: "Interest: 2 of 4" });
     await expect(interestChoice2).toHaveAttribute("aria-pressed", "true");
@@ -62,13 +62,13 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await page.goto("/check-in");
 
     // Answer taps
-    const moodInput = page.getByTestId("type-input-moodscore");
+    const moodInput = page.getByTestId("type-input-moodScore");
     await moodInput.fill("2");
-    await page.getByTestId("type-submit-moodscore").click();
+    await page.getByTestId("type-submit-moodScore").click();
 
-    const interestInput = page.getByTestId("type-input-interestscore");
+    const interestInput = page.getByTestId("type-input-interestScore");
     await interestInput.fill("2");
-    await page.getByTestId("type-submit-interestscore").click();
+    await page.getByTestId("type-submit-interestScore").click();
 
     // Answer PHQ-9 item 9 with score 1 by typing
     const item9Input = page.getByTestId("type-input-9");
@@ -96,8 +96,8 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await expect(voiceButtons).toHaveCount(0);
 
     // Text typing inputs remain available for everyone
-    await expect(page.getByTestId("type-input-moodscore")).toBeVisible();
-    await expect(page.getByTestId("type-input-interestscore")).toBeVisible();
+    await expect(page.getByTestId("type-input-moodScore")).toBeVisible();
+    await expect(page.getByTestId("type-input-interestScore")).toBeVisible();
   });
 
   test("4. check with both kinds of sample patient: anxiety patient gets GAD-7, depression patient never sees it", async ({
@@ -139,13 +139,13 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await page.goto("/check-in");
 
     // Answer taps to trigger PHQ-9
-    const moodInput = page.getByTestId("type-input-moodscore");
+    const moodInput = page.getByTestId("type-input-moodScore");
     await moodInput.fill("2");
-    await page.getByTestId("type-submit-moodscore").click();
+    await page.getByTestId("type-submit-moodScore").click();
 
-    const interestInput = page.getByTestId("type-input-interestscore");
+    const interestInput = page.getByTestId("type-input-interestScore");
     await interestInput.fill("2");
-    await page.getByTestId("type-submit-interestscore").click();
+    await page.getByTestId("type-submit-interestScore").click();
 
     // Verify PHQ-9 section is visible
     const phq9Section = page.getByTestId("phq9-section");
@@ -176,13 +176,13 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await page.goto("/check-in");
 
     // Answer taps
-    const moodInput = page.getByTestId("type-input-moodscore");
+    const moodInput = page.getByTestId("type-input-moodScore");
     await moodInput.fill("2");
-    await page.getByTestId("type-submit-moodscore").click();
+    await page.getByTestId("type-submit-moodScore").click();
 
-    const interestInput = page.getByTestId("type-input-interestscore");
+    const interestInput = page.getByTestId("type-input-interestScore");
     await interestInput.fill("2");
-    await page.getByTestId("type-submit-interestscore").click();
+    await page.getByTestId("type-submit-interestScore").click();
 
     // Verify GAD-7 section is visible
     const gad7Section = page.getByTestId("gad7-section");
@@ -213,7 +213,7 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await page.goto("/check-in");
 
     // Verify page header contains the true plain sentence
-    const header = page.locator("header");
+    const header = page.getByRole("main").locator("header");
     await expect(header).toContainText("The answers of this round are saved");
     await expect(header).toContainText("never scored as zero");
     await expect(header).toContainText("simulated");
@@ -246,10 +246,10 @@ test.describe("Check-in screen: GAD-7, typing answers, and on-device voice gatin
     await expect(page.getByTestId("crisis-path")).toHaveCount(0);
 
     // Type a fixed help phrase ("emergency") into the mood input
-    const moodInput = page.getByTestId("type-input-moodscore");
+    const moodInput = page.getByTestId("type-input-moodScore");
     await expect(moodInput).toBeVisible();
     await moodInput.fill("emergency");
-    await page.getByTestId("type-submit-moodscore").click();
+    await page.getByTestId("type-submit-moodScore").click();
 
     // The crisis path is displayed immediately on screen without waiting for the server
     const crisisPath = page.getByTestId("crisis-path");
