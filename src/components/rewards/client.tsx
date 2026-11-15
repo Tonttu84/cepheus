@@ -182,7 +182,7 @@ export function PreferencesForm({
           <label
             key={task.key}
             htmlFor={`pref-${task.key}`}
-            className={`min-h-[44px] flex items-center gap-3 p-3 rounded-lg border ${
+            className={`min-h-11 flex items-center gap-3 p-2.5 rounded-lg border ${
               preferred.includes(task.key)
                 ? "border-accent-sage bg-accent-sage-soft/30"
                 : "border-border-hairline bg-surface-card"
@@ -192,7 +192,7 @@ export function PreferencesForm({
               id={`pref-${task.key}`}
               type="checkbox"
               aria-label={task.title}
-              className="w-5 h-5 rounded border-border-tactile text-accent-sage focus:ring-accent-sage cursor-pointer disabled:opacity-50"
+              className="h-11 w-11 min-h-11 min-w-11 shrink-0 rounded border-border-tactile text-accent-sage focus:ring-accent-sage cursor-pointer disabled:opacity-50"
               checked={preferred.includes(task.key)}
               onChange={() => handleToggle(task.key)}
               disabled={isPending}
