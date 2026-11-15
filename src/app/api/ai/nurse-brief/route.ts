@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiSession } from "@/server/auth";
 import { generateNursePreCallBrief } from "@/server/verda/client";
+import { STORED_WARNING_KINDS } from "@/domain/ai-support";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ const nurseBriefBodySchema = z
   .object({
     participantCode: z.string().min(2).max(64),
     sinceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    triggerKind: z.enum(["sustained_dip", "silence"]),
+    triggerKind: z.enum(STORED_WARNING_KINDS),
     broadAreas: z.array(z.string().min(1).max(40)).min(1).max(5),
     ringActiveDuringSilence: z.boolean().nullable(),
     metrics: z

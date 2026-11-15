@@ -83,10 +83,18 @@ export function buildDeterministicNurseBrief(
 ): NurseBriefOutput {
   const areasText =
     input.broadAreas.length > 0 ? input.broadAreas.join(", ") : "check_in";
-  const triggerPhrase =
-    input.triggerKind === "silence"
-      ? "unanswered check-in rounds"
-      : "a sustained check-in shift below personal baseline";
+  let triggerPhrase = "a sustained check-in shift below personal baseline";
+  if (input.triggerKind === "silence") {
+    triggerPhrase = "unanswered check-in rounds";
+  } else if (input.triggerKind === "low_answers") {
+    triggerPhrase = "check-in answers below personal baseline";
+  } else if (input.triggerKind === "phq9") {
+    triggerPhrase = "a shift on the PHQ-9 questionnaire";
+  } else if (input.triggerKind === "gad7") {
+    triggerPhrase = "a shift on the GAD-7 questionnaire";
+  } else if (input.triggerKind === "mixed") {
+    triggerPhrase = "a mixed pattern of low answers and unanswered check-in rounds";
+  }
 
   const ringNote =
     input.ringActiveDuringSilence === true

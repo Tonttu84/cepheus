@@ -4,6 +4,11 @@
  * Zero imports outside src/domain/.
  */
 
+import type { WarningKind } from "../warning";
+
+export type { WarningKind };
+export { STORED_WARNING_KINDS } from "../warning";
+
 export const SAFE_ACTION_KEYS = [
   "short_walk",
   "breathing_space",
@@ -43,7 +48,7 @@ export interface NurseBriefMetric {
 export interface NurseBriefInput {
   readonly participantCode: string;
   readonly sinceDate: string;
-  readonly triggerKind: "sustained_dip" | "silence";
+  readonly triggerKind: WarningKind;
   readonly broadAreas: readonly string[];
   readonly ringActiveDuringSilence: boolean | null;
   readonly metrics: readonly NurseBriefMetric[];

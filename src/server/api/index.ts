@@ -42,3 +42,4 @@ export {
   type DemoSwitches,
 } from "./settings";
 export { advanceDemoAndRunSystemWork } from "./demo";
+export { listClinicNurseCalls, type ClinicNurseCallView } from "./clinic-nurse-calls";

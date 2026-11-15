@@ -61,6 +61,28 @@ export async function ensureClinicFlag() {
   });
 }
 
+export async function ensureCrisisEvent() {
+  const prisma = getPrisma();
+  const patient = await prisma.participant.findFirstOrThrow({
+    where: { participantCode: "P-SIM-001" },
+  });
+  const existing = await prisma.crisisEvent.findFirst({
+    where: { participantId: patient.id, acknowledgedAt: null },
+  });
+  if (existing) return existing;
+  return prisma.crisisEvent.create({
+    data: {
+      participantId: patient.id,
+      clinicId: "sim-clinic-01",
+      roundNumber: 1,
+      itemId: "phq9_item9",
+      value: 1,
+      occurredAt: new Date().toISOString(),
+      isSimulated: true,
+    },
+  });
+}
+
 export async function signInAsPatient(
   page: Page,
   contextOrCode?: BrowserContext | SimulatedPatientPresetKey,
@@ -95,6 +117,7 @@ export async function signInAsPatient(
 export interface SignInStaffOptions {
   readonly otherClinic?: boolean;
   readonly ensureFlag?: boolean;
+  readonly ensureCrisisEvent?: boolean;
 }
 
 export async function signInAsStaff(
@@ -115,6 +138,10 @@ export async function signInAsStaff(
 
   if (opts?.ensureFlag) {
     await ensureClinicFlag();
+  }
+
+  if (opts?.ensureCrisisEvent) {
+    await ensureCrisisEvent();
   }
 
   if (opts?.otherClinic) {

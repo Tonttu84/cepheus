@@ -7,6 +7,17 @@ export type WarningEvent =
   | { type: 'gad7_completed'; total: number; date: string }
   | { type: 'call_recorded' };
 
+export const STORED_WARNING_KINDS = [
+  'low_answers',
+  'silence',
+  'mixed',
+  'phq9',
+  'gad7',
+  'sustained_dip',
+] as const;
+
+export type WarningKind = (typeof STORED_WARNING_KINDS)[number];
+
 export type WarningEffect = 
   | { type: 'small_dip'; version: number }
   | { type: 'warning'; kind: 'low_answers' | 'silence' | 'mixed' | 'phq9' | 'gad7'; since: string; version: number }

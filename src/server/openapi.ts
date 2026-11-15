@@ -74,6 +74,12 @@ export const API_ROUTES: readonly RouteEntry[] = [
   },
   {
     path: "/api/clinic/nurse-calls",
+    method: "get",
+    caller: "staff",
+    summary: "Nurse call records for patients of the caller's clinic",
+  },
+  {
+    path: "/api/clinic/nurse-calls",
     method: "post",
     caller: "staff",
     summary: "Record the outcome of a nurse call about a flag",
