@@ -129,6 +129,28 @@ export async function resetRewardsState(
   }
 }
 
+export async function resetPatientConsentForTest(
+  participantCode: SimulatedPatientPresetKey = "P-SIM-001"
+): Promise<void> {
+  const prisma = getPrisma();
+  const patient = await prisma.participant.findFirstOrThrow({
+    where: { participantCode },
+  });
+  await prisma.participant.update({
+    where: { id: patient.id },
+    data: { takingPart: false },
+  });
+  await prisma.consentEvent.create({
+    data: {
+      participantId: patient.id,
+      clinicId: patient.clinicId,
+      layer: "taking_part",
+      enabled: false,
+      noticeVersion: "v1",
+    },
+  });
+}
+
 export async function signInAsPatient(
   page: Page,
   contextOrCode?: BrowserContext | SimulatedPatientPresetKey,

@@ -313,17 +313,20 @@ export async function seedDatabase(
       const participantId = participant.id;
 
       await tx.measurementConsent.createMany({
-        data: dataset.consents.map((c) => ({
-          participantId,
-          clinicId,
-          method: c.method,
-          broadArea: c.broadArea,
-          recordedDescription: c.recordedDescription,
-          enabled: c.enabled,
-          isPersonalSign: c.isPersonalSign,
-          consentedAt: c.consentedAt,
-          revokedAt: c.revokedAt,
-        })),
+        data: dataset.consents.map((c) => {
+          const isCore = c.method === "check_in" || c.method === "phq9";
+          return {
+            participantId,
+            clinicId,
+            method: c.method,
+            broadArea: c.broadArea,
+            recordedDescription: c.recordedDescription,
+            enabled: isCore ? c.enabled : false,
+            isPersonalSign: c.isPersonalSign,
+            consentedAt: isCore ? c.consentedAt : null,
+            revokedAt: isCore ? c.revokedAt : null,
+          };
+        }),
       });
 
       await tx.consentEvent.createMany({

@@ -8,6 +8,7 @@ describe('Consent', () => {
     expect(INITIAL_CONSENT_STATE.rule_check).toBe(false);
     expect(INITIAL_CONSENT_STATE.methods.ring).toBe(false);
     expect(INITIAL_CONSENT_STATE.methods.camera).toBe(false);
+    expect(INITIAL_CONSENT_STATE.detailed_answers).toBe(false);
   });
 
   it('Nothing is allowed when taking_part is off', () => {
@@ -39,6 +40,19 @@ describe('Consent', () => {
 
     const stateOn = { ...INITIAL_CONSENT_STATE, taking_part: true, rule_check: true };
     expect(isPurposeAllowed(stateOn, 'rule_check')).toBe(true);
+  });
+
+  it('detailed_answers needs taking_part and detailed_answers switch', () => {
+    const stateOff = { ...INITIAL_CONSENT_STATE, taking_part: true, detailed_answers: false };
+    expect(isPurposeAllowed(stateOff, 'detailed_answers')).toBe(false);
+    expect(isPurposeAllowed(stateOff, 'personalisation')).toBe(false);
+
+    const stateOn = { ...INITIAL_CONSENT_STATE, taking_part: true, detailed_answers: true };
+    expect(isPurposeAllowed(stateOn, 'detailed_answers')).toBe(true);
+    expect(isPurposeAllowed(stateOn, 'personalisation')).toBe(true);
+
+    const stateNoTakingPart = { ...INITIAL_CONSENT_STATE, taking_part: false, detailed_answers: true };
+    expect(isPurposeAllowed(stateNoTakingPart, 'detailed_answers')).toBe(false);
   });
 
   it('an unknown method must be refused', () => {

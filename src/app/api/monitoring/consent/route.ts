@@ -12,7 +12,12 @@ export const dynamic = "force-dynamic";
 
 const consentSchema = z
   .object({
-    method: z.enum(["ring_rhythm", "camera_expressivity", "home_routine"]),
+    method: z.enum([
+      "ring_rhythm",
+      "camera_expressivity",
+      "home_routine",
+      "detailed_answers",
+    ]),
     enabled: z.boolean(),
   })
   .strict();

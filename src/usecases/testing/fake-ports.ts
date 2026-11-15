@@ -117,6 +117,21 @@ export class FakePatientRepository implements PatientRepository {
   }
 
   async savePatient(record: PatientRecord): Promise<void> {
+    const previous = this.ctx.state.patients[record.patientId];
+    if (previous?.consent.detailed_answers && !record.consent.detailed_answers) {
+      if (this.ctx.state.phq9[record.patientId]) {
+        this.ctx.state.phq9[record.patientId] = this.ctx.state.phq9[record.patientId].map((p) => ({
+          ...p,
+          answers: [],
+        }));
+      }
+      if (this.ctx.state.gad7[record.patientId]) {
+        this.ctx.state.gad7[record.patientId] = this.ctx.state.gad7[record.patientId].map((g) => ({
+          ...g,
+          answers: [],
+        }));
+      }
+    }
     this.ctx.state.patients[record.patientId] = structuredClone(record);
   }
 }
@@ -174,12 +189,21 @@ export class FakePhq9Repository implements Phq9Repository {
     if (!this.ctx.state.phq9[assessment.patientId]) {
       this.ctx.state.phq9[assessment.patientId] = [];
     }
+    const patientConsent = this.ctx.state.patients[assessment.patientId]?.consent;
+    const storeItemAnswers = patientConsent?.detailed_answers === true;
+    const toSave: StoredPhq9 = {
+      ...structuredClone(assessment),
+      answers:
+        assessment.progress === 'unfinished' || storeItemAnswers
+          ? structuredClone(assessment.answers)
+          : [],
+    };
     const list = this.ctx.state.phq9[assessment.patientId];
     const idx = list.findIndex((p) => p.roundNumber === assessment.roundNumber);
     if (idx >= 0) {
-      list[idx] = structuredClone(assessment);
+      list[idx] = toSave;
     } else {
-      list.push(structuredClone(assessment));
+      list.push(toSave);
     }
   }
 }
@@ -199,12 +223,18 @@ export class FakeGad7Repository implements Gad7Repository {
     if (!this.ctx.state.gad7[assessment.patientId]) {
       this.ctx.state.gad7[assessment.patientId] = [];
     }
+    const patientConsent = this.ctx.state.patients[assessment.patientId]?.consent;
+    const shouldStrip = patientConsent?.detailed_answers === false && typeof assessment.total === 'number';
+    const toSave: StoredGad7 = {
+      ...structuredClone(assessment),
+      answers: shouldStrip ? [] : structuredClone(assessment.answers),
+    };
     const list = this.ctx.state.gad7[assessment.patientId];
     const idx = list.findIndex((g) => g.roundNumber === assessment.roundNumber);
     if (idx >= 0) {
-      list[idx] = structuredClone(assessment);
+      list[idx] = toSave;
     } else {
-      list.push(structuredClone(assessment));
+      list.push(toSave);
     }
   }
 }

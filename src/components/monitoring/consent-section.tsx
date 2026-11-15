@@ -17,6 +17,19 @@ export function ConsentSection({
   busyAction,
   onToggleConsent,
 }: ConsentSectionProps) {
+  const detailedConsent = consents.find((c) => c.method === "detailed_answers") ?? {
+    method: "detailed_answers",
+    label: "Keep individual answers",
+    broadArea: "check_in" as const,
+    recordedDescription:
+      "Keep my individual answers so the service can learn what helps me. Kept on the service's server in the EU, never on this phone; only your own answers from now on. Kept so it can be used for personalisation later. Can be withdrawn at any time, and withdrawing deletes what was kept.",
+    enabled: false,
+  };
+
+  const allCards = consents.some((c) => c.method === "detailed_answers")
+    ? consents
+    : [...consents, detailedConsent];
+
   return (
     <section
       aria-label="Per-method consent controls"
@@ -31,12 +44,13 @@ export function ConsentSection({
         nothing — separate from whether a device is connected.
       </p>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        {consents.map((c) => {
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {allCards.map((c) => {
+          const isDetailedAnswers = c.method === "detailed_answers";
           const device =
             deviceConnections[c.method as PassiveMethodKey] ?? {
               connected: false,
-              label: "No device connected",
+              label: isDetailedAnswers ? "Server storage in EU" : "No device connected",
             };
           return (
             <div

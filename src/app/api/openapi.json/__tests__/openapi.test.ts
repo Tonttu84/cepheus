@@ -19,6 +19,7 @@ const NOT_IN_THE_DOCUMENT = new Set([
   "/api/auth/session",
   "/api/auth/sign-in",
   "/api/auth/sign-out",
+  "/api/consent",
   "/api/demo",
   "/api/demo/advance",
   "/api/demo/reset",

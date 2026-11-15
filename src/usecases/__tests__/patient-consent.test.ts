@@ -139,5 +139,148 @@ describe('Patient consent use cases', () => {
       );
       expect(res.ok).toBe(false);
     });
+
+    it('layer 1: agrees to taking part and turns taking_part switch on', async () => {
+      await ports.patients.savePatient(
+        createPatientRecord(PATIENT_A, {
+          consent: { taking_part: false, methods: { ring: false, camera: false }, rule_check: false },
+        })
+      );
+
+      const before = await getPatientConsent(actorPatientA, { patientId: PATIENT_A }, ports);
+      expect(before.ok && before.value.consent.taking_part).toBe(false);
+
+      const res = await updateMethodConsent(
+        actorPatientA,
+        { patientId: PATIENT_A, method: 'taking_part', enabled: true },
+        ports
+      );
+      expect(res.ok).toBe(true);
+
+      const after = await getPatientConsent(actorPatientA, { patientId: PATIENT_A }, ports);
+      expect(after.ok && after.value.consent.taking_part).toBe(true);
+    });
+
+    it('each layer: updates layer 1, layer 2 methods, and layer 3 detailed answers independently', async () => {
+      // Layer 1
+      await updateMethodConsent(
+        actorPatientA,
+        { patientId: PATIENT_A, method: 'taking_part', enabled: true },
+        ports
+      );
+      // Layer 2
+      await updateMethodConsent(
+        actorPatientA,
+        { patientId: PATIENT_A, method: 'ring_rhythm', enabled: true },
+        ports
+      );
+      await updateMethodConsent(
+        actorPatientA,
+        { patientId: PATIENT_A, method: 'camera_expressivity', enabled: true },
+        ports
+      );
+      // Layer 3
+      await updateMethodConsent(
+        actorPatientA,
+        { patientId: PATIENT_A, method: 'detailed_answers', enabled: true },
+        ports
+      );
+
+      const read = await getPatientConsent(actorPatientA, { patientId: PATIENT_A }, ports);
+      expect(read.ok).toBe(true);
+      if (read.ok) {
+        expect(read.value.consent.taking_part).toBe(true);
+        expect(read.value.consent.methods.ring).toBe(true);
+        expect(read.value.consent.methods.camera).toBe(true);
+        expect(read.value.consent.detailed_answers).toBe(true);
+      }
+    });
+
+    it('a patient without layer 3 never gets item answers written on completion', async () => {
+      // Patient A has layer 3 off
+      await updateMethodConsent(
+        actorPatientA,
+        { patientId: PATIENT_A, method: 'detailed_answers', enabled: false },
+        ports
+      );
+
+      await ports.phq9.savePhq9({
+        patientId: PATIENT_A,
+        roundNumber: 1,
+        progress: 'completed',
+        answers: [{ id: '1', value: 2 }, { id: '2', value: 1 }],
+        total: 3,
+        completedAt: '2026-11-16T18:00:00.000Z',
+        completedInRoundNumber: 1,
+        date: '2026-11-16',
+      });
+
+      const assessments = await ports.phq9.getPhq9s(PATIENT_A);
+      expect(assessments).toHaveLength(1);
+      expect(assessments[0].total).toBe(3);
+      expect(assessments[0].answers).toEqual([]);
+    });
+
+    it('withdrawing layer 3 deletes kept answers, and another patient is never affected', async () => {
+      const actorPatientB: PatientActor = { kind: 'patient', patientId: PATIENT_B, clinicId: CLINIC_ID };
+
+      // Both patients have layer 3 on initially
+      await updateMethodConsent(
+        actorPatientA,
+        { patientId: PATIENT_A, method: 'detailed_answers', enabled: true },
+        ports
+      );
+      await updateMethodConsent(
+        actorPatientB,
+        { patientId: PATIENT_B, method: 'detailed_answers', enabled: true },
+        ports
+      );
+
+      // Save completed PHQ-9 for Patient A and Patient B
+      await ports.phq9.savePhq9({
+        patientId: PATIENT_A,
+        roundNumber: 1,
+        progress: 'completed',
+        answers: [{ id: '1', value: 3 }, { id: '2', value: 2 }],
+        total: 5,
+        completedAt: '2026-11-16T18:00:00.000Z',
+        completedInRoundNumber: 1,
+        date: '2026-11-16',
+      });
+      await ports.phq9.savePhq9({
+        patientId: PATIENT_B,
+        roundNumber: 1,
+        progress: 'completed',
+        answers: [{ id: '1', value: 1 }, { id: '2', value: 1 }],
+        total: 2,
+        completedAt: '2026-11-16T18:00:00.000Z',
+        completedInRoundNumber: 1,
+        date: '2026-11-16',
+      });
+
+      // Both initially have their item answers kept
+      const phq9AInitial = await ports.phq9.getPhq9s(PATIENT_A);
+      const phq9BInitial = await ports.phq9.getPhq9s(PATIENT_B);
+      expect(phq9AInitial[0].answers).toEqual([{ id: '1', value: 3 }, { id: '2', value: 2 }]);
+      expect(phq9BInitial[0].answers).toEqual([{ id: '1', value: 1 }, { id: '2', value: 1 }]);
+
+      // Patient A withdraws layer 3
+      const withdrawRes = await updateMethodConsent(
+        actorPatientA,
+        { patientId: PATIENT_A, method: 'detailed_answers', enabled: false },
+        ports
+      );
+      expect(withdrawRes.ok).toBe(true);
+
+      // Patient A's kept answers are deleted (empty), total is kept
+      const phq9AAfter = await ports.phq9.getPhq9s(PATIENT_A);
+      expect(phq9AAfter[0].total).toBe(5);
+      expect(phq9AAfter[0].answers).toEqual([]);
+
+      // Patient B is completely unaffected!
+      const phq9BAfter = await ports.phq9.getPhq9s(PATIENT_B);
+      expect(phq9BAfter[0].total).toBe(2);
+      expect(phq9BAfter[0].answers).toEqual([{ id: '1', value: 1 }, { id: '2', value: 1 }]);
+    });
   });
 });
