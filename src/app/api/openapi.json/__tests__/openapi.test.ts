@@ -27,6 +27,7 @@ const NOT_IN_THE_DOCUMENT = new Set([
   "/api/fitbit/sync",
   "/api/health",
   "/api/monitoring/consent",
+  "/api/monitoring/health-connect/pairing",
   "/api/monitoring/summary",
   "/api/webhooks/health-connect",
 ]);

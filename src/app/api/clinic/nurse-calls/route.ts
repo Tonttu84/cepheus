@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/server/auth";
 import {
   failureOf,
   getRouteDeps,
@@ -18,6 +19,8 @@ const ROUTE = "clinic:nurse-calls";
 
 /** Record the outcome of a nurse call regarding a clinic flag. */
 export async function POST(request: Request) {
+  const sessionGuard = requireApiSession(request, "staff");
+  if (!sessionGuard.ok) return sessionGuard.response;
   const guard = guardStaff(request, ROUTE);
   if (!guard.ok) return guard.response;
   if (new URL(request.url).search.length > 0) return refuse(400, "This route takes no parameters.");

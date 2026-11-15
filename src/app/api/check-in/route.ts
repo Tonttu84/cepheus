@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/server/auth";
 import { getRouteDeps, guardPatient, orStorageFailure, respond, failureOf } from "@/server/api";
 import { getCheckInState } from "@/usecases";
 
@@ -7,6 +8,8 @@ const ROUTE = "check-in:state";
 
 /** The signed-in patient's own check-in state for the round that is open now. */
 export async function GET(request: Request) {
+  const sessionGuard = requireApiSession(request, "patient");
+  if (!sessionGuard.ok) return sessionGuard.response;
   const guard = guardPatient(request, ROUTE);
   if (!guard.ok) return guard.response;
   const { actor } = guard;

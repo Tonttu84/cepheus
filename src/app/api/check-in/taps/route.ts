@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/server/auth";
 import {
   getRouteDeps,
   guardPatient,
@@ -17,6 +18,8 @@ const ROUTE = "check-in:taps";
 
 /** The two taps of the open round, for the signed-in patient only. */
 export async function POST(request: Request) {
+  const sessionGuard = requireApiSession(request, "patient");
+  if (!sessionGuard.ok) return sessionGuard.response;
   const guard = guardPatient(request, ROUTE);
   if (!guard.ok) return guard.response;
   const input = parseInput(CheckInTapsRequestSchema, await readJsonBody(request));

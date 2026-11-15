@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/server/auth";
 import {
   getRouteDeps,
   guardPatient,
@@ -17,6 +18,8 @@ const ROUTE = "check-in:gad7";
 
 /** One GAD-7 item for the signed-in patient, when the GAD-7 is switched on for them (D35). */
 export async function POST(request: Request) {
+  const sessionGuard = requireApiSession(request, "patient");
+  if (!sessionGuard.ok) return sessionGuard.response;
   const guard = guardPatient(request, ROUTE);
   if (!guard.ok) return guard.response;
   const input = parseInput(CheckInGad7RequestSchema, await readJsonBody(request));

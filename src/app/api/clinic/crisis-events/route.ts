@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/server/auth";
 import { getRouteDeps, guardStaff, orStorageFailure, refuse, respond } from "@/server/api";
 import { listUnacknowledgedCrisisEvents } from "@/usecases";
 
@@ -7,6 +8,8 @@ const ROUTE = "clinic:crisis-events";
 
 /** Unacknowledged crisis events for patients of the signed-in staff member's own clinic. */
 export async function GET(request: Request) {
+  const sessionGuard = requireApiSession(request, "staff");
+  if (!sessionGuard.ok) return sessionGuard.response;
   const guard = guardStaff(request, ROUTE);
   if (!guard.ok) return guard.response;
   if (new URL(request.url).search.length > 0) return refuse(400, "This route takes no parameters.");

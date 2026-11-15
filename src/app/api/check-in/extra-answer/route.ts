@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/server/auth";
 import {
   getRouteDeps,
   guardPatient,
@@ -16,6 +17,8 @@ const ROUTE = "check-in:extra-answer";
 
 /** The experimental rotating extra question of the open round (D25); never read by the warning rule. */
 export async function POST(request: Request) {
+  const sessionGuard = requireApiSession(request, "patient");
+  if (!sessionGuard.ok) return sessionGuard.response;
   const guard = guardPatient(request, ROUTE);
   if (!guard.ok) return guard.response;
   const input = parseInput(CheckInExtraAnswerRequestSchema, await readJsonBody(request));

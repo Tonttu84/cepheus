@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/server/auth";
 import {
   getRouteDeps,
   guardPatient,
@@ -5,6 +6,7 @@ import {
   orStorageFailure,
   parseInput,
   readJsonBody,
+  refuse,
   respond,
   runRuleIfNeeded,
   failureOf,
@@ -24,6 +26,19 @@ const ROUTE = "check-in:phq9";
 export async function POST(request: Request) {
   const raw = await readJsonBody(request);
   const crisis = isCrisisAnswer(raw);
+  const sessionGuard = requireApiSession(request, "patient");
+  if (!sessionGuard.ok) {
+    if (crisis) {
+      return refuse(
+        sessionGuard.response.status,
+        sessionGuard.response.status === 401
+          ? "Sign in required."
+          : "Only patient sessions may call this.",
+        true
+      );
+    }
+    return sessionGuard.response;
+  }
   const guard = guardPatient(request, ROUTE, crisis);
   if (!guard.ok) return guard.response;
   const input = parseInput(CheckInPhq9RequestSchema, raw, crisis);

@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/server/auth";
 import {
   getRouteDeps,
   guardPatient,
@@ -17,6 +18,8 @@ const ROUTE = "check-in:not-today";
 
 /** "Not today" for the open round: recorded as such, never as a missed or low answer. */
 export async function POST(request: Request) {
+  const sessionGuard = requireApiSession(request, "patient");
+  if (!sessionGuard.ok) return sessionGuard.response;
   const guard = guardPatient(request, ROUTE);
   if (!guard.ok) return guard.response;
   const input = parseInput(CheckInNotTodayRequestSchema, (await readJsonBody(request)) ?? {});
