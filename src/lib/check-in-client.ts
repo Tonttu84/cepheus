@@ -11,6 +11,8 @@ export interface CheckInStateResponse {
   readonly phq9Progress: "not_started" | "unfinished" | "completed";
   readonly hasSuggestionWaiting: boolean;
   readonly extraItem: unknown | null;
+  readonly isGad7Due?: boolean;
+  readonly gad7Progress?: "not_started" | "unfinished" | "completed";
 }
 
 export type ClientApiResult<T> =
@@ -143,3 +145,48 @@ export async function submitCheckInPhq9(input: {
     };
   }
 }
+
+export interface SubmitGad7Result {
+  readonly saved: boolean;
+  readonly isComplete: boolean;
+}
+
+export async function submitCheckInGad7(input: {
+  itemId: string;
+  value: number;
+}): Promise<ClientApiResult<SubmitGad7Result>> {
+  try {
+    const res = await fetch("/api/check-in/gad7", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (res.status === 401) {
+      return { ok: false, status: 401, error: "unauthorized" };
+    }
+    if (res.status === 503) {
+      return { ok: false, status: 503, saved: false, error: "service_unavailable" };
+    }
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: res.status,
+        error: data.message ?? `http_${res.status}`,
+      };
+    }
+    return {
+      ok: true,
+      saved: data.saved ?? true,
+      isComplete: data.isComplete ?? false,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 503,
+      saved: false,
+      error: err instanceof Error ? err.message : "network_error",
+    };
+  }
+}
+

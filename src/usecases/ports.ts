@@ -269,6 +269,8 @@ export interface CheckInState {
   readonly phq9Progress: Phq9Progress;
   readonly hasSuggestionWaiting: boolean;
   readonly extraItem: ExtraItem | null;
+  readonly isGad7Due?: boolean;
+  readonly gad7Progress?: Phq9Progress;
 }
 
 export interface SubmitTapsResult {
