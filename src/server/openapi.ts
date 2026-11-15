@@ -97,6 +97,13 @@ export const API_ROUTES: readonly RouteEntry[] = [
   { path: "/api/patient/consent", method: "post", caller: "patient", summary: "Update a consent switch" },
   { path: "/api/patient/suggestion", method: "get", caller: "patient", summary: "Get the patient's current suggestion" },
   { path: "/api/patient/suggestion", method: "post", caller: "patient", summary: "Record a choice for the patient's suggestion" },
+  { path: "/api/rewards/account", method: "get", caller: "patient", summary: "The patient's rewards account, balance and today's task" },
+  { path: "/api/rewards/payout", method: "post", caller: "patient", summary: "Request simulated payout of rewards balance (minimum 10 euros)" },
+  { path: "/api/rewards/preferences", method: "get", caller: "patient", summary: "Read small task preferences" },
+  { path: "/api/rewards/preferences", method: "post", caller: "patient", summary: "Update small task preferences" },
+  { path: "/api/rewards/task/done", method: "post", caller: "patient", summary: "Mark today's small task done" },
+  { path: "/api/rewards/task/not-today", method: "post", caller: "patient", summary: 'Mark today\'s small task "not today"' },
+  { path: "/api/rewards/today-task", method: "get", caller: "patient", summary: "Read today's offered small task" },
   { path: "/api/openapi.json", method: "get", caller: "anyone", summary: "This document" },
 ];
 
