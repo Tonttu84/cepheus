@@ -216,7 +216,7 @@ function SwitchesSection({
         Changeable while the server runs. Resets to environment defaults on Reset.
       </p>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SwitchCard
           title="Rewards"
           description="Simulated rewards for check-ins and tasks (D48)."
@@ -240,6 +240,14 @@ function SwitchesSection({
           status={switches.extraQuestion}
           isPending={isPending}
           onToggle={() => onToggle("extraQuestion", !switches.extraQuestion)}
+        />
+        <SwitchCard
+          title="Expressivity showcase"
+          description="Whether this is worth it is doubtful: it needs a camera in the home, and it adds privacy and data-security cost for an uncertain benefit. It is off by default."
+          statusKey="expressivity"
+          status={switches.expressivityShowcase}
+          isPending={isPending}
+          onToggle={() => onToggle("expressivityShowcase", !switches.expressivityShowcase)}
         />
       </div>
     </section>
