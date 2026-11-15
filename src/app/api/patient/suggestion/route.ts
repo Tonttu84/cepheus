@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiSession } from "@/server/auth";
+import { verifySameOrigin } from "@/server/security";
 import { getRouteDeps } from "@/server/api";
 import { getPatientSuggestion, recordSuggestionChoice } from "@/usecases";
 
@@ -31,6 +32,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!verifySameOrigin(request)) {
+    return NextResponse.json(
+      { ok: false, error: "Cross-origin POST rejected." },
+      { status: 403 }
+    );
+  }
+
   const auth = requireApiSession(request, "patient");
   if (!auth.ok) {
     return auth.response;

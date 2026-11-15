@@ -16,6 +16,17 @@ type Fake = ReturnType<typeof setUpRoutes>;
 
 const OTHER_PATIENT_ID = "patient-b";
 
+function patientApiRequest(
+  path: string,
+  options: Parameters<typeof apiRequest>[1] & { origin?: string | null } = {}
+): Request {
+  const req = apiRequest(path, options);
+  if (options.origin !== null) {
+    req.headers.set("origin", options.origin ?? "http://localhost:3000");
+  }
+  return req;
+}
+
 function suggestionRecord(id: string, patientId: string = PATIENT_ID, overrides: Partial<StoredSuggestion> = {}): StoredSuggestion {
   return {
     id,
@@ -55,7 +66,7 @@ describe("patient API routes", () => {
       expect(getSugRes.status).toBe(401);
 
       const postSugRes = await postSuggestionChoice(
-        apiRequest("/api/patient/suggestion", { method: "POST", body: { suggestionId: "sug-1", choice: "accepted" } })
+        patientApiRequest("/api/patient/suggestion", { method: "POST", body: { suggestionId: "sug-1", choice: "accepted" } })
       );
       expect(postSugRes.status).toBe(401);
 
@@ -63,7 +74,7 @@ describe("patient API routes", () => {
       expect(getConsentRes.status).toBe(401);
 
       const postConsentRes = await postConsent(
-        apiRequest("/api/patient/consent", { method: "POST", body: { method: "ring", enabled: false } })
+        patientApiRequest("/api/patient/consent", { method: "POST", body: { method: "ring", enabled: false } })
       );
       expect(postConsentRes.status).toBe(401);
     });
@@ -75,7 +86,7 @@ describe("patient API routes", () => {
       expect(getSugRes.status).toBe(403);
 
       const postSugRes = await postSuggestionChoice(
-        apiRequest("/api/patient/suggestion", {
+        patientApiRequest("/api/patient/suggestion", {
           method: "POST",
           body: { suggestionId: "sug-1", choice: "accepted" },
           cookie,
@@ -87,13 +98,45 @@ describe("patient API routes", () => {
       expect(getConsentRes.status).toBe(403);
 
       const postConsentRes = await postConsent(
-        apiRequest("/api/patient/consent", {
+        patientApiRequest("/api/patient/consent", {
           method: "POST",
           body: { method: "ring", enabled: false },
           cookie,
         })
       );
       expect(postConsentRes.status).toBe(403);
+    });
+  });
+
+  describe("same-origin verification on POST routes", () => {
+    it("rejects POST /api/patient/suggestion from foreign origin with 403", async () => {
+      const res = await postSuggestionChoice(
+        patientApiRequest("/api/patient/suggestion", {
+          method: "POST",
+          body: { suggestionId: "sug-1", choice: "accepted" },
+          cookie: patientCookie(),
+          origin: "https://evil.attacker.example",
+        })
+      );
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.ok).toBe(false);
+      expect(json.error).toBe("Cross-origin POST rejected.");
+    });
+
+    it("rejects POST /api/patient/consent from foreign origin with 403", async () => {
+      const res = await postConsent(
+        patientApiRequest("/api/patient/consent", {
+          method: "POST",
+          body: { method: "ring", enabled: false },
+          cookie: patientCookie(),
+          origin: "https://evil.attacker.example",
+        })
+      );
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.ok).toBe(false);
+      expect(json.error).toBe("Cross-origin POST rejected.");
     });
   });
 
@@ -122,7 +165,7 @@ describe("patient API routes", () => {
       await fake.ports.suggestions.saveSuggestion(sug);
 
       const res = await postSuggestionChoice(
-        apiRequest("/api/patient/suggestion", {
+        patientApiRequest("/api/patient/suggestion", {
           method: "POST",
           body: { suggestionId: "sug-1", choice: "accepted" },
           cookie: patientCookie(),
@@ -143,7 +186,7 @@ describe("patient API routes", () => {
       await fake.ports.suggestions.saveSuggestion(sug);
 
       const res = await postSuggestionChoice(
-        apiRequest("/api/patient/suggestion", {
+        patientApiRequest("/api/patient/suggestion", {
           method: "POST",
           body: { suggestionId: "sug-1", choice: "skipped" },
           cookie: patientCookie(),
@@ -164,7 +207,7 @@ describe("patient API routes", () => {
       await fake.ports.suggestions.saveSuggestion(sug);
 
       const first = await postSuggestionChoice(
-        apiRequest("/api/patient/suggestion", {
+        patientApiRequest("/api/patient/suggestion", {
           method: "POST",
           body: { suggestionId: "sug-1", choice: "accepted" },
           cookie: patientCookie(),
@@ -173,7 +216,7 @@ describe("patient API routes", () => {
       expect(first.status).toBe(200);
 
       const second = await postSuggestionChoice(
-        apiRequest("/api/patient/suggestion", {
+        patientApiRequest("/api/patient/suggestion", {
           method: "POST",
           body: { suggestionId: "sug-1", choice: "skipped" },
           cookie: patientCookie(),
@@ -190,7 +233,7 @@ describe("patient API routes", () => {
       await fake.ports.suggestions.saveSuggestion(sugOther);
 
       const res = await postSuggestionChoice(
-        apiRequest("/api/patient/suggestion", {
+        patientApiRequest("/api/patient/suggestion", {
           method: "POST",
           body: { suggestionId: "sug-other", choice: "accepted" },
           cookie: patientCookie(PATIENT_ID),
@@ -201,7 +244,7 @@ describe("patient API routes", () => {
 
     it("returns 400 on malformed body payload", async () => {
       const res = await postSuggestionChoice(
-        apiRequest("/api/patient/suggestion", {
+        patientApiRequest("/api/patient/suggestion", {
           method: "POST",
           body: { suggestionId: "", choice: "invalid" },
           cookie: patientCookie(),
@@ -223,7 +266,7 @@ describe("patient API routes", () => {
 
     it("updates a method switch and returns the updated state", async () => {
       const res = await postConsent(
-        apiRequest("/api/patient/consent", {
+        patientApiRequest("/api/patient/consent", {
           method: "POST",
           body: { method: "ring", enabled: false },
           cookie: patientCookie(),
@@ -241,7 +284,7 @@ describe("patient API routes", () => {
 
     it("returns 400 for unknown method name", async () => {
       const res = await postConsent(
-        apiRequest("/api/patient/consent", {
+        patientApiRequest("/api/patient/consent", {
           method: "POST",
           body: { method: "unknown_sensor", enabled: false },
           cookie: patientCookie(),
