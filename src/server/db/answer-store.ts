@@ -66,6 +66,19 @@ export class InMemoryAnswerStore implements AnswerStoreView {
     this.entries.delete(keyOf(patientId, kind, roundNumber));
   }
 
+  deleteForPatient(patientId: string): void {
+    for (const key of this.entries.keys()) {
+      try {
+        const parsed = JSON.parse(key);
+        if (Array.isArray(parsed) && parsed[0] === patientId) {
+          this.entries.delete(key);
+        }
+      } catch {
+        // ignore malformed keys
+      }
+    }
+  }
+
   size(): number {
     return this.entries.size;
   }

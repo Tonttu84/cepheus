@@ -7,6 +7,7 @@ import {
 } from "@/lib/simulation";
 import { resetDemoClock } from "@/server/api/clock";
 import { resetSettings } from "@/server/api/settings";
+import { sharedAnswerStore, type InMemoryAnswerStore } from "./answer-store";
 import {
   createCalmFirstRound,
   createSampleParticipants,
@@ -19,6 +20,8 @@ import {
 export interface ResetOptions {
   /** The moment the live schedules are laid out from; now by default. */
   readonly now?: Date;
+  /** In-memory answer store to clear for simulated participants; sharedAnswerStore by default. */
+  readonly answerStore?: InMemoryAnswerStore;
 }
 
 async function seedParticipantCore(
@@ -304,10 +307,25 @@ export async function resetSimulatedData(
   resetSettings();
 
   const now = options.now ?? new Date();
+  const answerStore = options.answerStore ?? sharedAnswerStore;
   const dataset = generateSimulatedPersonWeeks({ seed: DEFAULT_SIMULATION_SEED });
   const liveSchedule = liveScheduleAt(now, 2);
 
+  let simulatedIdsToDelete: string[] = [];
+
   await prisma.$transaction(async (tx) => {
+    const existingSimulated = await tx.participant.findMany({
+      where: { isSimulated: true },
+      select: { id: true },
+    });
+    simulatedIdsToDelete = existingSimulated.map((p) => p.id);
+
+    if (simulatedIdsToDelete.length > 0) {
+      await tx.webhookCredential.deleteMany({
+        where: { participantId: { in: simulatedIdsToDelete } },
+      });
+    }
+
     await tx.participant.deleteMany({ where: { isSimulated: true } });
 
     const clinicId = await upsertSimClinic(tx);
@@ -323,4 +341,8 @@ export async function resetSimulatedData(
     await seedSuggestionsAndFlags(tx, participantId, clinicId, dataset);
     await createSampleParticipants(tx, clinicId, now);
   });
+
+  for (const id of simulatedIdsToDelete) {
+    answerStore.deleteForPatient(id);
+  }
 }

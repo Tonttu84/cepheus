@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getPrisma } from "@/lib/db";
 import { advanceDemoAndRunSystemWork, getDemoOffsetDays, resetDemoClock } from "@/server/api";
 import { getSimulatedPatientSummaries, resetSimulatedData } from "@/server/db";
+import { sharedAnswerStore } from "@/server/db/answer-store";
 import { seedDatabase } from "../../../../prisma/seed";
 
 describe("Demo advance and reset database integration (*.dbtest.ts)", () => {
@@ -88,6 +89,83 @@ describe("Demo advance and reset database integration (*.dbtest.ts)", () => {
       expect(nonSimulatedAfterReset?.isSimulated).toBe(false);
     } finally {
       // Clean up the non-simulated participant
+      await prisma.participant.deleteMany({
+        where: { id: nonSimulated.id },
+      });
+    }
+  });
+
+  it("reset deletes pairing credentials and in-memory answers of simulated participants while leaving non-simulated participants untouched", async () => {
+    // 1. Identify a seeded simulated participant
+    const simPatient = await prisma.participant.findFirstOrThrow({
+      where: { participantCode: "P-SIM-001", isSimulated: true },
+    });
+
+    // 2. Create a non-simulated participant
+    const nonSimulated = await prisma.participant.create({
+      data: {
+        externalId: "real-test-patient-002",
+        participantCode: "REAL-P-002",
+        label: "Real trial participant 2",
+        source: "trial",
+        isSimulated: false,
+      },
+    });
+
+    // 3. Create WebhookCredentials for both participants
+    const simCred = await prisma.webhookCredential.create({
+      data: {
+        participantId: simPatient.id,
+        tokenId: "tok-sim-001",
+        sealedSecret: "sealed-sim-secret",
+        bearerHash: "hash-sim-001",
+      },
+    });
+
+    const realCred = await prisma.webhookCredential.create({
+      data: {
+        participantId: nonSimulated.id,
+        tokenId: "tok-real-002",
+        sealedSecret: "sealed-real-secret",
+        bearerHash: "hash-real-002",
+      },
+    });
+
+    // 4. Place in-progress questionnaire answers into sharedAnswerStore
+    sharedAnswerStore.set(simPatient.id, "phq9", 1, [{ id: "1", value: 2 }]);
+    sharedAnswerStore.set(nonSimulated.id, "phq9", 1, [{ id: "1", value: 3 }]);
+
+    try {
+      expect(sharedAnswerStore.get(simPatient.id, "phq9", 1)).toEqual([{ id: "1", value: 2 }]);
+      expect(sharedAnswerStore.get(nonSimulated.id, "phq9", 1)).toEqual([{ id: "1", value: 3 }]);
+
+      // 5. Perform reset
+      await resetSimulatedData(prisma);
+
+      // 6. Verify simulated participant's credential was deleted
+      const simCredAfter = await prisma.webhookCredential.findUnique({
+        where: { id: simCred.id },
+      });
+      expect(simCredAfter).toBeNull();
+
+      // 7. Verify simulated participant's in-memory answers were cleared
+      expect(sharedAnswerStore.get(simPatient.id, "phq9", 1)).toBeUndefined();
+
+      // 8. CRITICAL: Non-simulated participant's credential and in-memory answers remain intact
+      const realCredAfter = await prisma.webhookCredential.findUnique({
+        where: { id: realCred.id },
+      });
+      expect(realCredAfter).not.toBeNull();
+      expect(realCredAfter?.participantId).toBe(nonSimulated.id);
+      expect(realCredAfter?.tokenId).toBe("tok-real-002");
+
+      expect(sharedAnswerStore.get(nonSimulated.id, "phq9", 1)).toEqual([{ id: "1", value: 3 }]);
+    } finally {
+      // Clean up non-simulated data
+      sharedAnswerStore.deleteForPatient(nonSimulated.id);
+      await prisma.webhookCredential.deleteMany({
+        where: { id: realCred.id },
+      });
       await prisma.participant.deleteMany({
         where: { id: nonSimulated.id },
       });
