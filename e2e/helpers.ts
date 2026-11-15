@@ -1,4 +1,10 @@
-import { test as base, type BrowserContext, type Cookie, type Page } from "@playwright/test";
+import {
+  expect,
+  test as base,
+  type BrowserContext,
+  type Cookie,
+  type Page,
+} from "@playwright/test";
 import {
   SIMULATED_PATIENT_PRESETS,
   SIMULATED_STAFF_PRESETS,
@@ -566,5 +572,4 @@ export async function createStaffSessionCookie(
   return createSessionCookie(session);
 }
 
-export { expect } from "@playwright/test";
-export { sealSession, SESSION_COOKIE_NAME };
+export { expect, sealSession, SESSION_COOKIE_NAME };
