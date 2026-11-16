@@ -43,7 +43,10 @@ export function createDbContext(prisma: PrismaClient, options: DbContextOptions 
       // committed; when it fails they are dropped with the rollback.
       execute: async (work) => {
         const answers = answerStore.stage();
-        const result = await prisma.$transaction((tx) => activeUnit.run({ tx, answers }, work));
+        const result = await prisma.$transaction(
+          (tx) => activeUnit.run({ tx, answers }, work),
+          { timeout: 30_000, maxWait: 10_000 }
+        );
         answers.commit();
         return result;
       },

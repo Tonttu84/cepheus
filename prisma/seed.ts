@@ -562,7 +562,7 @@ export async function seedDatabase(
           clinicFlags: dataset.clinicFlags.length,
         },
       };
-    });
+    }, { timeout: 60_000, maxWait: 15_000 });
 
     return result;
   } finally {

@@ -23,6 +23,7 @@ import {
   DemoTimelinePreview,
   type DemoMomentSummary,
 } from "@/components/demo-timeline-preview";
+import { PublicLandingShowcase } from "@/components/public-landing-showcase";
 
 export const dynamic = "force-dynamic";
 
@@ -308,60 +309,6 @@ function ExploreViewsGrid({ role }: { role: "patient" | "staff" }) {
   );
 }
 
-function PublicOverviewContent() {
-  return (
-    <div className="space-y-12 sm:space-y-16">
-      <header className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <SimulatedBadge subtitle="Post-TMS home wellbeing companion" />
-          <span className="text-xs text-ink-muted">
-            Sign in required for participant &amp; clinic views
-          </span>
-        </div>
-
-        <div className="max-w-3xl space-y-3">
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-primary sm:text-5xl">
-            Staying well at home after TMS
-          </h1>
-          <p className="text-base leading-relaxed text-ink-secondary sm:text-lg">
-            Finishing a course of Transcranial Magnetic Stimulation (TMS) often
-            leaves a gap between clinic visits. Cepheus uses a short
-            twice-weekly check-in and consented home wellbeing measures to
-            support timely nurse follow-up, without diagnosis or treatment
-            claims.
-          </p>
-        </div>
-
-        <ForestCanopyArtwork className="w-full pt-2 text-accent-sage" />
-      </header>
-
-      <section
-        aria-label="Sign in required"
-        data-testid="logged-out-overview-card"
-        className="flex flex-col justify-between gap-4 rounded-2xl border border-border-hairline bg-surface-card p-6 sm:flex-row sm:items-center sm:p-8"
-      >
-        <div className="max-w-xl space-y-1.5">
-          <h2 className="font-display text-xl font-semibold text-ink-primary">
-            Sign in to view your workspace
-          </h2>
-          <p className="text-sm leading-relaxed text-ink-secondary">
-            Participant check-ins, sensor settings, and clinic follow-up tools
-            are hidden until you sign in. Direct crisis support numbers stay
-            available at the top of every screen.
-          </p>
-        </div>
-        <Link
-          href="/sign-in"
-          data-testid="landing-sign-in-link"
-          className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-accent-sage px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-sage-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
-        >
-          Sign in to Cepheus
-        </Link>
-      </section>
-    </div>
-  );
-}
-
 async function loadSignedInOverview() {
   const fullSimulatedDataset = generateSimulatedPersonWeeks();
   let dbSeeded = false;
@@ -409,7 +356,7 @@ async function loadSignedInOverview() {
 export default async function HomePage() {
   const session = await readServerSession();
   if (!session) {
-    return <PublicOverviewContent />;
+    return <PublicLandingShowcase />;
   }
 
   const {

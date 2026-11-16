@@ -41,17 +41,22 @@ function SignInContent() {
           Sign in to Cepheus
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-ink-secondary">
-          Participants sign in with simulated Finnish strong electronic
-          identification (D34), which stores only a pseudonymous participant
-          code. Clinic staff sign in with named credentials and a 6-digit
-          authenticator code (D20/B7).
+          Choose a sample participant or clinic staff account below. Participant
+          sign-in uses simulated strong identification and stores only a
+          pseudonymous code—never your name or personal identity number.
         </p>
       </header>
+
+      {!session && safeReturnUrl(returnTo) ? (
+        <p className="rounded-xl border border-accent-sage-border bg-accent-sage-soft/70 px-4 py-3 text-sm text-ink-primary">
+          Sign in below to continue to the page you opened.
+        </p>
+      ) : null}
 
       {session ? (
         <section
           aria-label="Active session"
-          className="flex flex-col gap-4 rounded-2xl border border-accent-sage-border bg-accent-sage-soft p-5 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-4 rounded-2xl border border-accent-sage-border bg-accent-sage-soft p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
         >
           <div className="flex items-center gap-3">
             <span
@@ -64,13 +69,13 @@ function SignInContent() {
             >
               {session.avatarInitials}
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-ink-primary">
                 {session.kind === "patient"
                   ? `Signed in as Participant ${session.participantCode}`
                   : `Signed in as ${session.displayName}`}
               </p>
-              <p className="text-xs text-ink-secondary">
+              <p className="text-sm text-ink-secondary [overflow-wrap:anywhere]">
                 {session.kind === "patient"
                   ? session.label
                   : `${session.email} · ${session.clinicName}`}
@@ -82,7 +87,7 @@ function SignInContent() {
               href={session.kind === "patient" ? "/check-in" : "/clinic"}
               className="inline-flex min-h-11 items-center rounded-xl bg-accent-sage px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-sage-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-sage"
             >
-              {session.kind === "patient" ? "Go to check-in" : "Go to clinic"}
+              {session.kind === "patient" ? "Open check-in" : "Open clinic view"}
             </Link>
             <button
               type="button"
@@ -96,14 +101,14 @@ function SignInContent() {
       ) : null}
 
       <div className="grid gap-6 md:grid-cols-2">
-        <section className="rounded-2xl border border-border-hairline bg-surface-card p-6">
+        <section className="rounded-2xl border border-border-hairline bg-surface-card p-4 sm:p-6">
           <h2 className="mb-3 font-display text-lg font-semibold text-ink-primary">
             Participant e-ID
           </h2>
           <PatientEidSignInPanel onSuccess={handleSuccess} />
         </section>
 
-        <section className="rounded-2xl border border-border-hairline bg-surface-card p-6">
+        <section className="rounded-2xl border border-border-hairline bg-surface-card p-4 sm:p-6">
           <h2 className="mb-3 font-display text-lg font-semibold text-ink-primary">
             Clinic staff
           </h2>
